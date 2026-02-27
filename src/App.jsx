@@ -772,13 +772,16 @@ const MainContent = ({ onGoToAdmin, onGoToVideos }) => {
       >
       <HeaderNavbar
         onNav={scrollToId}
-        onOpenSettings={openSettingsModal}
         onOpenParentZone={requestParentZoneAccess}
         isAdmin={isAdmin}
         onGoToAdmin={onGoToAdmin}
         onGoToVideos={onGoToVideos}
         isForcedOffline={isForcedOffline}
         onToggleForcedOffline={() => setIsForcedOffline((v) => !v)}
+        displayMode={displayMode}
+        onSetDisplayMode={setDisplayMode}
+        brightness={brightness}
+        onBrightnessChange={setBrightness}
       />
       <ParentPinGateModal
         open={parentPinGateOpen}

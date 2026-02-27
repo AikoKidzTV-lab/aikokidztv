@@ -3,7 +3,6 @@ import { Bell, ChevronDown, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useKidsMode } from '../context/KidsModeContext';
 import { ADMIN_EMAIL } from '../utils/admin';
-import Settings from './Settings';
 
 function ProfileDropdownMenu({
   open,
@@ -11,15 +10,22 @@ function ProfileDropdownMenu({
   user,
   profile,
   isAdmin,
-  setIsSettingsOpen,
   onOpenParentZone,
   onGoToAdmin,
+  displayMode = 'light',
+  onSetDisplayMode,
+  brightness = 100,
+  onBrightnessChange,
 }) {
   if (!open) return null;
 
   const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
   const isLoggedIn = Boolean(user);
   const canSeeAdminPanel = user?.email === ADMIN_EMAIL;
+  const modeOptions = [
+    { key: 'light', label: 'Light', icon: '\u2600\uFE0F' },
+    { key: 'dark', label: 'Dark', icon: '\uD83C\uDF19' },
+  ];
 
   const run = (fn) => () => {
     fn?.();
@@ -67,17 +73,49 @@ function ProfileDropdownMenu({
           Parent Zone
           <span className="block text-xs font-semibold opacity-80">Protected by 4-digit PIN (resettable)</span>
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            setIsSettingsOpen(true);
-            onClose?.();
-          }}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-        >
-          {'\u2699\uFE0F'} Settings
-          <span className="block text-xs font-semibold opacity-70">Account & preferences</span>
-        </button>
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-800/80">
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Display Controls</p>
+
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {modeOptions.map((mode) => {
+            const active = displayMode === mode.key;
+            return (
+              <button
+                key={mode.key}
+                type="button"
+                onClick={() => onSetDisplayMode?.(mode.key)}
+                aria-pressed={active}
+                className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                  active
+                    ? 'border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-500 dark:bg-sky-500/20 dark:text-sky-100'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span className="mr-1">{mode.icon}</span>
+                {mode.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-900/80">
+          <label className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Brightness</span>
+            <input
+              type="range"
+              min="50"
+              max="100"
+              step="1"
+              value={brightness}
+              onChange={(event) => onBrightnessChange?.(Number(event.target.value))}
+              className="w-full accent-sky-500"
+              aria-label="Brightness"
+            />
+            <span className="w-10 text-right text-xs font-bold text-slate-700 dark:text-slate-200">{brightness}%</span>
+          </label>
+        </div>
       </div>
     </div>
   );
@@ -91,14 +129,15 @@ export default function HeaderNavbar({
   onGoToVideos,
   isForcedOffline,
   onToggleForcedOffline,
+  displayMode = 'light',
+  onSetDisplayMode = () => {},
+  brightness = 100,
+  onBrightnessChange = () => {},
 }) {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const { isKidsModeOn, toggleKidsMode } = useKidsMode();
   const [showNotifications, setShowNotifications] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [themeKey, setThemeKey] = useState('light');
-  const [brightness, setBrightness] = useState(100);
 
   const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
   const networkLabel = isForcedOffline ? 'Offline' : 'Online';
@@ -261,23 +300,17 @@ export default function HeaderNavbar({
               user={user}
               profile={profile}
               isAdmin={isAdmin}
-              setIsSettingsOpen={setIsSettingsOpen}
               onOpenParentZone={onOpenParentZone}
               onGoToAdmin={onGoToAdmin}
+              displayMode={displayMode}
+              onSetDisplayMode={onSetDisplayMode}
+              brightness={brightness}
+              onBrightnessChange={onBrightnessChange}
             />
           </div>
         </div>
       </div>
     </nav>
-    <Settings
-      isOpen={isSettingsOpen}
-      onClose={() => setIsSettingsOpen(false)}
-      themeKey={themeKey}
-      onThemeChange={setThemeKey}
-      brightness={brightness}
-      onBrightnessChange={setBrightness}
-      onLogout={signOut}
-    />
     </>
   );
 }

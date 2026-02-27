@@ -538,8 +538,8 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
             <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Account Access</h3>
-                  <p className="text-gray-500 mt-1">Sign out of this device securely to protect data.</p>
+                  <h3 className="text-xl font-bold text-gray-900">Parent Zone Settings</h3>
+                  <p className="text-gray-500 mt-1">Logout and account deletion are restricted to this parent-only section.</p>
                 </div>
                 <button
                   onClick={onLogout}

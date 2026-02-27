@@ -15,7 +15,6 @@ export default function Settings({
   onThemeChange,
   brightness = 100,
   onBrightnessChange,
-  onLogout,
 }) {
   const resolvedIsOpen = typeof isOpen === 'boolean' ? isOpen : Boolean(open);
   if (!resolvedIsOpen) return null;
@@ -82,16 +81,11 @@ export default function Settings({
           </div>
         </section>
 
-        <section className="mt-6 rounded-2xl border-2 border-amber-200 bg-amber-50 p-5">
-          <h3 className="text-lg font-extrabold text-amber-900">Danger Zone</h3>
-          <button
-            type="button"
-            onClick={onLogout}
-            className="mt-4 w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-red-700"
-          >
-            Logout
-          </button>
-          <p className="mt-3 text-sm font-semibold text-amber-800">Warning: This signs you out safely</p>
+        <section className="mt-6 rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-5">
+          <h3 className="text-lg font-extrabold text-indigo-900">Parent Controls</h3>
+          <p className="mt-2 text-sm font-semibold text-indigo-800">
+            Logout and Delete Account are available only inside Parent Zone for child safety.
+          </p>
         </section>
       </div>
     </div>
