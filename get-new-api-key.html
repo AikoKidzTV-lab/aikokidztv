@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get New API Key - Step by Step</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #1a1a1a; color: #fff; }
+        .status { padding: 15px; border-radius: 5px; margin: 10px 0; border: 1px solid; }
+        .success { background-color: #2d5a2d; border-color: #4caf50; color: #c8e6c9; }
+        .error { background-color: #5a2d2d; border-color: #f44336; color: #ffcdd2; }
+        .info { background-color: #2d3a5a; border-color: #2196f3; color: #bbdefb; }
+        .warning { background-color: #5a4a2d; border-color: #ff9800; color: #ffe0b2; }
+        button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; border: none; border-radius: 4px; }
+        .btn-primary { background-color: #2196f3; color: white; }
+        .btn-success { background-color: #4caf50; color: white; }
+        .btn-warning { background-color: #ff9800; color: white; }
+        .btn-danger { background-color: #f44336; color: white; }
+        .step { background: #333; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #2196f3; }
+        .code { background: #000; color: #0f0; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #555; background: #333; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🔑 Get New Gemini API Key</h1>
+    
+    <div class="status warning">
+        <h3>⚠️ IMPORTANT: Use a FRESH API Key</h3>
+        <p>The current key <strong>AIzaSyDcwKFGqe7R2P9ewix0P__5MVlrv25QJeg</strong> is not working.</p>
+        <p>You need to create a <strong>NEW</strong> API key from Google AI Studio.</p>
+    </div>
+
+    <div class="step">
+        <h3>📋 Step 1: Get New API Key</h3>
+        <ol>
+            <li><strong>Open</strong>: <a href="https://makersuite.google.com/app/apikey" target="_blank">https://makersuite.google.com/app/apikey</a></li>
+            <li><strong>Sign in</strong> with your Google account</li>
+            <li><strong>Click</strong> "Create API key"</li>
+            <li><strong>Copy</strong> the new API key</li>
+        </ol>
+        <button onclick="openGoogleAIStudio()" class="btn-primary">🌐 Open Google AI Studio</button>
+    </div>
+
+    <div class="step">
+        <h3>📋 Step 2: Update .env File</h3>
+        <p><strong>Replace</strong> the current API key in your <code>.env</code> file:</p>
+        <div class="code">VITE_GEMINI_API_KEY=YOUR_NEW_API_KEY_HERE</div>
+        <p><strong>Current (broken):</strong> AIzaSyDcwKFGqe7R2P9ewix0P__5MVlrv25QJeg</p>
+        <p><strong>New (working):</strong> [Your new key from Google AI Studio]</p>
+    </div>
+
+    <div class="step">
+        <h3>📋 Step 3: Restart Development Server</h3>
+        <ol>
+            <li><strong>Stop</strong> current server (Ctrl+C in terminal)</li>
+            <li><strong>Restart</strong> with: <code>npm run dev</code></li>
+            <li><strong>Wait</strong> for server to start on http://localhost:5176</li>
+        </ol>
+        <button onclick="restartServer()" class="btn-warning">🔄 Restart Server</button>
+    </div>
+
+    <div class="step">
+        <h3>📋 Step 4: Test the Application</h3>
+        <ol>
+            <li><strong>Open</strong>: http://localhost:5176</li>
+            <li><strong>Open</strong> Developer Tools (F12) → Console tab</li>
+            <li><strong>Try</strong> generating a story or image</li>
+            <li><strong>Check</strong> console for success messages</li>
+        </ol>
+        <button onclick="openApp()" class="btn-success">🌐 Open Application</button>
+    </div>
+
+    <div class="status info">
+        <h3>🔍 What to Look For in Console:</h3>
+        <div class="code">📝 User Input: [your text]
+Gemini API Request: { url: "...", prompt: "...", ... }
+Gemini API Response Status: 200
+Gemini API Response Data: { ... }</div>
+        <p>If you see <span style="color: #4caf50;">✅ 200</span> status, it's working!</p>
+        <p>If you see <span style="color: #f44336;">❌ 401/403/429</span>, the key is still invalid.</p>
+    </div>
+
+    <div class="status error">
+        <h3>🚨 Common Issues:</h3>
+        <ul>
+            <li><strong>401 Error:</strong> Invalid API key</li>
+            <li><strong>403 Error:</strong> Key doesn't have Gemini API access</li>
+            <li><strong>429 Error:</strong> Quota exceeded</li>
+            <li><strong>Network Error:</strong> CORS or connectivity issues</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h3>📋 Step 5: Test Your New Key</h3>
+        <p>Enter your new API key to test it:</p>
+        <input type="text" id="new-api-key" placeholder="Paste your new Gemini API key here...">
+        <button onclick="testNewApiKey()" class="btn-success">🧪 Test New API Key</button>
+    </div>
+
+    <div class="code" id="test-output">
+        Test results will appear here...
+    </div>
+
+    <script>
+        function openGoogleAIStudio() {
+            window.open('https://makersuite.google.com/app/apikey', '_blank');
+        }
+
+        function openApp() {
+            window.open('http://localhost:5176', '_blank');
+        }
+
+        function restartServer() {
+            alert('Please:\n1. Stop the current server (Ctrl+C)\n2. Run: npm run dev\n3. Wait for server to start\n4. Then test the application');
+        }
+
+        async function testNewApiKey() {
+            const apiKey = document.getElementById('new-api-key').value.trim();
+            const output = document.getElementById('test-output');
+            
+            if (!apiKey) {
+                output.innerHTML = '❌ Please enter a new API key to test';
+                return;
+            }
+
+            output.innerHTML = '🔍 Testing new API key...\n';
+            
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    output.innerHTML += '✅ NEW API Key is VALID!\n';
+                    output.innerHTML += '📋 Available models:\n';
+                    data.models.forEach(model => {
+                        output.innerHTML += `  - ${model.name}\n`;
+                    });
+                    output.innerHTML += '\n🎉 Your new API key should work with the application!';
+                    output.innerHTML += '\n\n💡 Next steps:\n1. Update .env file with this key\n2. Restart server\n3. Test the application';
+                } else {
+                    const errorText = await response.text();
+                    output.innerHTML += `❌ NEW API Key is INVALID!\n`;
+                    output.innerHTML += `Status: ${response.status}\n`;
+                    output.innerHTML += `Error: ${errorText}\n`;
+                    output.innerHTML += '\n💡 Get a new API key from: https://makersuite.google.com/app/apikey';
+                }
+            } catch (error) {
+                output.innerHTML += `❌ Network Error: ${error.message}\n`;
+                output.innerHTML += '\n💡 Check your internet connection and try again';
+            }
+        }
+    </script>
+</body>
+</html>

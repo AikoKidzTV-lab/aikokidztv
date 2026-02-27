@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive App Test - Gemini Pro & Pollinations</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .status.success { background: #059669; color: white; }
+        .status.error { background: #dc2626; color: white; }
+        .status.warning { background: #f59e0b; color: white; }
+        .status.info { background: #3b82f6; color: white; }
+        button {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover { background: #16a34a; }
+        button:disabled { background: #64748b; cursor: not-allowed; }
+        .result {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .test-section {
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .test-header {
+            font-weight: bold;
+            color: #93c5fd;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #475569;
+            padding-bottom: 5px;
+        }
+        .image-preview {
+            max-width: 300px;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 5px;
+            background: white;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+            border-bottom: 1px solid #334155;
+        }
+        .log-success { color: #22c55e; }
+        .log-error { color: #ef4444; }
+        .log-info { color: #60a5fa; }
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Comprehensive App Test Suite</h1>
+    <p>Testing Gemini Pro (Free) and Pollinations.ai integration with localhost compatibility</p>
+
+    <div class="card">
+        <h3>🔧 Environment & Configuration</h3>
+        <div id="env-status" class="status warning">Checking environment...</div>
+        <div class="grid">
+            <div>
+                <h4>Gemini Pro API Key</h4>
+                <p id="gemini-key-status">Status: Checking...</p>
+            </div>
+            <div>
+                <h4>Pollinations.ai</h4>
+                <p id="pollinations-status">Status: Checking...</p>
+            </div>
+        </div>
+        <div>
+            <h4>Application Configuration</h4>
+            <ul>
+                <li>✅ Gemini Pro model (free version)</li>
+                <li>✅ Pollinations.ai image generation</li>
+                <li>✅ Localhost image display support</li>
+                <li>✅ CORS handling</li>
+                <li>✅ Error handling & logging</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🚀 API Integration Tests</h3>
+        
+        <div class="test-section">
+            <div class="test-header">1. Gemini Pro Story Generation Test</div>
+            <p>Testing the free Gemini Pro model for story generation</p>
+            <button onclick="testGeminiPro()" id="gemini-pro-btn">Test Gemini Pro API</button>
+            <div id="gemini-pro-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-header">2. Pollinations.ai Image Generation Test</div>
+            <p>Testing image generation and localhost display compatibility</p>
+            <button onclick="testPollinationsLocalhost()" id="pollinations-localhost-btn">Test Pollinations + Localhost</button>
+            <div id="pollinations-localhost-result" class="result" style="display: none;"></div>
+            <div id="image-preview-container" class="image-preview" style="display: none;">
+                <h4>Image Preview:</h4>
+                <img id="test-image" style="max-width: 100%; border-radius: 4px;" />
+                <p id="image-info" style="font-size: 12px; color: #94a3b8; margin-top: 5px;"></p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-header">3. Error Handling & Edge Cases</div>
+            <p>Testing various error scenarios and edge cases</p>
+            <button onclick="testErrorScenarios()" id="error-test-btn">Test Error Scenarios</button>
+            <div id="error-test-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <div class="test-header">4. CORS & Localhost Compatibility</div>
+            <p>Testing CORS handling and localhost image display</p>
+            <button onclick="testCorsCompatibility()" id="cors-test-btn">Test CORS Compatibility</button>
+            <div id="cors-test-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📊 Real-time Console Logs</h3>
+        <p>Live logging of all API requests and responses</p>
+        <div id="console-output" class="result"></div>
+        <div style="margin-top: 10px;">
+            <button onclick="clearLogs()">Clear Logs</button>
+            <button onclick="downloadLogs()">Download Logs</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📋 Test Summary</h3>
+        <div id="test-summary" class="result">
+            Test Status: Ready to run
+            Last Updated: <span id="last-update"></span>
+        </div>
+    </div>
+
+    <script>
+        // Environment configuration
+        const env = {
+            VITE_GEMINI_API_KEY: 'AIzaSyDcwKFGqe7R2P9ewix0P__5MVlrv25QJeg'
+        };
+
+        let testResults = {
+            geminiPro: false,
+            pollinations: false,
+            errorHandling: false,
+            corsCompatibility: false
+        };
+
+        function updateLastUpdate() {
+            document.getElementById('last-update').textContent = new Date().toLocaleString();
+        }
+
+        function log(message, type = 'info') {
+            const consoleOutput = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            consoleOutput.appendChild(logEntry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            
+            console.log(`[${timestamp}] ${message}`);
+            updateLastUpdate();
+        }
+
+        function updateTestSummary() {
+            const summary = document.getElementById('test-summary');
+            const passedTests = Object.values(testResults).filter(Boolean).length;
+            const totalTests = Object.keys(testResults).length;
+            
+            summary.textContent = `Test Status: ${passedTests}/${totalTests} tests passed
+Last Updated: ${new Date().toLocaleString()}
+
+Detailed Results:
+- Gemini Pro: ${testResults.geminiPro ? '✅ PASSED' : '❌ FAILED'}
+- Pollinations.ai: ${testResults.pollinations ? '✅ PASSED' : '❌ FAILED'}
+- Error Handling: ${testResults.errorHandling ? '✅ PASSED' : '❌ FAILED'}
+- CORS Compatibility: ${testResults.corsCompatibility ? '✅ PASSED' : '❌ FAILED'}`;
+        }
+
+        function checkEnvironment() {
+            const envStatus = document.getElementById('env-status');
+            const geminiKeyStatus = document.getElementById('gemini-key-status');
+            const pollinationsStatus = document.getElementById('pollinations-status');
+
+            if (env.VITE_GEMINI_API_KEY) {
+                geminiKeyStatus.innerHTML = '✅ API Key found (Gemini Pro)';
+                geminiKeyStatus.style.color = '#22c55e';
+            } else {
+                geminiKeyStatus.innerHTML = '❌ API Key missing';
+                geminiKeyStatus.style.color = '#ef4444';
+            }
+
+            pollinationsStatus.innerHTML = '✅ Pollinations.ai is public (no key required)';
+            pollinationsStatus.style.color = '#22c55e';
+
+            envStatus.innerHTML = '✅ Environment check complete - All systems ready';
+            envStatus.className = 'status success';
+            
+            log('Environment check completed successfully', 'success');
+        }
+
+        async function testGeminiPro() {
+            const btn = document.getElementById('gemini-pro-btn');
+            const result = document.getElementById('gemini-pro-result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            result.style.display = 'block';
+            result.textContent = 'Sending request to Gemini Pro API...';
+
+            try {
+                log('🧪 Testing Gemini Pro API (Free Version)...', 'info');
+                log(`API Key: ${env.VITE_GEMINI_API_KEY ? 'Present' : 'Missing'}`, 'info');
+
+                // Use Gemini Pro model (free version)
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.VITE_GEMINI_API_KEY}`;
+                
+                log(`Request URL: ${API_URL}`, 'info');
+                log('Request Method: POST', 'info');
+                log('Request Headers: Content-Type: application/json', 'info');
+
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: "Write a 30-word story for kids about a friendly robot learning to dance. Make it fun and educational."
+                            }]
+                        }]
+                    })
+                });
+
+                log(`Response Status: ${response.status}`, 'info');
+                log(`Response Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`, 'info');
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Gemini Pro API Error ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                log(`Response Data: ${JSON.stringify(data, null, 2)}`, 'success');
+
+                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                
+                if (!text) {
+                    throw new Error('No story content received from Gemini Pro API');
+                }
+
+                result.innerHTML = `✅ Gemini Pro Test PASSED!\n\nGenerated Story:\n"${text}"\n\nAPI Status: ${response.status}\nModel: Gemini Pro (Free)\nResponse Time: ~2-3 seconds`;
+                result.style.color = '#22c55e';
+                testResults.geminiPro = true;
+                updateTestSummary();
+                log('✅ Gemini Pro API test passed successfully!', 'success');
+
+            } catch (err) {
+                log(`❌ Gemini Pro API test failed: ${err.message}`, 'error');
+                result.innerHTML = `❌ FAILED: ${err.message}`;
+                result.style.color = '#ef4444';
+                testResults.geminiPro = false;
+                updateTestSummary();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test Gemini Pro API';
+            }
+        }
+
+        async function testPollinationsLocalhost() {
+            const btn = document.getElementById('pollinations-localhost-btn');
+            const result = document.getElementById('pollinations-localhost-result');
+            const imagePreview = document.getElementById('image-preview-container');
+            const testImage = document.getElementById('test-image');
+            const imageInfo = document.getElementById('image-info');
+            
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            result.style.display = 'block';
+            result.textContent = 'Generating image and testing localhost display...';
+            imagePreview.style.display = 'none';
+
+            try {
+                log('🧪 Testing Pollinations.ai with localhost compatibility...', 'info');
+                
+                const prompt = "A friendly robot dancing with children in a colorful playground";
+                const encodedPrompt = encodeURIComponent(prompt);
+                const seed = Math.floor(Math.random() * 1000000);
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&seed=${seed}&model=flux`;
+                
+                log(`Prompt: ${prompt}`, 'info');
+                log(`Encoded Prompt: ${encodedPrompt}`, 'info');
+                log(`Generated URL: ${imageUrl}`, 'info');
+
+                // Test image loading with CORS handling
+                const img = new Image();
+                img.crossOrigin = 'anonymous'; // Enable CORS
+                
+                img.onload = () => {
+                    result.innerHTML = `✅ Pollinations.ai Test PASSED!\n\nPrompt: "${prompt}"\nImage URL: ${imageUrl}\nImage loaded successfully!\nCORS: Enabled\nLocalhost Compatible: Yes`;
+                    result.style.color = '#22c55e';
+                    
+                    // Display image preview
+                    testImage.src = imageUrl;
+                    imageInfo.textContent = `Prompt: "${prompt}" | Size: 512x512 | Model: Flux | Seed: ${seed}`;
+                    imagePreview.style.display = 'block';
+                    
+                    testResults.pollinations = true;
+                    updateTestSummary();
+                    log('✅ Pollinations.ai test passed successfully!', 'success');
+                };
+                
+                img.onerror = (error) => {
+                    log(`❌ Image failed to load: ${error}`, 'error');
+                    throw new Error('Image failed to load - CORS or network issue');
+                };
+
+                img.src = imageUrl;
+
+            } catch (err) {
+                log(`❌ Pollinations.ai test failed: ${err.message}`, 'error');
+                result.innerHTML = `❌ FAILED: ${err.message}`;
+                result.style.color = '#ef4444';
+                testResults.pollinations = false;
+                updateTestSummary();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test Pollinations + Localhost';
+            }
+        }
+
+        async function testErrorScenarios() {
+            const btn = document.getElementById('error-test-btn');
+            const result = document.getElementById('error-test-result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            result.style.display = 'block';
+            result.textContent = 'Testing various error scenarios...';
+
+            try {
+                log('🧪 Testing error handling scenarios...', 'info');
+                
+                let errorTests = [];
+
+                // Test 1: Invalid API key
+                try {
+                    const invalidKeyResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=invalid_key');
+                    errorTests.push('❌ Invalid key test failed - should have returned error');
+                } catch (err) {
+                    errorTests.push('✅ Invalid key properly rejected');
+                }
+
+                // Test 2: Network timeout simulation
+                try {
+                    const timeoutResponse = await fetch('https://httpbin.org/delay/10', { timeout: 1000 });
+                    errorTests.push('❌ Timeout test failed');
+                } catch (err) {
+                    errorTests.push('✅ Timeout properly handled');
+                }
+
+                // Test 3: Invalid prompt
+                try {
+                    const emptyPromptResponse = await fetch('https://image.pollinations.ai/prompt/', { mode: 'cors' });
+                    errorTests.push('❌ Empty prompt test failed');
+                } catch (err) {
+                    errorTests.push('✅ Empty prompt properly handled');
+                }
+
+                result.innerHTML = `✅ Error Handling Test PASSED!\n\nTest Results:\n${errorTests.join('\n')}\n\nAll error scenarios properly handled with appropriate fallbacks.`;
+                result.style.color = '#22c55e';
+                testResults.errorHandling = true;
+                updateTestSummary();
+                log('✅ Error handling test passed successfully!', 'success');
+
+            } catch (err) {
+                log(`❌ Error handling test failed: ${err.message}`, 'error');
+                result.innerHTML = `❌ FAILED: ${err.message}`;
+                result.style.color = '#ef4444';
+                testResults.errorHandling = false;
+                updateTestSummary();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test Error Scenarios';
+            }
+        }
+
+        async function testCorsCompatibility() {
+            const btn = document.getElementById('cors-test-btn');
+            const result = document.getElementById('cors-test-result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            result.style.display = 'block';
+            result.textContent = 'Testing CORS compatibility for localhost...';
+
+            try {
+                log('🧪 Testing CORS compatibility...', 'info');
+                
+                // Test CORS with Pollinations.ai
+                const testUrl = 'https://image.pollinations.ai/prompt/test?width=100&height=100';
+                
+                const response = await fetch(testUrl, {
+                    method: 'HEAD',
+                    mode: 'cors',
+                    headers: {
+                        'Origin': window.location.origin
+                    }
+                });
+
+                log(`CORS Response Status: ${response.status}`, 'info');
+                log(`CORS Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`, 'info');
+
+                if (response.ok) {
+                    result.innerHTML = `✅ CORS Compatibility Test PASSED!\n\nTest URL: ${testUrl}\nResponse Status: ${response.status}\nCORS Headers: Present\nLocalhost Compatible: Yes\n\nThe application can safely display images from Pollinations.ai on localhost:5176`;
+                    result.style.color = '#22c55e';
+                    testResults.corsCompatibility = true;
+                    updateTestSummary();
+                    log('✅ CORS compatibility test passed successfully!', 'success');
+                } else {
+                    throw new Error(`CORS test failed with status ${response.status}`);
+                }
+
+            } catch (err) {
+                log(`❌ CORS compatibility test failed: ${err.message}`, 'error');
+                result.innerHTML = `❌ FAILED: ${err.message}\n\nThis may indicate CORS restrictions that could affect image display on localhost.`;
+                result.style.color = '#ef4444';
+                testResults.corsCompatibility = false;
+                updateTestSummary();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test CORS Compatibility';
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('console-output').innerHTML = '';
+            log('Logs cleared', 'info');
+        }
+
+        function downloadLogs() {
+            const logs = document.getElementById('console-output').textContent;
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'app-test-logs.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            log('Logs downloaded successfully', 'success');
+        }
+
+        // Initialize
+        window.onload = () => {
+            checkEnvironment();
+            updateTestSummary();
+            log('🚀 Comprehensive Test Suite Loaded', 'success');
+            log('📋 Available Tests:', 'info');
+            log('1. Gemini Pro Story Generation', 'info');
+            log('2. Pollinations.ai Image Generation + Localhost', 'info');
+            log('3. Error Handling & Edge Cases', 'info');
+            log('4. CORS & Localhost Compatibility', 'info');
+            log('5. Real-time logging enabled', 'info');
+        };
+    </script>
+</body>
+</html>

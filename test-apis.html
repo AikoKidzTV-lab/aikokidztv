@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - Gemini & Pollinations</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .status.success { background: #059669; color: white; }
+        .status.error { background: #dc2626; color: white; }
+        .status.warning { background: #f59e0b; color: white; }
+        button {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        button:hover { background: #16a34a; }
+        button:disabled { background: #64748b; cursor: not-allowed; }
+        .result {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 API Integration Test</h1>
+    <p>Testing Gemini 1.5 Flash and Pollinations.ai API connectivity</p>
+
+    <div class="card">
+        <h3>🔧 Environment Check</h3>
+        <div id="env-status" class="status warning">Checking environment variables...</div>
+        <div class="grid">
+            <div>
+                <h4>Gemini API Key</h4>
+                <p id="gemini-key-status">Status: Checking...</p>
+            </div>
+            <div>
+                <h4>Pollinations API</h4>
+                <p id="pollinations-status">Status: Checking...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🚀 Manual Tests</h3>
+        <div class="grid">
+            <div>
+                <h4>Gemini Story Generation</h4>
+                <button onclick="testGemini()" id="gemini-btn">Test Gemini API</button>
+                <div id="gemini-result" class="result" style="display: none;"></div>
+            </div>
+            <div>
+                <h4>Pollinations Image Generation</h4>
+                <button onclick="testPollinations()" id="pollinations-btn">Test Pollinations API</button>
+                <div id="pollinations-result" class="result" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📊 Console Logs</h3>
+        <p>Check browser console for detailed API request/response logs</p>
+        <div id="console-output" class="result"></div>
+    </div>
+
+    <script>
+        // Simulate environment variables (in real app, these come from .env)
+        const env = {
+            VITE_GEMINI_API_KEY: 'AIzaSyBXw61MXlMoNzj2UrblUxFrLqXzrTfLo1Q'
+        };
+
+        function log(message) {
+            const consoleOutput = document.getElementById('console-output');
+            consoleOutput.textContent += message + '\n';
+            console.log(message);
+        }
+
+        function checkEnvironment() {
+            const envStatus = document.getElementById('env-status');
+            const geminiKeyStatus = document.getElementById('gemini-key-status');
+            const pollinationsStatus = document.getElementById('pollinations-status');
+
+            if (env.VITE_GEMINI_API_KEY) {
+                geminiKeyStatus.innerHTML = '✅ API Key found';
+                geminiKeyStatus.style.color = '#22c55e';
+            } else {
+                geminiKeyStatus.innerHTML = '❌ API Key missing';
+                geminiKeyStatus.style.color = '#ef4444';
+            }
+
+            pollinationsStatus.innerHTML = '✅ Pollinations.ai is public (no key required)';
+            pollinationsStatus.style.color = '#22c55e';
+
+            envStatus.innerHTML = '✅ Environment check complete';
+            envStatus.className = 'status success';
+        }
+
+        async function testGemini() {
+            const btn = document.getElementById('gemini-btn');
+            const result = document.getElementById('gemini-result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            result.style.display = 'block';
+            result.textContent = 'Sending request to Gemini API...';
+
+            try {
+                log('🧪 Testing Gemini API...');
+                log('API Key:', env.VITE_GEMINI_API_KEY ? 'Present' : 'Missing');
+
+                // Use Gemini Pro model (free version) instead of Flash
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.VITE_GEMINI_API_KEY}`;
+                
+                log('Request URL:', API_URL);
+                log('Request Method: POST');
+                log('Request Headers: Content-Type: application/json');
+
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: "Write a 30-word story for kids about a friendly robot."
+                            }]
+                        }]
+                    })
+                });
+
+                log('Response Status:', response.status);
+                log('Response Headers:', Object.fromEntries(response.headers.entries()));
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Gemini API Error ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                log('Response Data:', JSON.stringify(data, null, 2));
+
+                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                
+                if (!text) {
+                    throw new Error('No story content received from Gemini API');
+                }
+
+                result.innerHTML = `✅ Success!\n\nGenerated Story:\n"${text}"\n\nAPI Status: ${response.status}`;
+                result.style.color = '#22c55e';
+                log('✅ Gemini API test passed!');
+
+            } catch (err) {
+                log('❌ Gemini API test failed:', err);
+                result.innerHTML = `❌ Failed: ${err.message}`;
+                result.style.color = '#ef4444';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test Gemini API';
+            }
+        }
+
+        async function testPollinations() {
+            const btn = document.getElementById('pollinations-btn');
+            const result = document.getElementById('pollinations-result');
+            
+            btn.disabled = true;
+            btn.textContent = 'Testing...';
+            result.style.display = 'block';
+            result.textContent = 'Generating image URL...';
+
+            try {
+                log('🧪 Testing Pollinations.ai API...');
+                
+                const prompt = "A friendly robot playing with children in a park";
+                const encodedPrompt = encodeURIComponent(prompt);
+                const seed = Math.floor(Math.random() * 1000000);
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=512&height=512&seed=${seed}&model=flux`;
+                
+                log('Prompt:', prompt);
+                log('Encoded Prompt:', encodedPrompt);
+                log('Generated URL:', imageUrl);
+
+                // Test if the image loads
+                const img = new Image();
+                img.onload = () => {
+                    result.innerHTML = `✅ Success!\n\nPrompt: "${prompt}"\n\nImage URL: ${imageUrl}\n\nImage loaded successfully!`;
+                    result.style.color = '#22c55e';
+                    log('✅ Pollinations.ai test passed!');
+                };
+                
+                img.onerror = () => {
+                    throw new Error('Image failed to load');
+                };
+
+                img.src = imageUrl;
+
+            } catch (err) {
+                log('❌ Pollinations.ai test failed:', err);
+                result.innerHTML = `❌ Failed: ${err.message}`;
+                result.style.color = '#ef4444';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Test Pollinations API';
+            }
+        }
+
+        // Initialize
+        window.onload = () => {
+            checkEnvironment();
+            log('🚀 API Test Page Loaded');
+            log('📋 Instructions:');
+            log('1. Click "Test Gemini API" to test story generation');
+            log('2. Click "Test Pollinations API" to test image generation');
+            log('3. Check console for detailed logs');
+        };
+    </script>
+</body>
+</html>

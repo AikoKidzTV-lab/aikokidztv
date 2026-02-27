@@ -1,0 +1,286 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - button "AikoKidzTV" [ref=e7] [cursor=pointer]:
+          - img [ref=e8]
+          - text: AikoKidzTV
+        - generic [ref=e10]:
+          - generic [ref=e11]: 🐼 Kids Mode
+          - button "Toggle Kids Mode" [ref=e12] [cursor=pointer]
+      - generic [ref=e15]:
+        - button "Story Studio" [ref=e16] [cursor=pointer]
+        - button "Magic Art" [ref=e17] [cursor=pointer]
+        - button "🧠 Learning Zone" [ref=e18] [cursor=pointer]
+      - generic [ref=e19]:
+        - button "Toggle Dark Mode" [ref=e20] [cursor=pointer]:
+          - img [ref=e21]
+          - generic [ref=e23]: Dark Mode
+        - generic [ref=e24]:
+          - img [ref=e25]
+          - generic [ref=e28]: "0"
+        - button "G" [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]: G
+          - img [ref=e32]
+  - main [ref=e34]:
+    - generic [ref=e39]:
+      - heading "The Visionary & The Machine" [level=2] [ref=e40]
+      - heading "AikoKidzTV AI Adventures for Kids" [level=1] [ref=e41]:
+        - text: AikoKidzTV
+        - text: AI Adventures for Kids
+      - paragraph [ref=e42]: Dedicated to revolutionizing child education. We are bridging the gap between creativity and awareness by introducing Junior Law subjects in our upcoming app. Empowering the next generation with knowledge of their rights, safety, and legal basics in a fun, interactive way.
+    - generic [ref=e44]:
+      - heading "Our Story" [level=2] [ref=e46]
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - heading "The Beginning" [level=3] [ref=e51]
+            - heading "Spark of AikoKidzTV" [level=4] [ref=e52]
+          - paragraph [ref=e57]: When the idea of making AI-powered stories safe and playful for kids first lit up.
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - heading "First Project" [level=3] [ref=e60]
+            - heading "The First Animated Story" [level=4] [ref=e61]
+          - paragraph [ref=e66]: We built a tiny AI puppet show, and kids loved the colors, voices, and giggles.
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - heading "Featured Projects" [level=2] [ref=e70]
+        - paragraph [ref=e71]: A showcase of what happens when creativity meets computational power.
+      - generic [ref=e72]:
+        - generic [ref=e75]:
+          - generic [ref=e77]: Media & Edutainment
+          - heading "AikoKidzTV" [level=3] [ref=e78]
+          - generic [ref=e79]: App Coming Soon to Play Store
+          - paragraph [ref=e80]: The flagship channel for AI-driven edutainment.
+          - generic [ref=e81]:
+            - button "YouTube" [ref=e82] [cursor=pointer]:
+              - img [ref=e83]
+              - text: YouTube
+            - button "Instagram" [ref=e86] [cursor=pointer]:
+              - img [ref=e87]
+              - text: Instagram
+        - generic [ref=e92]:
+          - generic [ref=e94]: Coming Soon
+          - heading "AikoKidz" [level=3] [ref=e95]
+          - paragraph [ref=e96]: A holistic learning ecosystem designed to nurture creativity and curiosity in children.
+          - button "Coming Soon" [ref=e98]
+        - generic [ref=e101]:
+          - generic [ref=e103]: Coming Soon
+          - heading "AikoTeenz" [level=3] [ref=e104]
+          - paragraph [ref=e105]: Future-ready innovation hub for teenagers, focusing on tech, law, and life skills.
+          - button "Coming Soon" [ref=e107]
+    - generic [ref=e109]:
+      - heading "AI Creative Studio" [level=2] [ref=e110]
+      - paragraph [ref=e111]: Login to access our powerful AI tools and generate amazing stories.
+      - button "Login to Unlock Studio" [ref=e112] [cursor=pointer]
+    - generic [ref=e113]:
+      - generic [ref=e114]:
+        - heading "Welcome to the Learning Zone! 🚀" [level=1] [ref=e115]
+        - paragraph [ref=e116]: Pick a box below to start your adventure. Tap any card to hear its name! 🔊
+      - generic [ref=e117]:
+        - button "A to Z Letters" [ref=e118] [cursor=pointer]:
+          - generic [ref=e119]: 🔤
+          - heading "A to Z Letters" [level=2] [ref=e120]
+          - paragraph [ref=e121]: Learn your ABCs fun way!
+        - button "1 to 100 Numbers" [ref=e122] [cursor=pointer]:
+          - generic [ref=e123]: 🔢
+          - heading "1 to 100 Numbers" [level=2] [ref=e124]
+          - paragraph [ref=e125]: Count all the way to 100!
+        - button "Colors & Shapes" [ref=e126] [cursor=pointer]:
+          - generic [ref=e127]: 🎨
+          - heading "Colors & Shapes" [level=2] [ref=e128]
+          - paragraph [ref=e129]: Mix colors & learn shapes!
+        - button "Animal Safari" [ref=e130] [cursor=pointer]:
+          - generic [ref=e131]: 🦓
+          - heading "Animal Safari" [level=2] [ref=e132]
+          - paragraph [ref=e133]: Meet animals & hear sounds!
+    - generic [ref=e136]:
+      - generic [ref=e137]:
+        - heading "Published Books" [level=2] [ref=e138]
+        - paragraph [ref=e139]: Words that inspire, stories that connect.
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - img [ref=e143]
+          - generic [ref=e147]:
+            - heading "7 Ways to Know Human Nature" [level=3] [ref=e148]
+            - paragraph [ref=e149]: A deep dive into understanding the complexities of human behavior.
+            - button "Buy on Amazon" [ref=e150] [cursor=pointer]:
+              - img [ref=e151]
+              - text: Buy on Amazon
+        - generic [ref=e155]:
+          - img [ref=e157]
+          - generic [ref=e161]:
+            - heading "Luna and The Lost Starlight" [level=3] [ref=e162]
+            - paragraph [ref=e163]: An enchanting tale woven with imagination and heart.
+            - button "Buy on Amazon" [ref=e164] [cursor=pointer]:
+              - img [ref=e165]
+              - text: Buy on Amazon
+        - generic [ref=e169]:
+          - img [ref=e171]
+          - generic [ref=e175]:
+            - heading "Kinu's Big Birthday Surprise" [level=3] [ref=e176]
+            - paragraph [ref=e177]: A fun-filled adventure about friendship and surprises.
+            - button "Buy on Amazon" [ref=e178] [cursor=pointer]:
+              - img [ref=e179]
+              - text: Buy on Amazon
+        - generic [ref=e183]:
+          - img [ref=e185]
+          - generic [ref=e189]:
+            - heading "Happy Family of Kinu and Mimi" [level=3] [ref=e190]
+            - paragraph [ref=e191]: Heartwarming stories about family bonds and love.
+            - button "Buy on Amazon" [ref=e192] [cursor=pointer]:
+              - img [ref=e193]
+              - text: Buy on Amazon
+        - generic [ref=e197]:
+          - img [ref=e199]
+          - generic [ref=e203]:
+            - heading "The Glow Bubble Journey" [level=3] [ref=e204]
+            - paragraph [ref=e205]: A magical journey through a world of glowing bubbles.
+            - button "Buy on Amazon" [ref=e206] [cursor=pointer]:
+              - img [ref=e207]
+              - text: Buy on Amazon
+    - generic [ref=e212]:
+      - generic [ref=e213]:
+        - generic [ref=e214]:
+          - paragraph [ref=e215]: Hybrid Freemium
+          - heading "Kids TV" [level=2] [ref=e216]
+          - paragraph [ref=e217]: Ad-free Aiko originals plus a complimentary cartoon lane for everyone.
+        - button "👑 Go Premium to Remove Ads" [ref=e218] [cursor=pointer]
+      - generic [ref=e219]:
+        - generic [ref=e220]:
+          - generic [ref=e221]:
+            - paragraph [ref=e222]: Ad-Free & Downloadable
+            - heading "Aiko Premium Originals" [level=3] [ref=e223]
+          - generic [ref=e224]: Premium
+        - generic [ref=e225]:
+          - generic [ref=e226]:
+            - generic [ref=e229]: Premium
+            - generic [ref=e230]:
+              - heading "Panda Parade in the Clouds" [level=4] [ref=e231]
+              - paragraph [ref=e232]: Soft pastel skies, giggles, and calm background music for little ones.
+              - generic [ref=e233]:
+                - link "📥 Save to Device" [ref=e234] [cursor=pointer]:
+                  - /url: https://samplelib.com/lib/preview/mp4/sample-5s.mp4
+                - button "▶️ Play with Confetti" [ref=e235] [cursor=pointer]
+          - generic [ref=e236]:
+            - generic [ref=e239]: Premium
+            - generic [ref=e240]:
+              - heading "Rainbow Rocket Storytime" [level=4] [ref=e241]
+              - paragraph [ref=e242]: A gentle rocket tour through candy nebulae, narrated for bedtime.
+              - generic [ref=e243]:
+                - link "📥 Save to Device" [ref=e244] [cursor=pointer]:
+                  - /url: https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4
+                - button "▶️ Play with Confetti" [ref=e245] [cursor=pointer]
+          - generic [ref=e246]:
+            - generic [ref=e249]: Premium
+            - generic [ref=e250]:
+              - heading "Bunny & Friends Picnic" [level=4] [ref=e251]
+              - paragraph [ref=e252]: Colourful forest critters share snacks and songs in the sunshine.
+              - generic [ref=e253]:
+                - link "📥 Save to Device" [ref=e254] [cursor=pointer]:
+                  - /url: https://www.w3schools.com/html/mov_bbb.mp4
+                - button "▶️ Play with Confetti" [ref=e255] [cursor=pointer]
+      - generic [ref=e256]:
+        - generic [ref=e258]:
+          - paragraph [ref=e259]: Complimentary
+          - heading "Free Cartoon Zone" [level=3] [ref=e260]
+        - generic [ref=e261]: "Disclaimer: The videos in this section are embedded from YouTube and are provided as a free, complimentary service for kids' entertainment. They may contain ads served by YouTube. This section is NOT a part of the AikoKidzTV Premium Subscription plan."
+        - generic [ref=e262]:
+          - generic [ref=e263]:
+            - iframe [ref=e265]:
+              
+            - generic [ref=e266]:
+              - heading "Big Buck Bunny (YouTube HD)" [level=4] [ref=e267]
+              - paragraph [ref=e268]: Complimentary with ads via YouTube
+          - generic [ref=e269]:
+            - iframe [ref=e271]:
+              - generic [active] [ref=f2e1]:
+                - generic "YouTube Video Player" [ref=f2e3]
+                - generic [ref=f2e5]:
+                  - generic:
+                    - generic:
+                      - button "Play video" [ref=f2e10] [cursor=pointer]
+                      - button "Hide player controls" [ref=f2e12] [cursor=pointer]
+                      - generic [ref=f2e14]:
+                        - generic [ref=f2e19]:
+                          - generic [ref=f2e20]:
+                            - link "Big Buck Bunny" [ref=f2e21] [cursor=pointer]:
+                              - /url: https://www.youtube.com/watch?v=YE7VzlLtp-4
+                            - link "Blender" [ref=f2e22] [cursor=pointer]:
+                              - /url: /channel/UCSMOQeBJ2RAnuFungnQOxLg
+                              - generic [ref=f2e23]: Blender
+                          - generic [ref=f2e24]:
+                            - button [ref=f2e25] [cursor=pointer]
+                            - generic [ref=f2e27]:
+                              - generic: Blender
+                              - generic: 1.22M subscribers
+                        - generic [ref=f2e28]:
+                          - button "Share" [ref=f2e31] [cursor=pointer]:
+                            - generic [ref=f2e35]:
+                              - img
+                          - link "Watch on YouTube" [ref=f2e42] [cursor=pointer]:
+                            - /url: https://www.youtube.com/watch?v=YE7VzlLtp-4
+                            - generic [ref=f2e45]:
+                              - text: Watch on
+                              - img [ref=f2e47]:
+                                - generic [ref=f2e49]:
+                                  - img
+            - generic [ref=e272]:
+              - heading "Sintel Short Film (YouTube)" [level=4] [ref=e273]
+              - paragraph [ref=e274]: Complimentary with ads via YouTube
+          - generic [ref=e275]:
+            - iframe [ref=e277]:
+              
+            - generic [ref=e278]:
+              - heading "Elephant Dream (YouTube)" [level=4] [ref=e279]
+              - paragraph [ref=e280]: Complimentary with ads via YouTube
+    - generic [ref=e282]:
+      - heading "Powered By" [level=3] [ref=e283]
+      - generic [ref=e284]:
+        - generic [ref=e285]: React
+        - generic [ref=e286]: Tailwind CSS
+        - generic [ref=e287]: Framer Motion
+        - generic [ref=e288]: Vite
+        - generic [ref=e289]: Node.js
+        - generic [ref=e290]: AI Integration
+    - generic [ref=e293]: Advertisement Space
+  - contentinfo [ref=e294]:
+    - generic [ref=e295]:
+      - generic [ref=e296]:
+        - generic [ref=e297]:
+          - heading "AikoKidzTV" [level=3] [ref=e298]
+          - paragraph [ref=e299]: Empowering the next generation through AI-driven education and creativity. Building a future where technology meets human potential.
+        - generic [ref=e300]:
+          - heading "Quick Links" [level=4] [ref=e301]
+          - list [ref=e302]:
+            - listitem [ref=e303]:
+              - link "Home" [ref=e304] [cursor=pointer]:
+                - /url: "#hero"
+            - listitem [ref=e305]:
+              - link "Our Story" [ref=e306] [cursor=pointer]:
+                - /url: "#story"
+            - listitem [ref=e307]:
+              - link "Projects" [ref=e308] [cursor=pointer]:
+                - /url: "#projects"
+            - listitem [ref=e309]:
+              - link "AI Studio" [ref=e310] [cursor=pointer]:
+                - /url: "#ai-studio"
+        - generic [ref=e311]:
+          - heading "Legal" [level=4] [ref=e312]
+          - list [ref=e313] [cursor=pointer]:
+            - listitem [ref=e314]:
+              - button "Privacy Policy" [ref=e315]
+            - listitem [ref=e316]:
+              - button "Terms of Service" [ref=e317]
+            - listitem [ref=e318]:
+              - button "Refund Policy" [ref=e319]
+        - generic [ref=e320]:
+          - heading "Contact Us" [level=4] [ref=e321]
+          - list [ref=e322]:
+            - listitem [ref=e323]:
+              - img [ref=e324]
+              - button "support@aikokidztv.com" [ref=e327] [cursor=pointer]
+            - listitem [ref=e328]:
+              - img [ref=e329]
+              - generic [ref=e332]: Gohana, Haryana, India
+      - paragraph [ref=e334]: © 2026 AikoKidzTV. All rights reserved.

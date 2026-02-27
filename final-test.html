@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final AI Generation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #1a1a1a; color: #fff; }
+        .status { padding: 15px; border-radius: 5px; margin: 10px 0; border: 1px solid; }
+        .success { background-color: #2d5a2d; border-color: #4caf50; color: #c8e6c9; }
+        .error { background-color: #5a2d2d; border-color: #f44336; color: #ffcdd2; }
+        .info { background-color: #2d3a5a; border-color: #2196f3; color: #bbdefb; }
+        .warning { background-color: #5a4a2d; border-color: #ff9800; color: #ffe0b2; }
+        button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; border: none; border-radius: 4px; }
+        .btn-primary { background-color: #2196f3; color: white; }
+        .btn-success { background-color: #4caf50; color: white; }
+        .btn-warning { background-color: #ff9800; color: white; }
+        .btn-danger { background-color: #f44336; color: white; }
+        .console-output { background: #000; color: #0f0; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; min-height: 100px; }
+    </style>
+</head>
+<body>
+    <h1>🚀 AI Generation System - FINAL TEST</h1>
+    
+    <div class="status info">
+        <h3>✅ SYSTEM STATUS</h3>
+        <p><strong>Development Server:</strong> Running on http://localhost:5176</p>
+        <p><strong>Files Modified:</strong> StoryStudio.jsx (complete rewrite), imageProxy.js (new utility)</p>
+        <p><strong>API Key:</strong> Update .env file with your new Gemini API key</p>
+    </div>
+
+    <div class="status success">
+        <h3>🎯 WHAT'S FIXED</h3>
+        <ul>
+            <li><strong>Complete API Rewrite:</strong> Modular functions for Gemini and Pollinations.ai</li>
+            <li><strong>Extreme Logging:</strong> Every step logged to console with detailed error info</li>
+            <li><strong>State Management:</strong> Input properly captured and passed to APIs</li>
+            <li><strong>URL Encoding:</strong> Proper encodeURIComponent() for Pollinations.ai</li>
+            <li><strong>Environment Setup:</strong> Correct import.meta.env.VITE_GEMINI_API_KEY usage</li>
+        </ul>
+    </div>
+
+    <div class="status warning">
+        <h3>🔧 NEXT STEPS</h3>
+        <ol>
+            <li><strong>Update API Key:</strong> Replace placeholder in .env file</li>
+            <li><strong>Open Application:</strong> http://localhost:5176</li>
+            <li><strong>Open Console:</strong> F12 → Console tab</li>
+            <li><strong>Test Generation:</strong> Try both Story and Image modes</li>
+            <li><strong>Check Logs:</strong> View detailed console output for debugging</li>
+        </ol>
+    </div>
+
+    <div class="status error">
+        <h3>⚠️ TROUBLESHOOTING</h3>
+        <p>If you still see "Failed to generate":</p>
+        <ul>
+            <li>Check console for specific error messages (CORS, 500, network)</li>
+            <li>Verify your Gemini API key is valid and has sufficient quota</li>
+            <li>Check internet connection</li>
+            <li>Try clearing browser cache and refreshing</li>
+        </ul>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <button onclick="openApp()" class="btn-primary">🌐 Open Application</button>
+        <button onclick="openConsole()" class="btn-success">💻 Open Console Guide</button>
+        <button onclick="checkEnv()" class="btn-warning">⚙️ Check .env File</button>
+        <button onclick="location.reload()" class="btn-danger">🔄 Refresh Test Page</button>
+    </div>
+
+    <div class="console-output" id="console-output">
+        Console output will appear here when you test the application...
+    </div>
+
+    <script>
+        function openApp() {
+            window.open('http://localhost:5176', '_blank');
+        }
+
+        function openConsole() {
+            alert('To open Developer Console:\n1. Press F12\n2. Click on "Console" tab\n3. Try generating content in the app\n4. Check console for detailed logs');
+        }
+
+        function checkEnv() {
+            fetch('.env')
+                .then(response => response.text())
+                .then(data => {
+                    const output = document.getElementById('console-output');
+                    output.innerHTML = 'Current .env content:\n\n' + data;
+                })
+                .catch(err => {
+                    const output = document.getElementById('console-output');
+                    output.innerHTML = 'Error reading .env file: ' + err.message;
+                });
+        }
+
+        // Instructions
+        document.getElementById('console-output').innerHTML = 
+            'INSTRUCTIONS:\n\n' +
+            '1. Click "Open Application" to launch the app\n' +
+            '2. Open Developer Console (F12 → Console)\n' +
+            '3. Try generating a story or image\n' +
+            '4. Check console for detailed logging:\n' +
+            '   - Input capture: "📝 User Input: [your text]"\n' +
+            '   - API requests: "Gemini API Request: ..."\n' +
+            '   - Response status: "Gemini API Response Status: 200"\n' +
+            '   - Errors: "❌ Error Details: [specific error]"\n\n' +
+            '5. If errors persist, check the console output above for debugging info.';
+    </script>
+</body>
+</html>

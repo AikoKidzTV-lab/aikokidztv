@@ -1,0 +1,46 @@
+- generic [ref=e335]:
+  - button "Back to Home" [active] [ref=e337] [cursor=pointer]
+  - generic [ref=e338]:
+    - generic [ref=e339]:
+      - generic [ref=e340]:
+        - button [ref=e341] [cursor=pointer]
+        - button [ref=e342] [cursor=pointer]
+        - button [ref=e343] [cursor=pointer]
+        - button [ref=e344] [cursor=pointer]
+        - button [ref=e345] [cursor=pointer]
+        - button [ref=e346] [cursor=pointer]
+        - button [ref=e347] [cursor=pointer]
+        - button [ref=e348] [cursor=pointer]
+      - generic [ref=e349]:
+        - generic [ref=e350]: CUSTOM
+        - textbox [ref=e352]: "#ff0000"
+      - generic [ref=e354]:
+        - generic [ref=e355]: Brush Size
+        - slider [ref=e356]: "10"
+    - generic [ref=e357]:
+      - button "Brush" [ref=e358] [cursor=pointer]
+      - button "Eraser" [ref=e359] [cursor=pointer]
+      - button "Fill Shape" [ref=e360] [cursor=pointer]
+      - button "Clear All" [ref=e361] [cursor=pointer]
+      - button "Download" [ref=e362] [cursor=pointer]
+    - generic [ref=e363]:
+      - generic [ref=e364]:
+        - generic [ref=e365]: "STAMPS:"
+        - button "☁️" [ref=e366] [cursor=pointer]
+        - button "☀️" [ref=e367] [cursor=pointer]
+        - button "🌙" [ref=e368] [cursor=pointer]
+        - button "🌲" [ref=e369] [cursor=pointer]
+        - button "🏠" [ref=e370] [cursor=pointer]
+        - button "🚗" [ref=e371] [cursor=pointer]
+        - button "🌻" [ref=e372] [cursor=pointer]
+        - button "🦋" [ref=e373] [cursor=pointer]
+        - button "🐟" [ref=e374] [cursor=pointer]
+        - button "👾" [ref=e375] [cursor=pointer]
+      - generic [ref=e377]:
+        - generic [ref=e378]: "SHAPES:"
+        - button "⬜" [ref=e379] [cursor=pointer]
+        - button "⚪" [ref=e380] [cursor=pointer]
+        - button "△" [ref=e381] [cursor=pointer]
+        - button "☆" [ref=e382] [cursor=pointer]
+        - button "♡" [ref=e383] [cursor=pointer]
+        - button "♢" [ref=e384] [cursor=pointer]

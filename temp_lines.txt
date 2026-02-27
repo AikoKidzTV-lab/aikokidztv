@@ -1,0 +1,113 @@
+  28: ];
+  29: 
+  30: const SettingsModal = ({
+  31:   open,
+  32:   onClose,
+  33:   themeKey,
+  34:   onThemeChange,
+  35:   onLogin,
+  36:   onCreateAccount,
+  37:   onLogout,
+  38:   user,
+  39: }) => {
+  40:   if (!open) return null;
+  41:   const isSuperAdmin = user?.email === "advdeepakkumar26@gmail.com";
+  42: 
+  43:   const goToAdmin = () => {
+  44:     onClose?.();
+  45:     window.location.assign("/admin");
+  46:   };
+  47: 
+  48:   return (
+  49:     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+  50:       <div
+  51:         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+  52:         onClick={onClose}
+  53:       />
+  54:       <div className="relative w-full max-w-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl kid-3d kid-modal text-slate-900 dark:text-white">
+  55:         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+  56:           <h3 className="text-xl font-bold flex items-center gap-2">
+  57:             <Sparkles className="text-pink-400" size={18} />
+  58:             AikoKidzTV Settings
+  59:           </h3>
+  60:           <button
+  61:             onClick={onClose}
+  62:             className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+  63:           >
+  64:             ✕
+  65:           </button>
+  66:         </div>
+  67: 
+  68:         <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+  69:           <div>
+  70:             <p className="text-sm text-slate-500 dark:text-slate-300 mb-3 uppercase tracking-widest">
+  71:               Themes
+  72:             </p>
+  73:             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  74:               {themes.map((theme) => (
+  75:                 <button
+  76:                   key={theme.key}
+  77:                   onClick={() => onThemeChange(theme.key)}
+  78:                   className={`kid-3d text-left px-4 py-3 rounded-xl border transition-all ${
+  79:                     themeKey === theme.key
+  80:                       ? 'border-pink-400 bg-pink-50 text-slate-900'
+  81:                       : 'border-slate-200 bg-white/70 text-slate-800 hover:border-pink-200 dark:bg-slate-800/80 dark:text-slate-100 dark:border-slate-700 dark:hover:border-pink-300/70'
+  82:                   }`}
+  83:                 >
+  84:                   {theme.label}
+  85:                 </button>
+  86:               ))}
+  87:             </div>
+  88:           </div>
+  89: 
+  90:           <div>
+  91:             <p className="text-sm text-slate-500 dark:text-slate-300 mb-3 uppercase tracking-widest">
+  92:               Account
+  93:             </p>
+  94:             <div className="flex flex-col gap-3">
+  95:               {!user && (
+  96:                 <button
+  97:                   onClick={onLogin}
+  98:                   className="kid-3d px-4 py-3 rounded-xl bg-pink-400 text-slate-900 font-semibold hover:bg-pink-300"
+  99:                 >
+ 100:                   Log In with OTP
+ 101:                 </button>
+ 102:               )}
+ 103:               <button
+ 104:                 onClick={onCreateAccount}
+ 105:                 className="kid-3d px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-900 font-semibold hover:border-pink-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+ 106:               >
+ 107:                 Create / Switch Account
+ 108:               </button>
+ 109:               {isSuperAdmin && (
+ 110:                 <button
+ 111:                   onClick={goToAdmin}
+ 112:                   className="kid-3d px-4 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white font-semibold border border-pink-200 shadow-lg hover:from-pink-400 hover:to-fuchsia-400"
+ 113:                 >
+ 114:                   {"\uD83D\uDC51"} Admin Panel
+ 115:                 </button>
+ 116:               )}
+ 117:               {user && (
+ 118:                 <button
+ 119:                   onClick={onLogout}
+ 120:                   className="kid-3d px-4 py-3 rounded-xl bg-red-100 border border-red-200 text-red-700 font-semibold dark:bg-red-900/30 dark:border-red-800 dark:text-red-100"
+ 121:                 >
+ 122:                   Log Out
+ 123:                 </button>
+ 124:               )}
+ 125:             </div>
+ 126:           </div>
+ 127: 
+ 128:         </div>
+ 129: 
+ 130:         <div className="px-6" py-4 border-t border-slate-200 dark:border-slate-700 text-right">
+ 131:           <button
+ 132:             onClick={onClose}
+ 133:             className="kid-3d px-4 py-2 rounded-lg bg-pink-100 border border-pink-200 text-slate-900 text-sm hover:bg-pink-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+ 134:           >
+ 135:             Close
+ 136:           </button>
+ 137:         </div>
+ 138:       </div>
+ 139:     </div>
+ 140:   );

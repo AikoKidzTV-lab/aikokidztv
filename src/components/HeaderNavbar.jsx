@@ -1,0 +1,285 @@
+import React, { useState } from 'react';
+import { Bell, ChevronDown, Sparkles } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useKidsMode } from '../context/KidsModeContext';
+import { ADMIN_EMAIL } from '../utils/admin';
+import Settings from './Settings';
+
+function ProfileDropdownMenu({
+  open,
+  onClose,
+  user,
+  profile,
+  isAdmin,
+  setIsSettingsOpen,
+  onOpenParentZone,
+  onGoToAdmin,
+}) {
+  if (!open) return null;
+
+  const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
+  const isLoggedIn = Boolean(user);
+  const canSeeAdminPanel = user?.email === ADMIN_EMAIL;
+
+  const run = (fn) => () => {
+    fn?.();
+    onClose?.();
+  };
+
+  return (
+    <div className="absolute right-0 top-full mt-3 w-[20rem] max-w-[92vw] rounded-[1.5rem] border border-white/70 bg-white/95 p-3 shadow-[0_20px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95 z-50 animate-[fadeIn_0.18s_ease-out]">
+      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 to-cyan-50 p-3 dark:border-slate-700 dark:from-slate-800 dark:to-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-pink-200 bg-pink-100 font-black text-pink-600 dark:border-slate-600 dark:bg-slate-700 dark:text-pink-200">
+            {avatarLetter}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {isLoggedIn ? 'Profile' : 'Guest Mode'}
+            </p>
+            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
+              {user?.email || 'Login / Profile'}
+            </p>
+          </div>
+          <div className="ml-auto rounded-full border border-cyan-200 bg-white/80 px-2.5 py-1 text-xs font-bold text-cyan-700 dark:border-slate-700 dark:bg-slate-900 dark:text-cyan-300">
+            Gems: {profile?.gems ?? 0}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <p className="px-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+          Quick Links
+        </p>
+        {isAdmin && canSeeAdminPanel && (
+          <button
+            onClick={run(onGoToAdmin)}
+            className="w-full rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-left font-bold text-violet-800 shadow-sm transition hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/20 dark:text-violet-200 dark:hover:bg-violet-900/30"
+          >
+            Admin Panel
+            <span className="block text-xs font-semibold opacity-80">Manage dashboard & content</span>
+          </button>
+        )}
+        <button
+          onClick={run(onOpenParentZone)}
+          className="w-full rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-100 to-sky-100 px-4 py-3 text-left font-bold text-indigo-900 shadow-sm transition hover:-translate-y-0.5 dark:border-indigo-800 dark:from-indigo-900/30 dark:to-sky-900/20 dark:text-indigo-100"
+        >
+          Parent Zone
+          <span className="block text-xs font-semibold opacity-80">Protected by 4-digit PIN (resettable)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setIsSettingsOpen(true);
+            onClose?.();
+          }}
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+        >
+          {'\u2699\uFE0F'} Settings
+          <span className="block text-xs font-semibold opacity-70">Account & preferences</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function HeaderNavbar({
+  onNav,
+  onOpenParentZone,
+  isAdmin,
+  onGoToAdmin,
+  onGoToVideos,
+  isForcedOffline,
+  onToggleForcedOffline,
+}) {
+  const { user, profile, signOut } = useAuth();
+  const { isKidsModeOn, toggleKidsMode } = useKidsMode();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [openProfile, setOpenProfile] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [themeKey, setThemeKey] = useState('light');
+  const [brightness, setBrightness] = useState(100);
+
+  const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
+  const networkLabel = isForcedOffline ? 'Offline' : 'Online';
+
+  const navItems = [
+    { label: 'Story Studio', target: 'story-studio' },
+    { label: 'Magic Art', target: 'magic-art' },
+    { label: 'Learning Zone', target: 'learning-zone' },
+  ];
+  navItems.push({ label: 'Video Zone', target: 'videos' });
+  if (isAdmin) navItems.push({ label: 'Admin', target: 'admin' });
+
+  return (
+    <>
+    <nav className="fixed left-0 right-0 top-0 z-50 px-3 pt-3 sm:px-4">
+      <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-3 rounded-full border border-white/75 border-b-4 border-blue-200 bg-white/88 px-3 shadow-[0_14px_38px_rgba(56,189,248,0.20)] backdrop-blur-xl dark:border-slate-700 dark:border-b-sky-800 dark:bg-slate-900/88 dark:shadow-[0_14px_38px_rgba(15,23,42,0.45)]">
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            onClick={() => onNav?.('top')}
+            className="flex shrink-0 items-center gap-2 rounded-full border border-pink-100 bg-white px-3 py-1.5 font-black tracking-tight text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:text-pink-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:text-pink-300"
+          >
+            <Sparkles className="text-pink-400 dark:text-pink-300" size={16} />
+            <span className="hidden sm:inline">AikoKidzTV</span>
+            <span className="sm:hidden">Aiko</span>
+          </button>
+
+          <div className="hidden xl:flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <span className="inline-flex items-center gap-1 text-sm text-slate-800 dark:text-slate-100">Kids Mode</span>
+            <button
+              onClick={toggleKidsMode}
+              className={`relative h-6 w-12 rounded-full transition-all ${
+                isKidsModeOn ? 'bg-pink-400' : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+              aria-label="Toggle Kids Mode"
+            >
+              <span
+                className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  isKidsModeOn ? 'translate-x-6' : ''
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="hidden 2xl:flex items-center gap-2 rounded-full border border-emerald-100 bg-gradient-to-r from-white to-emerald-50 px-2.5 py-1 shadow-sm dark:border-slate-700 dark:from-slate-800 dark:to-slate-800">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Network:</span>
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${
+                isForcedOffline
+                  ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-100'
+                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${isForcedOffline ? 'bg-slate-500' : 'bg-emerald-500'}`} />
+              {networkLabel}
+            </span>
+            <button
+              onClick={onToggleForcedOffline}
+              aria-label={`Set network mode to ${isForcedOffline ? 'online' : 'offline'}`}
+              aria-pressed={isForcedOffline}
+              className={`relative h-6 w-12 rounded-full border transition-all duration-300 ease-out ${
+                isForcedOffline
+                  ? 'border-slate-300 bg-slate-300/90 dark:border-slate-600 dark:bg-slate-600'
+                  : 'border-emerald-300 bg-gradient-to-r from-emerald-400 to-emerald-500 dark:border-emerald-500/60'
+              }`}
+            >
+              <span
+                className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 ${
+                  isForcedOffline ? '' : 'translate-x-6'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div className="hidden lg:flex flex-1 justify-center">
+          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-2 py-1 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
+            {navItems.map((item) => (
+              <button
+                key={item.label}
+                onClick={() => {
+                  if (item.target === 'videos') {
+                    onGoToVideos?.();
+                    return;
+                  }
+                  if (item.target === 'admin') {
+                    onGoToAdmin?.();
+                    return;
+                  }
+                  onNav?.(item.target);
+                }}
+                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-800 transition hover:bg-pink-100/80 dark:text-slate-100 dark:hover:bg-slate-700"
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications((v) => !v)}
+              className="relative grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white shadow-sm transition hover:bg-pink-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+              aria-label="Notifications"
+            >
+              <Bell size={18} className="text-slate-700 dark:text-slate-100" />
+              <span className="absolute right-2 top-2 flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" />
+              </span>
+            </button>
+            {showNotifications && (
+              <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800 z-50">
+                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
+                  <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
+                  <span className="rounded-full bg-pink-100 px-2 py-0.5 text-xs font-bold text-pink-700 dark:bg-pink-500/20 dark:text-pink-200">
+                    1 unread
+                  </span>
+                </div>
+                <div className="p-3">
+                  <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-pink-50 to-cyan-50 p-3 shadow-sm dark:border-amber-900/40 dark:from-amber-900/20 dark:via-pink-900/20 dark:to-cyan-900/20">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
+                      New Hint
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      {'\u{1F95A} Hint: read carefully in the site to find the Easter Egg and get a surprise gift!'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => setOpenProfile((v) => !v)}
+              className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1.5 shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+              aria-label={user ? 'Open profile menu' : 'Open login and profile menu'}
+            >
+              <div className="grid h-8 w-8 place-items-center rounded-full border border-pink-200 bg-pink-100 font-bold text-pink-600 dark:border-slate-600 dark:bg-slate-700 dark:text-pink-200">
+                {avatarLetter}
+              </div>
+              <div className="hidden md:block text-left">
+                <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                  {user ? 'Profile' : 'Login / Profile'}
+                </p>
+                <p className="max-w-[110px] truncate text-xs font-bold text-slate-800 dark:text-slate-100">
+                  {user?.email || 'Guest'}
+                </p>
+              </div>
+              <ChevronDown
+                size={16}
+                className={`text-slate-500 transition-transform dark:text-slate-200 ${openProfile ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            <ProfileDropdownMenu
+              open={openProfile}
+              onClose={() => setOpenProfile(false)}
+              user={user}
+              profile={profile}
+              isAdmin={isAdmin}
+              setIsSettingsOpen={setIsSettingsOpen}
+              onOpenParentZone={onOpenParentZone}
+              onGoToAdmin={onGoToAdmin}
+            />
+          </div>
+        </div>
+      </div>
+    </nav>
+    <Settings
+      isOpen={isSettingsOpen}
+      onClose={() => setIsSettingsOpen(false)}
+      themeKey={themeKey}
+      onThemeChange={setThemeKey}
+      brightness={brightness}
+      onBrightnessChange={setBrightness}
+      onLogout={signOut}
+    />
+    </>
+  );
+}
+
+
