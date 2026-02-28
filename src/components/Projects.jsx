@@ -90,6 +90,60 @@ const Projects = () => {
             </motion.div>
           ))}
         </div>
+
+        <div className="mt-16">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-8 text-center"
+          >
+            <h3 className="text-2xl md:text-3xl font-bold">Upcoming Adventures</h3>
+            <p className="mt-2 text-gray-400">
+              A quick look at the next chapter of the Aiko universe.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.05 }}
+              className="rounded-2xl border border-white/20 bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-fuchsia-500/20 p-6 shadow-lg transition-transform duration-300 hover:-translate-y-1"
+            >
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-pink-200">Future Roadmap</p>
+              <h4 className="mt-2 text-2xl font-bold">AikoKidz</h4>
+              <p className="mt-3 text-gray-200">
+                The ultimate upcoming ecosystem for children&apos;s learning, premium toys, and interactive growth.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.12 }}
+              className="rounded-2xl border border-white/20 bg-gradient-to-br from-violet-500/20 via-indigo-500/20 to-cyan-500/20 p-6 shadow-lg transition-transform duration-300 hover:-translate-y-1"
+            >
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Future Roadmap</p>
+              <h4 className="mt-2 text-2xl font-bold">AikoTeenz</h4>
+              <p className="mt-3 text-gray-200">
+                Coming Soon! A safe, engaging, and creative digital space designed specifically for teenagers to explore, learn, and express themselves.
+              </p>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.08 }}
+            className="mt-8 rounded-2xl border border-amber-300/30 bg-amber-400/10 p-5 text-sm leading-relaxed text-amber-100 shadow-md"
+          >
+            © Official Notice: AikoKidz, AikoKidzTV, and AikoTeenz are exclusive trademarks and fully copyrighted properties. All original brand concepts, names, and ecosystem designs belong entirely to our brand. All rights reserved.
+          </motion.div>
+        </div>
       </div>
     </section>
   );
