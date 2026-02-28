@@ -82,7 +82,16 @@ const Footer = () => {
                   Our Story
                 </Link>
               </li>
-              <li><a href="#projects" className="hover:text-accent transition-colors">Projects</a></li>
+              <li>
+                <Link to="/projects" className="hover:text-accent transition-colors">
+                  Projects
+                </Link>
+              </li>
+              <li>
+                <Link to="/blender-credit" className="hover:text-accent transition-colors">
+                  Blender Studio Credit
+                </Link>
+              </li>
               <li><a href="#ai-studio" className="hover:text-accent transition-colors">AI Studio</a></li>
             </ul>
           </div>

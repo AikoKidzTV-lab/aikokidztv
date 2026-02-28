@@ -17,6 +17,8 @@ import StoryReader from './components/StoryReader';
 import ParentPinGateModal from './components/ParentPinGateModal';
 import Settings from './components/Settings';
 import ErrorBoundary from './components/ErrorBoundary';
+import Projects from './components/Projects';
+import BlenderCredit from './components/pages/BlenderCredit';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { KidsModeProvider, useKidsMode } from './context/KidsModeContext';
 import { Gem, ChevronDown, Sparkles, LogOut, Bell } from 'lucide-react';
@@ -900,6 +902,8 @@ function App() {
             <Route path="/videos" element={<VideoZone />} />
             <Route path="/story" element={<StoryReader />} />
             <Route path="/coloring" element={<ColoringBook />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/blender-credit" element={<BlenderCredit />} />
           </Routes>
         </BrowserRouter>
       </KidsModeProvider>
