@@ -145,7 +145,9 @@ const Footer = () => {
             <h4 className="font-semibold mb-4 uppercase text-sm tracking-wider">Connect</h4>
             <div className="flex items-center gap-3">
               <a
-                href="#"
+                href="http://www.youtube.com/@AikoKidzTV"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="YouTube"
                 className="grid h-10 w-10 place-items-center rounded-full border border-red-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:bg-red-50"
               >
@@ -154,7 +156,9 @@ const Footer = () => {
                 </svg>
               </a>
               <a
-                href="#"
+                href="https://www.instagram.com/aikokidztv"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="Instagram"
                 className="grid h-10 w-10 place-items-center rounded-full border border-pink-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:bg-pink-50"
               >

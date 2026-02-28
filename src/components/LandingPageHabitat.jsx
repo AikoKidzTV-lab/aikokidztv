@@ -34,13 +34,6 @@ const loadRazorpayScript = () =>
     document.body.appendChild(script);
   });
 
-const HOMEPAGE_FOUNDER_VIDEOS = [
-  { id: 'watch-1', youtubeId: 'YOUR_CUSTOM_VID_1', title: 'Founder Video 1' },
-  { id: 'watch-2', youtubeId: 'YOUR_CUSTOM_VID_2', title: 'Founder Video 2' },
-  { id: 'watch-3', youtubeId: 'YOUR_CUSTOM_VID_3', title: 'Founder Video 3' },
-  { id: 'watch-4', youtubeId: 'YOUR_CUSTOM_VID_4', title: 'Founder Video 4' },
-];
-
 const HERO_BANNERS = [
   {
     id: 'banner-1',
@@ -701,31 +694,41 @@ export default function LandingPageHabitat({
               Want Free Gems? 💎
             </h2>
             <p className="mx-auto mt-3 max-w-3xl text-sm sm:text-base !text-blue-50/95">
-              Watch 4 of our special Aiko videos to unlock 50 FREE GEMS instantly!
+              Explore our official channel and enjoy family-friendly adventures from AikoKidzTV.
             </p>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {HOMEPAGE_FOUNDER_VIDEOS.map((video) => (
-              <div
-                key={video.id}
-                className="overflow-hidden rounded-2xl border border-white/30 bg-white/10 p-2 shadow-xl backdrop-blur-sm"
-              >
-                <div className="overflow-hidden rounded-xl border border-white/20 bg-black/20">
-                  <div className="aspect-video">
-                    <iframe
-                      className="h-full w-full"
-                      src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?rel=0&modestbranding=1`}
-                      title={video.title}
-                      loading="lazy"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  </div>
-                </div>
-                <p className="px-2 pb-1 pt-3 text-sm font-bold !text-white">{video.title}</p>
+          <div className="mt-8 overflow-hidden rounded-[1.8rem] border border-white/40 bg-white/15 p-5 shadow-2xl backdrop-blur-md">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] !text-cyan-900/75">
+                  Official Channel
+                </p>
+                <h3 className="mt-2 text-2xl font-black !text-white sm:text-3xl">
+                  AikoKidzTV on YouTube
+                </h3>
+                <p className="mt-3 max-w-xl text-sm font-semibold !text-blue-50/95 sm:text-base">
+                  New stories, playful learning, and kid-safe entertainment updates are published on our official channel.
+                </p>
+                <a
+                  href="http://www.youtube.com/@AikoKidzTV"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex items-center rounded-2xl border border-red-200/80 bg-red-500 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-red-400/30 transition hover:-translate-y-0.5 hover:bg-red-600"
+                >
+                  ▶ Subscribe to our Channel
+                </a>
               </div>
-            ))}
+              <div className="rounded-2xl border border-white/35 bg-gradient-to-br from-red-500/30 via-fuchsia-500/20 to-cyan-500/30 p-5 text-center">
+                <p className="text-5xl">📺✨</p>
+                <p className="mt-3 text-sm font-black uppercase tracking-[0.18em] !text-white/85">
+                  youtube.com/@AikoKidzTV
+                </p>
+                <p className="mt-2 text-sm font-semibold !text-blue-50/95">
+                  Tap subscribe and join the official AikoKidzTV family.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3">

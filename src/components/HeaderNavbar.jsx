@@ -169,7 +169,6 @@ export default function HeaderNavbar({
     { label: 'Magic Art', target: 'magic-art' },
     { label: 'Learning Zone', target: 'learning-zone' },
   ];
-  navItems.push({ label: 'Video Zone', target: 'videos' });
   if (isAdmin) navItems.push({ label: 'Admin', target: 'admin' });
 
   return (
