@@ -1,7 +1,7 @@
 ﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useState, useMemo, useEffect } from 'react';
 import LandingPageHabitat from './components/LandingPageHabitat';
 import Footer from './components/Footer';
-import AuthPage from './components/AuthPage';
+import AuthModal from './components/AuthModal';
 import AdminDashboard from './components/AdminDashboard';
 import HeaderNavbar from './components/HeaderNavbar';
 import KidsMascot from './components/KidsMascot';
@@ -618,15 +618,6 @@ const MainContent = ({ onGoToAdmin, onGoToVideos }) => {
     filter: `brightness(${(brightness / 100).toFixed(2)})`,
   };
 
-  if (authMode) {
-    return (
-      <AuthPage
-        initialMode={authMode}
-        onLoginSuccess={() => setAuthMode(null)}
-      />
-    );
-  }
-
   if (parentZoneOpen) {
     return (
       <ParentZone
@@ -687,6 +678,12 @@ const MainContent = ({ onGoToAdmin, onGoToVideos }) => {
             user={user}
             isAdmin={isAdmin}
             onGoToAdmin={onGoToAdmin}
+          />
+          <AuthModal
+            open={Boolean(authMode)}
+            initialMode={authMode || 'login'}
+            onClose={() => setAuthMode(null)}
+            onSuccess={() => setAuthMode(null)}
           />
         </div>
       </>
@@ -772,6 +769,8 @@ const MainContent = ({ onGoToAdmin, onGoToVideos }) => {
       >
       <HeaderNavbar
         onNav={scrollToId}
+        onOpenLogin={() => setAuthMode('login')}
+        onOpenSignup={() => setAuthMode('signup')}
         onOpenParentZone={requestParentZoneAccess}
         isAdmin={isAdmin}
         onGoToAdmin={onGoToAdmin}
@@ -812,6 +811,12 @@ const MainContent = ({ onGoToAdmin, onGoToVideos }) => {
         user={user}
         isAdmin={isAdmin}
         onGoToAdmin={onGoToAdmin}
+      />
+      <AuthModal
+        open={Boolean(authMode)}
+        initialMode={authMode || 'login'}
+        onClose={() => setAuthMode(null)}
+        onSuccess={() => setAuthMode(null)}
       />
       <main className="pt-24">
         <div className="mx-auto max-w-[1400px] px-4">

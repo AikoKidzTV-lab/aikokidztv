@@ -10,6 +10,8 @@ function ProfileDropdownMenu({
   user,
   profile,
   isAdmin,
+  onOpenLogin,
+  onOpenSignup,
   onOpenParentZone,
   onGoToAdmin,
   displayMode = 'light',
@@ -73,6 +75,24 @@ function ProfileDropdownMenu({
           Parent Zone
           <span className="block text-xs font-semibold opacity-80">Protected by 4-digit PIN (resettable)</span>
         </button>
+        {!isLoggedIn && (
+          <>
+            <button
+              onClick={run(onOpenLogin)}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+            >
+              Login
+              <span className="block text-xs font-semibold opacity-80">Open authentication modal</span>
+            </button>
+            <button
+              onClick={run(onOpenSignup)}
+              className="w-full rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-4 py-3 text-left font-bold text-pink-900 shadow-sm transition hover:brightness-105 dark:border-pink-900/50 dark:from-pink-900/30 dark:to-amber-900/20 dark:text-pink-100"
+            >
+              Sign Up / Create Account
+              <span className="block text-xs font-semibold opacity-80">Start with email, password, or OTP</span>
+            </button>
+          </>
+        )}
       </div>
 
       <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-800/80">
@@ -123,6 +143,8 @@ function ProfileDropdownMenu({
 
 export default function HeaderNavbar({
   onNav,
+  onOpenLogin,
+  onOpenSignup,
   onOpenParentZone,
   isAdmin,
   onGoToAdmin,
@@ -300,6 +322,8 @@ export default function HeaderNavbar({
               user={user}
               profile={profile}
               isAdmin={isAdmin}
+              onOpenLogin={onOpenLogin}
+              onOpenSignup={onOpenSignup}
               onOpenParentZone={onOpenParentZone}
               onGoToAdmin={onGoToAdmin}
               displayMode={displayMode}
