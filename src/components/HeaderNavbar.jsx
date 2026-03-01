@@ -185,9 +185,9 @@ export default function HeaderNavbar({
 
           <div className="hidden xl:flex items-center">
             <img
-              src="/logo.png"
+              src="/logo.png.webp"
               alt="AikoKidzTV logo"
-              className="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm"
+              className="h-10 w-10 rounded-full object-cover border border-gray-200 ring-2 ring-white shadow-sm dark:border-slate-600 dark:ring-slate-800"
               loading="eager"
               decoding="async"
             />
