@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { Loader } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const AuthContext = createContext({
@@ -17,10 +16,32 @@ const isNetworkError = (error) => {
   return /failed to fetch|network|timed out|err_connection_timed_out|fetch/i.test(text);
 };
 
+const AUTH_TIMEOUT_MS = 10000;
+
+const withTimeout = async (promise, timeoutMs, label) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = globalThis.setTimeout(() => {
+      const timeoutError = new Error(`${label} timed out after ${timeoutMs}ms`);
+      timeoutError.name = 'AuthTimeoutError';
+      timeoutError.code = 'AUTH_TIMEOUT';
+      reject(timeoutError);
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) {
+      globalThis.clearTimeout(timeoutId);
+    }
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [authError, setAuthError] = useState(null);
   const isMountedRef = useRef(false);
@@ -34,7 +55,11 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      const { data, error } = await withTimeout(
+        supabase.from('profiles').select('*').eq('id', userId).single(),
+        AUTH_TIMEOUT_MS,
+        'Profile fetch'
+      );
 
       if (error) {
         throw error;
@@ -68,6 +93,7 @@ export const AuthProvider = ({ children }) => {
     isMountedRef.current = true;
     let isActive = true;
     let authSubscription;
+    setLoading(true);
 
     const applySession = async (session) => {
       if (!isMountedRef.current || !isActive) {
@@ -127,7 +153,11 @@ export const AuthProvider = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const { data, error } = await withTimeout(
+          supabase.auth.getSession(),
+          AUTH_TIMEOUT_MS,
+          'Session bootstrap'
+        );
 
         if (error) {
           throw error;
@@ -233,13 +263,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, isOffline, authError, signOut, fetchProfile }}>
-      {loading ? (
-        <div className="flex h-screen w-full items-center justify-center bg-slate-900 text-white">
-          <Loader className="animate-spin text-pink-500" size={48} />
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </AuthContext.Provider>
   );
 };

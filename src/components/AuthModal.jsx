@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 import { isAdminEmail } from '../utils/admin';
+import { useAuth } from '../context/AuthContext';
 
 const isDuplicateKeyError = (error) => {
   const message = `${error?.message || ''} ${error?.code || ''}`.toLowerCase();
@@ -57,7 +58,30 @@ const logAuthError = (label, authError, runtimeContext) => {
   });
 };
 
+const AUTH_REQUEST_TIMEOUT_MS = 12000;
+
+const withAuthTimeout = async (promise, label) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = globalThis.setTimeout(() => {
+      const timeoutError = new Error(`${label} timed out after ${AUTH_REQUEST_TIMEOUT_MS}ms`);
+      timeoutError.name = 'AuthTimeoutError';
+      timeoutError.code = 'AUTH_TIMEOUT';
+      reject(timeoutError);
+    }, AUTH_REQUEST_TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) {
+      globalThis.clearTimeout(timeoutId);
+    }
+  }
+};
+
 const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
+  const { authError, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState(initialMode === 'signup' ? 'signup' : 'login');
   const [email, setEmail] = useState('');
@@ -79,6 +103,13 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     setErrorDetails('');
     setInfo('');
   }, [open, initialMode]);
+
+  useEffect(() => {
+    if (!open || !authError) return;
+    const formatted = formatAuthError(authError);
+    setError((current) => current || formatted.userMessage);
+    setErrorDetails((current) => current || formatted.debug);
+  }, [open, authError]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -161,10 +192,13 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     try {
       if (mode === 'login') {
         console.info('[AuthModal] Starting signInWithPassword request', runtimeContext);
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { data: signInData, error: signInError } = await withAuthTimeout(
+          supabase.auth.signInWithPassword({
+            email,
+            password,
+          }),
+          'signInWithPassword'
+        );
         if (signInError) {
           logAuthError('signInWithPassword returned an error', signInError, runtimeContext);
           throw signInError;
@@ -181,10 +215,13 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       }
 
       console.info('[AuthModal] Starting signUp request', runtimeContext);
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      const { data, error: signUpError } = await withAuthTimeout(
+        supabase.auth.signUp({
+          email,
+          password,
+        }),
+        'signUp'
+      );
       if (signUpError) {
         logAuthError('signUp returned an error', signUpError, runtimeContext);
         throw signUpError;
@@ -226,12 +263,15 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
     try {
       console.info('[AuthModal] Starting signInWithOtp request', runtimeContext);
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: mode === 'signup',
-        },
-      });
+      const { error: otpError } = await withAuthTimeout(
+        supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: mode === 'signup',
+          },
+        }),
+        'signInWithOtp'
+      );
       if (otpError) {
         logAuthError('signInWithOtp returned an error', otpError, runtimeContext);
         throw otpError;
@@ -329,6 +369,11 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
         {info ? (
           <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             {info}
+          </div>
+        ) : null}
+        {open && authLoading ? (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Checking existing session in background. You can still log in now.
           </div>
         ) : null}
 
