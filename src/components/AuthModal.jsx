@@ -30,6 +30,33 @@ const formatAuthError = (authError) => {
   };
 };
 
+const getAuthRuntimeContext = (mode, email) => ({
+  mode,
+  email,
+  origin: typeof window !== 'undefined' ? window.location.origin : 'server',
+  path: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
+  supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '(missing)',
+  hasAnonKey: Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY),
+});
+
+const serializeAuthError = (authError) => ({
+  message: authError?.message || 'Unknown auth error',
+  code: authError?.code || null,
+  status: Number.isFinite(Number(authError?.status)) ? Number(authError.status) : null,
+  name: authError?.name || 'Error',
+  details: authError?.details || null,
+  hint: authError?.hint || null,
+});
+
+const logAuthError = (label, authError, runtimeContext) => {
+  const normalized = serializeAuthError(authError);
+  console.error(`[AuthModal] ${label}`, {
+    ...normalized,
+    runtimeContext,
+    rawError: authError,
+  });
+};
+
 const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
   const navigate = useNavigate();
   const [mode, setMode] = useState(initialMode === 'signup' ? 'signup' : 'login');
@@ -129,14 +156,19 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     setError('');
     setErrorDetails('');
     setInfo('');
+    const runtimeContext = getAuthRuntimeContext(mode, email);
 
     try {
       if (mode === 'login') {
+        console.info('[AuthModal] Starting signInWithPassword request', runtimeContext);
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (signInError) throw signInError;
+        if (signInError) {
+          logAuthError('signInWithPassword returned an error', signInError, runtimeContext);
+          throw signInError;
+        }
 
         const signedInUser = signInData?.user ?? signInData?.session?.user ?? null;
         setInfo('Welcome back! Redirecting...');
@@ -148,11 +180,15 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
         return;
       }
 
+      console.info('[AuthModal] Starting signUp request', runtimeContext);
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        logAuthError('signUp returned an error', signUpError, runtimeContext);
+        throw signUpError;
+      }
 
       await ensureSignupProfile(data?.user?.id);
 
@@ -170,7 +206,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       const formatted = formatAuthError(authError);
       setError(formatted.userMessage);
       setErrorDetails(formatted.debug);
-      console.error('[AuthModal] Authentication failed:', authError);
+      logAuthError('Authentication failed', authError, runtimeContext);
     } finally {
       setLoading(false);
     }
@@ -186,21 +222,26 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     setError('');
     setErrorDetails('');
     setInfo('');
+    const runtimeContext = getAuthRuntimeContext(mode, email);
 
     try {
+      console.info('[AuthModal] Starting signInWithOtp request', runtimeContext);
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: mode === 'signup',
         },
       });
-      if (otpError) throw otpError;
+      if (otpError) {
+        logAuthError('signInWithOtp returned an error', otpError, runtimeContext);
+        throw otpError;
+      }
       setInfo('OTP sent! Check your email for the login link or verification code.');
     } catch (otpAuthError) {
       const formatted = formatAuthError(otpAuthError);
       setError(formatted.userMessage || 'Could not send OTP. Please try again.');
       setErrorDetails(formatted.debug);
-      console.error('[AuthModal] OTP request failed:', otpAuthError);
+      logAuthError('OTP request failed', otpAuthError, runtimeContext);
     } finally {
       setOtpLoading(false);
     }
