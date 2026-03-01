@@ -6,6 +6,7 @@ import LearningZone from './LearningZone';
 import { supabase } from '../supabaseClient';
 
 const RAZORPAY_SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
+const RAZORPAY_KEY_ID = String(import.meta.env.VITE_RAZORPAY_KEY_ID || '').trim();
 
 const loadRazorpayScript = () =>
   new Promise((resolve) => {
@@ -240,6 +241,13 @@ export default function LandingPageHabitat({
     }
 
     const paymentCurrency = currency === 'USD' ? 'USD' : 'INR';
+
+    if (!RAZORPAY_KEY_ID || RAZORPAY_KEY_ID === 'undefined' || RAZORPAY_KEY_ID === 'null') {
+      console.error('[Razorpay] Missing VITE_RAZORPAY_KEY_ID. Check your .env and restart the dev server.');
+      showPaymentToast('error', 'Payment is temporarily unavailable. Please contact support.');
+      return;
+    }
+
     const sdkLoaded = window.Razorpay ? true : await loadRazorpayScript();
     if (!sdkLoaded) {
       showPaymentToast('error', 'Payment gateway failed to load. Please try again.');
@@ -247,7 +255,7 @@ export default function LandingPageHabitat({
     }
 
     const options = {
-      key: 'rzp_test_SL4ytKNK0S7Ukd',
+      key: RAZORPAY_KEY_ID,
       amount: Math.round(paymentAmount * 100),
       currency: paymentCurrency,
       name: 'AikoKidzTV',
