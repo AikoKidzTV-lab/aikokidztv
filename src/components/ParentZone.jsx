@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useKidsMode } from '../context/KidsModeContext';
 
 const PARENT_PIN_STORAGE_KEY = 'aiko_parent_pin';
 const EYE_TRACKER_STORAGE_KEY = 'aiko_eye_health_tracker_v1';
@@ -74,6 +75,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
   });
   const [eyeSaveStatus, setEyeSaveStatus] = useState('');
   const [wellbeingUsage, setWellbeingUsage] = useState(() => readWellbeingUsage());
+  const { isKidsModeOn, toggleKidsMode } = useKidsMode();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -328,6 +330,38 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
               <h2 className="text-3xl font-extrabold text-gray-900">Digital Wellbeing & Analytics</h2>
               <p className="text-gray-500 mt-1">Track eye care, monitor play time, and manage daily usage limits.</p>
             </div>
+
+            <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                <div>
+                  <h3 className="text-xl font-extrabold text-gray-900">Kids Mode Control</h3>
+                  <p className="text-gray-500 mt-1">Only Parent Zone can turn Kids Mode on or off across the app.</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-gray-700">Kids Mode</p>
+                    <p className={`text-xs font-semibold ${isKidsModeOn ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      {isKidsModeOn ? 'ON' : 'OFF'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleKidsMode}
+                    aria-pressed={isKidsModeOn}
+                    aria-label="Toggle Kids Mode"
+                    className={`relative h-6 w-12 rounded-full transition-all ${
+                      isKidsModeOn ? 'bg-pink-400' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                        isKidsModeOn ? 'translate-x-6' : ''
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </section>
 
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">

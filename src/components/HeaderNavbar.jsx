@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Bell, ChevronDown, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useKidsMode } from '../context/KidsModeContext';
 import { ADMIN_EMAIL } from '../utils/admin';
 
 function ProfileDropdownMenu({
@@ -157,7 +156,6 @@ export default function HeaderNavbar({
   onBrightnessChange = () => {},
 }) {
   const { user, profile } = useAuth();
-  const { isKidsModeOn, toggleKidsMode } = useKidsMode();
   const [showNotifications, setShowNotifications] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
 
@@ -185,21 +183,14 @@ export default function HeaderNavbar({
             <span className="sm:hidden">Aiko</span>
           </button>
 
-          <div className="hidden xl:flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <span className="inline-flex items-center gap-1 text-sm text-slate-800 dark:text-slate-100">Kids Mode</span>
-            <button
-              onClick={toggleKidsMode}
-              className={`relative h-6 w-12 rounded-full transition-all ${
-                isKidsModeOn ? 'bg-pink-400' : 'bg-slate-300 dark:bg-slate-600'
-              }`}
-              aria-label="Toggle Kids Mode"
-            >
-              <span
-                className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                  isKidsModeOn ? 'translate-x-6' : ''
-                }`}
-              />
-            </button>
+          <div className="hidden xl:flex items-center">
+            <img
+              src="/logo.png"
+              alt="AikoKidzTV logo"
+              className="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm"
+              loading="eager"
+              decoding="async"
+            />
           </div>
 
           <div className="hidden 2xl:flex items-center gap-2 rounded-full border border-emerald-100 bg-gradient-to-r from-white to-emerald-50 px-2.5 py-1 shadow-sm dark:border-slate-700 dark:from-slate-800 dark:to-slate-800">
