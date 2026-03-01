@@ -1,14 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, Lock, Mail, Sparkles, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
+import { isAdminEmail } from '../utils/admin';
 
 const isDuplicateKeyError = (error) => {
   const message = `${error?.message || ''} ${error?.code || ''}`.toLowerCase();
   return message.includes('duplicate') || message.includes('unique');
 };
 
+const formatAuthError = (authError) => {
+  const message = authError?.message || 'Authentication failed. Please try again.';
+  const code = authError?.code || authError?.name || 'unknown_error';
+  const status = Number.isFinite(Number(authError?.status)) ? Number(authError.status) : null;
+  const suffix = [code, status ? `status:${status}` : null].filter(Boolean).join(' | ');
+
+  return {
+    userMessage: suffix ? `${message} (${suffix})` : message,
+    debug: JSON.stringify(
+      {
+        message,
+        code,
+        status,
+      },
+      null,
+      2
+    ),
+  };
+};
+
 const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
+  const navigate = useNavigate();
   const [mode, setMode] = useState(initialMode === 'signup' ? 'signup' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +39,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorDetails, setErrorDetails] = useState('');
   const [info, setInfo] = useState('');
 
   useEffect(() => {
@@ -25,6 +49,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     setPassword('');
     setConfirmPassword('');
     setError('');
+    setErrorDetails('');
     setInfo('');
   }, [open, initialMode]);
 
@@ -55,9 +80,34 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     }
   };
 
-  const handleAuthSuccess = () => {
-    onSuccess?.();
+  const handleAuthSuccess = ({ user: signedInUser = null, session = null, source = 'password' } = {}) => {
+    if (!signedInUser) {
+      const missingSessionError = new Error('Sign-in succeeded but Supabase returned no active user/session.');
+      const formatted = formatAuthError(missingSessionError);
+      setError(formatted.userMessage);
+      setErrorDetails(formatted.debug);
+      console.error('[AuthModal] Missing user/session after auth success:', {
+        source,
+        session,
+      });
+      return;
+    }
+
+    onSuccess?.({ user: signedInUser, session, source });
     onClose?.();
+
+    if (isAdminEmail(signedInUser.email)) {
+      console.info('[AuthModal] Admin login successful. Redirecting to /admin.', {
+        email: signedInUser.email,
+        source,
+      });
+      navigate('/admin', { replace: true });
+    } else {
+      console.info('[AuthModal] Login successful. No admin redirect for non-admin account.', {
+        email: signedInUser.email,
+        source,
+      });
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -77,17 +127,24 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
     setLoading(true);
     setError('');
+    setErrorDetails('');
     setInfo('');
 
     try {
       if (mode === 'login') {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (signInError) throw signInError;
-        setInfo('Welcome back!');
-        handleAuthSuccess();
+
+        const signedInUser = signInData?.user ?? signInData?.session?.user ?? null;
+        setInfo('Welcome back! Redirecting...');
+        handleAuthSuccess({
+          user: signedInUser,
+          session: signInData?.session ?? null,
+          source: 'password',
+        });
         return;
       }
 
@@ -101,12 +158,19 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
       if (data?.session) {
         setInfo('Account created successfully!');
-        handleAuthSuccess();
+        handleAuthSuccess({
+          user: data?.user ?? data?.session?.user ?? null,
+          session: data?.session ?? null,
+          source: 'signup',
+        });
       } else {
         setInfo('Account created! Please check your email to confirm your signup.');
       }
     } catch (authError) {
-      setError(authError?.message || 'Authentication failed. Please try again.');
+      const formatted = formatAuthError(authError);
+      setError(formatted.userMessage);
+      setErrorDetails(formatted.debug);
+      console.error('[AuthModal] Authentication failed:', authError);
     } finally {
       setLoading(false);
     }
@@ -120,6 +184,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
     setOtpLoading(true);
     setError('');
+    setErrorDetails('');
     setInfo('');
 
     try {
@@ -132,7 +197,10 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       if (otpError) throw otpError;
       setInfo('OTP sent! Check your email for the login link or verification code.');
     } catch (otpAuthError) {
-      setError(otpAuthError?.message || 'Could not send OTP. Please try again.');
+      const formatted = formatAuthError(otpAuthError);
+      setError(formatted.userMessage || 'Could not send OTP. Please try again.');
+      setErrorDetails(formatted.debug);
+      console.error('[AuthModal] OTP request failed:', otpAuthError);
     } finally {
       setOtpLoading(false);
     }
@@ -177,6 +245,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
             onClick={() => {
               setMode('login');
               setError('');
+              setErrorDetails('');
               setInfo('');
             }}
             className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
@@ -192,6 +261,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
             onClick={() => {
               setMode('signup');
               setError('');
+              setErrorDetails('');
               setInfo('');
             }}
             className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
@@ -207,6 +277,12 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
         {error ? (
           <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}
+            {errorDetails ? (
+              <details className="mt-2 rounded-lg border border-red-200 bg-white/60 p-2 text-xs text-red-900">
+                <summary className="cursor-pointer font-semibold">Technical details</summary>
+                <pre className="mt-2 whitespace-pre-wrap break-words">{errorDetails}</pre>
+              </details>
+            ) : null}
           </div>
         ) : null}
         {info ? (

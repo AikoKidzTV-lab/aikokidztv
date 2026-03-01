@@ -87,6 +87,44 @@ export const AuthProvider = ({ children }) => {
       await fetchProfile(nextUser.id);
     };
 
+    const safelyApplySession = (session, eventLabel = 'unknown') => {
+      const run = async () => {
+        try {
+          await applySession(session);
+        } catch (error) {
+          console.error('[AuthContext] onAuthStateChange failed. Keeping guest-safe state:', error, {
+            event: eventLabel,
+          });
+
+          if (!isMountedRef.current || !isActive) {
+            return;
+          }
+
+          setUser(session?.user ?? null);
+          if (!session?.user) {
+            setProfile(null);
+          }
+          setAuthError(error ?? null);
+          if (isNetworkError(error)) {
+            setIsOffline(true);
+          }
+        } finally {
+          if (isMountedRef.current && isActive) {
+            setLoading(false);
+          }
+        }
+      };
+
+      // Supabase recommends deferring async work from onAuthStateChange callbacks.
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          void run();
+        }, 0);
+      } else {
+        void run();
+      }
+    };
+
     const initializeAuth = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -115,31 +153,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     try {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        void (async () => {
-          try {
-            await applySession(session);
-          } catch (error) {
-            console.error('[AuthContext] onAuthStateChange failed. Keeping guest-safe state:', error);
-
-            if (!isMountedRef.current || !isActive) {
-              return;
-            }
-
-            setUser(session?.user ?? null);
-            if (!session?.user) {
-              setProfile(null);
-            }
-            setAuthError(error ?? null);
-            if (isNetworkError(error)) {
-              setIsOffline(true);
-            }
-          } finally {
-            if (isMountedRef.current && isActive) {
-              setLoading(false);
-            }
-          }
-        })();
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+        console.info('[AuthContext] Auth event:', event, {
+          hasSession: Boolean(session),
+          userId: session?.user?.id ?? null,
+        });
+        safelyApplySession(session, event);
       });
 
       authSubscription = data?.subscription;
@@ -226,4 +245,3 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
