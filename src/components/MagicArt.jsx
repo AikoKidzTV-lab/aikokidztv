@@ -1,7 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { MAGIC_ART_PACK_COST_GEMS, MAGIC_ART_PACK_USES } from '../constants/gemEconomy';
-import { spendUserGems } from '../utils/gemWallet';
+import {
+  buyMagicArtPack,
+  consumeMagicArtUse,
+  DEFAULT_MAGIC_ART_USES,
+} from '../utils/profileEconomy';
 
 const PRESET_COLORS = [
   '#FF4136',
@@ -58,14 +62,17 @@ const STAMPS = [
   { id: 'heart', icon: '💖' },
 ];
 
-const MAGIC_ART_USES_KEY_PREFIX = 'aiko_magic_art_uses_v1_';
+const toSafeUses = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : fallback;
+};
 
 const MagicArt = ({ onBack }) => {
   const { user, profile, fetchProfile } = useAuth();
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [activeTool, setActiveTool] = useState('brush'); // brush | eraser | stamp
+  const [activeTool, setActiveTool] = useState('brush');
   const [brushColor, setBrushColor] = useState('#FF4136');
   const [brushSize, setBrushSize] = useState(10);
   const [customColor, setCustomColor] = useState('#FF0000');
@@ -75,7 +82,6 @@ const MagicArt = ({ onBack }) => {
   const [statusMessage, setStatusMessage] = useState('');
 
   const hasActivePack = remainingUses > 0;
-  const usesStorageKey = `${MAGIC_ART_USES_KEY_PREFIX}${user?.id || 'guest'}`;
 
   const showStatus = (message) => {
     setStatusMessage(message);
@@ -83,17 +89,13 @@ const MagicArt = ({ onBack }) => {
   };
 
   useEffect(() => {
-    try {
-      const storedUses = Number(window.localStorage.getItem(usesStorageKey));
-      setRemainingUses(Number.isFinite(storedUses) ? Math.max(0, Math.floor(storedUses)) : 0);
-    } catch {
+    if (!user?.id) {
       setRemainingUses(0);
+      return;
     }
-  }, [usesStorageKey]);
 
-  useEffect(() => {
-    window.localStorage.setItem(usesStorageKey, String(remainingUses));
-  }, [remainingUses, usesStorageKey]);
+    setRemainingUses(toSafeUses(profile?.magic_art_uses, DEFAULT_MAGIC_ART_USES));
+  }, [user?.id, profile?.magic_art_uses]);
 
   const paintCanvasBackground = (ctx, width, height) => {
     ctx.save();
@@ -171,17 +173,18 @@ const MagicArt = ({ onBack }) => {
 
     setPackLoading(true);
     try {
-      const spendResult = await spendUserGems({
+      const purchaseResult = await buyMagicArtPack({
         userId: user.id,
-        amount: MAGIC_ART_PACK_COST_GEMS,
+        costGems: MAGIC_ART_PACK_COST_GEMS,
+        packUses: MAGIC_ART_PACK_USES,
       });
 
-      if (!spendResult.ok) {
-        showStatus(spendResult.message || 'Unable to buy Magic Art pack right now.');
+      if (!purchaseResult.ok) {
+        showStatus(purchaseResult.message || 'Unable to buy Magic Art pack right now.');
         return;
       }
 
-      setRemainingUses((prev) => prev + MAGIC_ART_PACK_USES);
+      setRemainingUses(toSafeUses(purchaseResult.profile?.magic_art_uses));
       await fetchProfile?.(user.id);
       showStatus(`Unlocked ${MAGIC_ART_PACK_USES} uses for ${MAGIC_ART_PACK_COST_GEMS} 💎`);
     } catch (error) {
@@ -198,6 +201,7 @@ const MagicArt = ({ onBack }) => {
       showStatus('Buy a Magic Art pack to start drawing.');
       return;
     }
+
     const ctx = contextRef.current;
     if (!ctx) return;
 
@@ -213,9 +217,7 @@ const MagicArt = ({ onBack }) => {
       return;
     }
 
-    if (activeTool !== 'brush' && activeTool !== 'eraser') {
-      return;
-    }
+    if (activeTool !== 'brush' && activeTool !== 'eraser') return;
 
     ctx.strokeStyle = activeTool === 'eraser' ? '#FFFFFF' : brushColor;
     ctx.lineWidth = brushSize;
@@ -228,7 +230,6 @@ const MagicArt = ({ onBack }) => {
 
   const draw = ({ nativeEvent }) => {
     nativeEvent.preventDefault();
-
     if (!isDrawing) return;
     if (activeTool !== 'brush' && activeTool !== 'eraser') return;
 
@@ -255,18 +256,41 @@ const MagicArt = ({ onBack }) => {
     paintCanvasBackground(ctx, canvas.width, canvas.height);
   };
 
-  const downloadImage = () => {
+  const downloadImage = async () => {
+    if (!user?.id) {
+      showStatus('Please log in to use Magic Art.');
+      return;
+    }
     if (!hasActivePack) {
       showStatus('No uses left. Buy a new pack to download art.');
       return;
     }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const link = document.createElement('a');
-    link.download = 'magic-art.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    setRemainingUses((prev) => Math.max(0, prev - 1));
+
+    try {
+      const consumeResult = await consumeMagicArtUse({
+        userId: user.id,
+        amount: 1,
+      });
+
+      if (!consumeResult.ok) {
+        showStatus(consumeResult.message || 'Could not use Magic Art right now.');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.download = 'magic-art.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+
+      setRemainingUses(toSafeUses(consumeResult.profile?.magic_art_uses));
+      await fetchProfile?.(user.id);
+    } catch (error) {
+      console.error('[MagicArt] Failed to consume use:', error);
+      showStatus('Download failed. Please try again.');
+    }
   };
 
   const handleBackToHome = () => {
@@ -282,7 +306,7 @@ const MagicArt = ({ onBack }) => {
       <div className="mx-auto mb-4 flex max-w-7xl flex-wrap items-center justify-between gap-3">
         <button
           onClick={handleBackToHome}
-          className="bg-white px-5 py-2 rounded-full shadow-sm font-bold text-pink-600 border border-pink-200 hover:bg-pink-50 active:scale-[0.98] transition"
+          className="rounded-full border border-pink-200 bg-white px-5 py-2 font-bold text-pink-600 shadow-sm transition hover:bg-pink-50 active:scale-[0.98]"
         >
           Back to Home
         </button>
@@ -304,7 +328,9 @@ const MagicArt = ({ onBack }) => {
           onClick={handleBuyPack}
           disabled={packLoading}
           className={`rounded-xl px-4 py-2 text-sm font-black transition ${
-            packLoading ? 'cursor-not-allowed bg-slate-200 text-slate-500' : 'bg-slate-900 text-white hover:bg-slate-800'
+            packLoading
+              ? 'cursor-not-allowed bg-slate-200 text-slate-500'
+              : 'bg-slate-900 text-white hover:bg-slate-800'
           }`}
         >
           {packLoading
@@ -313,7 +339,7 @@ const MagicArt = ({ onBack }) => {
         </button>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-md p-4 mb-4 flex flex-col gap-4 max-w-7xl mx-auto">
+      <div className="mx-auto mb-4 flex max-w-7xl flex-col gap-4 rounded-3xl bg-white p-4 shadow-md">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             {PRESET_COLORS.map((color) => (
@@ -322,7 +348,7 @@ const MagicArt = ({ onBack }) => {
                 onClick={() => setBrushColor(color)}
                 disabled={!hasActivePack}
                 className={`h-10 w-10 rounded-full border-2 transition ${
-                  brushColor === color ? 'border-gray-400 scale-110 shadow-md' : 'border-white'
+                  brushColor === color ? 'scale-110 border-gray-400 shadow-md' : 'border-white'
                 } ${!hasActivePack ? 'cursor-not-allowed opacity-50' : ''}`}
                 style={{ backgroundColor: color }}
                 aria-label={`Select color ${color}`}
@@ -330,9 +356,9 @@ const MagicArt = ({ onBack }) => {
             ))}
           </div>
 
-          <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200">
-            <span className="text-xs font-extrabold text-gray-500 tracking-wider">CUSTOM</span>
-            <label className="w-10 h-10 rounded-lg border-2 border-gray-300 overflow-hidden cursor-pointer relative shadow-sm">
+          <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-2">
+            <span className="text-xs font-extrabold tracking-wider text-gray-500">CUSTOM</span>
+            <label className="relative h-10 w-10 cursor-pointer overflow-hidden rounded-lg border-2 border-gray-300 shadow-sm">
               <input
                 type="color"
                 value={customColor}
@@ -341,12 +367,12 @@ const MagicArt = ({ onBack }) => {
                   setCustomColor(e.target.value);
                   setBrushColor(e.target.value);
                 }}
-                className="absolute inset-0 w-[200%] h-[200%] -top-1/2 -left-1/2"
+                className="absolute -left-1/2 -top-1/2 h-[200%] w-[200%]"
               />
             </label>
           </div>
 
-          <div className="hidden md:block w-px bg-gray-200 h-8 mx-2" />
+          <div className="mx-2 hidden h-8 w-px bg-gray-200 md:block" />
 
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-gray-500">Brush Size</span>
@@ -359,7 +385,7 @@ const MagicArt = ({ onBack }) => {
               onChange={(e) => setBrushSize(Number(e.target.value))}
               className="w-36 accent-pink-500"
             />
-            <span className="text-xs font-bold text-gray-400 w-8 text-right">{brushSize}</span>
+            <span className="w-8 text-right text-xs font-bold text-gray-400">{brushSize}</span>
           </div>
         </div>
 
@@ -367,10 +393,10 @@ const MagicArt = ({ onBack }) => {
           <button
             onClick={() => setActiveTool('brush')}
             disabled={!hasActivePack}
-            className={`px-5 py-2 rounded-xl font-bold border transition ${
+            className={`rounded-xl border px-5 py-2 font-bold transition ${
               activeTool === 'brush'
-                ? 'bg-pink-100 border-pink-300 text-pink-700'
-                : 'bg-white border-gray-200 text-gray-600'
+                ? 'border-pink-300 bg-pink-100 text-pink-700'
+                : 'border-gray-200 bg-white text-gray-600'
             } ${!hasActivePack ? 'cursor-not-allowed opacity-60' : ''}`}
           >
             Brush
@@ -378,10 +404,10 @@ const MagicArt = ({ onBack }) => {
           <button
             onClick={() => setActiveTool('eraser')}
             disabled={!hasActivePack}
-            className={`px-5 py-2 rounded-xl font-bold border transition ${
+            className={`rounded-xl border px-5 py-2 font-bold transition ${
               activeTool === 'eraser'
-                ? 'bg-gray-200 border-gray-400 text-gray-800'
-                : 'bg-white border-gray-200 text-gray-600'
+                ? 'border-gray-400 bg-gray-200 text-gray-800'
+                : 'border-gray-200 bg-white text-gray-600'
             } ${!hasActivePack ? 'cursor-not-allowed opacity-60' : ''}`}
           >
             Eraser
@@ -389,10 +415,10 @@ const MagicArt = ({ onBack }) => {
           <button
             onClick={clearCanvas}
             disabled={!hasActivePack}
-            className={`px-5 py-2 rounded-xl font-bold border transition ${
+            className={`rounded-xl border px-5 py-2 font-bold transition ${
               hasActivePack
-                ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+                : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
             }`}
           >
             Clear All
@@ -400,19 +426,19 @@ const MagicArt = ({ onBack }) => {
           <button
             onClick={downloadImage}
             disabled={!hasActivePack}
-            className={`px-5 py-2 rounded-xl font-bold border transition ${
+            className={`rounded-xl border px-5 py-2 font-bold transition ${
               hasActivePack
-                ? 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100'
-                : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                : 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
             }`}
           >
             Download
           </button>
         </div>
 
-        <div className="flex flex-col gap-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+        <div className="flex flex-col gap-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-extrabold text-gray-400 tracking-wider">STAMPS</span>
+            <span className="text-xs font-extrabold tracking-wider text-gray-400">STAMPS</span>
             <span className="text-xs text-gray-500">
               Tap a stamp, then tap the page
               {activeTool === 'stamp' && selectedStamp ? ` • Selected: ${selectedStamp.icon}` : ''}
@@ -427,7 +453,7 @@ const MagicArt = ({ onBack }) => {
                   setActiveTool('stamp');
                   setSelectedStamp(stamp);
                 }}
-                className={`text-2xl min-w-11 h-11 rounded-xl transition ${
+                className={`h-11 min-w-11 rounded-xl text-2xl transition ${
                   activeTool === 'stamp' && selectedStamp?.id === stamp.id
                     ? 'bg-pink-100 shadow-inner ring-1 ring-pink-200'
                     : 'hover:bg-gray-200'
@@ -441,10 +467,12 @@ const MagicArt = ({ onBack }) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto">
-        <div className={`bg-white rounded-[2rem] shadow-inner border-4 border-dashed border-pink-200 p-2 sm:p-3 min-h-[80vh] h-[82vh] max-h-[1000px] relative overflow-hidden ${
-          hasActivePack ? 'cursor-crosshair' : 'cursor-not-allowed'
-        }`}>
+      <div className="mx-auto max-w-7xl">
+        <div
+          className={`relative min-h-[80vh] h-[82vh] max-h-[1000px] overflow-hidden rounded-[2rem] border-4 border-dashed border-pink-200 bg-white p-2 shadow-inner sm:p-3 ${
+            hasActivePack ? 'cursor-crosshair' : 'cursor-not-allowed'
+          }`}
+        >
           <canvas
             ref={canvasRef}
             onMouseDown={startDrawing}
@@ -455,16 +483,16 @@ const MagicArt = ({ onBack }) => {
             onTouchMove={draw}
             onTouchEnd={stopDrawing}
             onTouchCancel={stopDrawing}
-            className={`w-full h-full rounded-[1.4rem] bg-white touch-none ${!hasActivePack ? 'pointer-events-none' : ''}`}
+            className={`h-full w-full touch-none rounded-[1.4rem] bg-white ${
+              !hasActivePack ? 'pointer-events-none' : ''
+            }`}
           />
 
           {!hasActivePack && (
             <div className="absolute inset-0 z-10 grid place-items-center bg-white/75 backdrop-blur-[1px]">
               <div className="max-w-sm rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-lg">
-                <p className="text-base font-black text-slate-900">🔒 Magic Art Locked</p>
-                <p className="mt-2 text-sm text-slate-700">
-                  Buy a pack to unlock drawing tools.
-                </p>
+                <p className="text-base font-black text-slate-900">Magic Art Locked</p>
+                <p className="mt-2 text-sm text-slate-700">Buy a pack to unlock drawing tools.</p>
                 <button
                   type="button"
                   onClick={handleBuyPack}
@@ -484,7 +512,7 @@ const MagicArt = ({ onBack }) => {
           )}
 
           {activeTool === 'stamp' && selectedStamp && (
-            <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 bg-pink-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+            <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-pink-600 px-4 py-2 text-sm font-bold text-white shadow-lg">
               Stamp mode: tap anywhere to place {selectedStamp.icon}
             </div>
           )}
@@ -501,3 +529,4 @@ const MagicArt = ({ onBack }) => {
 };
 
 export default MagicArt;
+

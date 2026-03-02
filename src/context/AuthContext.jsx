@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { ensureEconomyProfile } from '../utils/profileEconomy';
 
 const AuthContext = createContext({
   user: null,
@@ -55,23 +56,23 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const { data, error } = await withTimeout(
-        supabase.from('profiles').select('*').eq('id', userId).single(),
+      const profileResult = await withTimeout(
+        ensureEconomyProfile(userId),
         AUTH_TIMEOUT_MS,
         'Profile fetch'
       );
 
-      if (error) {
-        throw error;
+      if (!profileResult?.ok) {
+        throw new Error(profileResult?.message || 'Failed to load profile.');
       }
 
       if (isMountedRef.current) {
-        setProfile(data ?? null);
+        setProfile(profileResult.profile ?? null);
         setIsOffline(false);
         setAuthError(null);
       }
 
-      return data ?? null;
+      return profileResult.profile ?? null;
     } catch (error) {
       console.error('[AuthContext] Failed to fetch profile:', error);
 

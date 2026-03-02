@@ -4,6 +4,8 @@ import AIStudio from './AIStudio';
 import GemPacksPricing from './GemPacksPricing';
 import LearningZone from './LearningZone';
 import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
+import { claimRewardOnce } from '../utils/profileEconomy';
 
 const RAZORPAY_SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 const RAZORPAY_KEY_ID = String(import.meta.env.VITE_RAZORPAY_KEY_ID || '').trim();
@@ -114,8 +116,11 @@ const sanskariTasks = [
 
 const TASKS_PER_QUEST = 5;
 const TASK_ROTATION_INTERVAL_MS = 300000;
-const FREE_GEMS_RESET_LIMIT = 1000;
 const BELL_NOTIFICATION_EVENT = 'aiko:bell-notification';
+const YOUTUBE_SUBSCRIBE_REWARD_KEY = 'homepage_youtube_subscribe_50';
+const YOUTUBE_SUBSCRIBE_REWARD_GEMS = 50;
+const TASK_QUEST_REWARD_KEY = 'homepage_task_quest_2';
+const TASK_QUEST_REWARD_GEMS = 2;
 
 const WaveDivider = ({ fill = '#dcfce7', flip = false }) => (
   <div className={`absolute inset-x-0 ${flip ? 'bottom-0 rotate-180' : 'top-0 -translate-y-full'} pointer-events-none`}>
@@ -134,16 +139,24 @@ export default function LandingPageHabitat({
   onNav,
   onSelectLearningModule,
 }) {
+  const { profile, fetchProfile } = useAuth();
   const go = (target) => onNav?.(target);
-  const [freeGemsClaimed, setFreeGemsClaimed] = React.useState(false);
   const [watchEarnMessage, setWatchEarnMessage] = React.useState('');
   const [paymentToast, setPaymentToast] = React.useState(null);
   const [heroSlideIndex, setHeroSlideIndex] = React.useState(0);
-  const [freeGemsEarned, setFreeGemsEarned] = React.useState(0);
   const [activeTaskStart, setActiveTaskStart] = React.useState(0);
   const [showTaskQuest, setShowTaskQuest] = React.useState(false);
-  const [taskQuestClaimed, setTaskQuestClaimed] = React.useState(false);
+  const [isClaimingYoutubeReward, setIsClaimingYoutubeReward] = React.useState(false);
+  const [isClaimingTaskQuestReward, setIsClaimingTaskQuestReward] = React.useState(false);
   const paymentToastTimerRef = React.useRef(null);
+
+  const claimedRewards = React.useMemo(
+    () => (Array.isArray(profile?.claimed_rewards) ? profile.claimed_rewards : []),
+    [profile?.claimed_rewards]
+  );
+  const freeGemsClaimed = claimedRewards.includes(YOUTUBE_SUBSCRIBE_REWARD_KEY);
+  const taskQuestClaimed = claimedRewards.includes(TASK_QUEST_REWARD_KEY);
+  const gemsBalance = Number(profile?.gems || 0);
 
   const pushBellNotification = React.useCallback((message) => {
     if (typeof window === 'undefined') return;
@@ -199,7 +212,6 @@ export default function LandingPageHabitat({
 
     const rotationIntervalId = window.setInterval(() => {
       setActiveTaskStart((current) => (current + TASKS_PER_QUEST) % sanskariTasks.length);
-      setTaskQuestClaimed(false);
       pushBellNotification('New tasks available!');
     }, TASK_ROTATION_INTERVAL_MS);
 
@@ -216,20 +228,74 @@ export default function LandingPageHabitat({
     setHeroSlideIndex((current) => (current + 1) % HERO_BANNERS.length);
   };
 
-  const handleClaimFreeGems = () => {
-    if (freeGemsClaimed) return;
-    setFreeGemsClaimed(true);
-    setWatchEarnMessage('Success! 50 FREE GEMS were added to your balance.');
+  const handleClaimFreeGems = async () => {
+    if (freeGemsClaimed || isClaimingYoutubeReward) return;
+    if (!user?.id) {
+      onOpenLogin?.();
+      return;
+    }
+
+    setIsClaimingYoutubeReward(true);
+    try {
+      const claimResult = await claimRewardOnce({
+        userId: user.id,
+        rewardKey: YOUTUBE_SUBSCRIBE_REWARD_KEY,
+        gemReward: YOUTUBE_SUBSCRIBE_REWARD_GEMS,
+      });
+
+      if (!claimResult.ok) {
+        setWatchEarnMessage(claimResult.message || 'Could not claim your reward right now.');
+        return;
+      }
+
+      await fetchProfile?.(user.id);
+      setWatchEarnMessage(
+        claimResult.alreadyClaimed
+          ? 'This reward has already been claimed.'
+          : `Success! ${YOUTUBE_SUBSCRIBE_REWARD_GEMS} FREE GEMS were added to your balance.`
+      );
+    } catch (error) {
+      console.error('[LandingPageHabitat] Failed to claim YouTube reward:', error);
+      setWatchEarnMessage('Could not claim your reward right now.');
+    } finally {
+      setIsClaimingYoutubeReward(false);
+    }
   };
 
-  const handleTaskQuestReward = () => {
-    if (taskQuestClaimed) return;
-    setTaskQuestClaimed(true);
-    setFreeGemsEarned((current) => {
-      const next = current + 2;
-      return next >= FREE_GEMS_RESET_LIMIT ? 0 : next;
-    });
-    pushBellNotification('You earned 2 gems!');
+  const handleTaskQuestReward = async () => {
+    if (taskQuestClaimed || isClaimingTaskQuestReward) return;
+    if (!user?.id) {
+      onOpenLogin?.();
+      return;
+    }
+
+    setIsClaimingTaskQuestReward(true);
+    try {
+      const claimResult = await claimRewardOnce({
+        userId: user.id,
+        rewardKey: TASK_QUEST_REWARD_KEY,
+        gemReward: TASK_QUEST_REWARD_GEMS,
+      });
+
+      if (!claimResult.ok) {
+        showPaymentToast('error', claimResult.message || 'Task reward could not be claimed.');
+        return;
+      }
+
+      await fetchProfile?.(user.id);
+
+      if (!claimResult.alreadyClaimed) {
+        pushBellNotification(`You earned ${TASK_QUEST_REWARD_GEMS} gems!`);
+        showPaymentToast('success', `Task reward claimed: +${TASK_QUEST_REWARD_GEMS} Gems.`);
+      } else {
+        showPaymentToast('info', 'Task reward already claimed.');
+      }
+    } catch (error) {
+      console.error('[LandingPageHabitat] Failed to claim task reward:', error);
+      showPaymentToast('error', 'Task reward could not be claimed.');
+    } finally {
+      setIsClaimingTaskQuestReward(false);
+    }
   };
 
   const handlePayment = async (packName, amount, gemAmount, currency = 'INR') => {
@@ -296,12 +362,13 @@ export default function LandingPageHabitat({
               .eq('id', user.id);
 
             if (updateError) throw updateError;
+            await fetchProfile?.(user.id);
           }
 
           showPaymentToast('success', `Payment Successful! ${gemsToCredit} Gems added to your account.`);
         } catch (error) {
-          console.warn('[LandingPageHabitat] Supabase gem update fallback to simulation.', error);
-          showPaymentToast('success', `Payment Successful! ${gemsToCredit} Gems added to your account.`);
+          console.error('[LandingPageHabitat] Supabase gem update failed.', error);
+          showPaymentToast('error', 'Payment succeeded but gem credit failed. Please contact support.');
         }
       },
       modal: {
@@ -617,14 +684,14 @@ export default function LandingPageHabitat({
                 </button>
                 <div className="rounded-3xl border border-white/80 bg-white/70 p-4 shadow-xl backdrop-blur">
                   <p className="text-xs font-black uppercase tracking-wider !text-slate-500">Treasure Meter</p>
-                  <p className="mt-2 text-2xl font-black !text-blue-900">{freeGemsEarned} 💎</p>
+                  <p className="mt-2 text-2xl font-black !text-blue-900">{gemsBalance} 💎</p>
                   <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500 transition-all duration-500"
-                      style={{ width: `${Math.min((freeGemsEarned / FREE_GEMS_RESET_LIMIT) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((gemsBalance / 1000) * 100, 100)}%` }}
                     />
                   </div>
-                  <p className="mt-2 text-xs font-semibold !text-slate-600">Free gems earned (Resets at 1000)</p>
+                  <p className="mt-2 text-xs font-semibold !text-slate-600">Current gem balance</p>
                 </div>
                 {showTaskQuest ? (
                   <div className="col-span-2 rounded-3xl border border-white/85 bg-white/90 p-4 shadow-xl backdrop-blur">
@@ -649,14 +716,18 @@ export default function LandingPageHabitat({
                       <button
                         type="button"
                         onClick={handleTaskQuestReward}
-                        disabled={taskQuestClaimed}
+                        disabled={taskQuestClaimed || isClaimingTaskQuestReward}
                         className={`rounded-xl px-4 py-2 text-sm font-black transition ${
-                          taskQuestClaimed
+                          taskQuestClaimed || isClaimingTaskQuestReward
                             ? 'cursor-not-allowed border border-slate-200 bg-slate-100 !text-slate-500'
                             : 'border border-emerald-200 bg-emerald-500 !text-white shadow hover:bg-emerald-600'
                         }`}
                       >
-                        {taskQuestClaimed ? 'Reward Claimed ✅' : 'I completed all 5!'}
+                        {taskQuestClaimed
+                          ? 'Reward Claimed ✅'
+                          : isClaimingTaskQuestReward
+                            ? 'Claiming...'
+                            : 'I completed all 5!'}
                       </button>
                       <span className="text-xs font-bold !text-slate-600">
                         +2 💎 reward and bell notification update
@@ -743,14 +814,18 @@ export default function LandingPageHabitat({
             <button
               type="button"
               onClick={handleClaimFreeGems}
-              disabled={freeGemsClaimed}
+              disabled={freeGemsClaimed || isClaimingYoutubeReward}
               className={`rounded-2xl px-6 py-3 text-base font-black shadow-xl transition ${
-                freeGemsClaimed
+                freeGemsClaimed || isClaimingYoutubeReward
                   ? 'cursor-not-allowed border border-white/40 bg-white/20 !text-blue-50/90'
                   : 'border border-white/80 bg-white/95 !text-blue-700 hover:-translate-y-1 hover:bg-cyan-50'
               }`}
             >
-              {freeGemsClaimed ? '✅ 50 Free Gems Claimed' : '🎁 Claim 50 Free Gems'}
+              {freeGemsClaimed
+                ? '✅ Already Claimed'
+                : isClaimingYoutubeReward
+                  ? 'Claiming...'
+                  : '🎁 Claim 50 Free Gems'}
             </button>
 
             {watchEarnMessage ? (
@@ -759,7 +834,7 @@ export default function LandingPageHabitat({
               </p>
             ) : (
               <p className="text-xs font-semibold !text-blue-50/85">
-                Demo flow: this simulates a reward claim on the home page.
+                One-time claim only. Already-claimed rewards stay locked after refresh.
               </p>
             )}
           </div>

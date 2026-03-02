@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 import { isAdminEmail } from '../utils/admin';
+import { DEFAULT_MAGIC_ART_USES } from '../utils/profileEconomy';
 
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
 
@@ -197,6 +198,11 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
       gems: NEW_USER_BONUS_GEMS,
+      magic_art_uses: DEFAULT_MAGIC_ART_USES,
+      unlocked_zones: [],
+      unlocked_videos: [],
+      unlocked_items: [],
+      claimed_rewards: [],
     });
 
     if (profileError && !isDuplicateKeyError(profileError)) {

@@ -24,7 +24,6 @@ import { KidsModeProvider, useKidsMode } from './context/KidsModeContext';
 import { Gem, ChevronDown, Sparkles, LogOut, Bell } from 'lucide-react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { ADMIN_EMAIL, isAdminEmail } from './utils/admin';
-import { LEARNING_ZONE_UNLOCK_STORAGE_PREFIX } from './constants/gemEconomy';
 
 const themes = [
   { key: 'light', label: 'Light Mode' },
@@ -407,7 +406,7 @@ const Navbar = ({
 };
 
 const MainContent = ({ onGoToAdmin, onGoToVideos }) => {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [authMode, setAuthMode] = useState(null); // 'login' | 'signup' | null
   const [displayMode, setDisplayMode] = useState(() => {
     if (typeof window === 'undefined') return 'light';
@@ -578,21 +577,15 @@ const MainContent = ({ onGoToAdmin, onGoToVideos }) => {
         return true;
       }
 
-      if (typeof window === 'undefined') return false;
-      try {
-        const unlockKey = `${LEARNING_ZONE_UNLOCK_STORAGE_PREFIX}${user?.id || 'guest'}`;
-        const raw = window.localStorage.getItem(unlockKey);
-        const parsed = raw ? JSON.parse(raw) : {};
-        const zoneUnlocked = Boolean(parsed?.zoneUnlocked);
-        if (!zoneUnlocked) return false;
+      if (LEARNING_ZONE_CORE_MODULES.has(moduleKey)) return true;
 
-        if (LEARNING_ZONE_CORE_MODULES.has(moduleKey)) return true;
-        return Boolean(parsed?.premiumUnlocked?.[moduleKey]);
-      } catch {
-        return false;
-      }
+      const unlockedZones = Array.isArray(profile?.unlocked_zones)
+        ? profile.unlocked_zones
+        : [];
+
+      return unlockedZones.includes(moduleKey);
     },
-    [user?.id]
+    [profile?.unlocked_zones]
   );
 
   const handleSelectLearningModule = React.useCallback(

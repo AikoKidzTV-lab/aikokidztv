@@ -1,9 +1,11 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { applySmallItemEconomy } from '../constants/gemEconomy';
+import { useAuth } from '../context/AuthContext';
+import { unlockItemWithGems } from '../utils/profileEconomy';
 
 const PREMIUM_UNLOCK_COST = applySmallItemEconomy(3);
-const UNLOCKED_STORAGE_KEY = 'aiko_coloringbook_unlocked_pages_v2';
+const COLORING_PAGE_UNLOCK_PREFIX = 'coloring:';
 
 const PRESET_COLORS = [
   '#FF4136',
@@ -17,27 +19,22 @@ const PRESET_COLORS = [
   '#111111',
 ];
 
-const readUnlockedPages = () => {
-  if (typeof window === 'undefined') return [];
+const parseUnlockedColoringPageIds = (unlockedItems) => {
+  if (!Array.isArray(unlockedItems)) return [];
 
-  try {
-    const raw = window.localStorage.getItem(UNLOCKED_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed.filter((value) => typeof value === 'string' && value.trim().length > 0);
-  } catch {
-    return [];
-  }
+  return unlockedItems
+    .filter((value) => typeof value === 'string' && value.startsWith(COLORING_PAGE_UNLOCK_PREFIX))
+    .map((value) => value.slice(COLORING_PAGE_UNLOCK_PREFIX.length))
+    .filter(Boolean);
 };
 
 export default function ColoringBook({ onBack }) {
+  const { user, profile, fetchProfile } = useAuth();
   const canvasRef = useRef(null);
   const canvasContainerRef = useRef(null);
   const contextRef = useRef(null);
   const canvasSectionRef = useRef(null);
   const isDrawingRef = useRef(false);
-  const lastPointRef = useRef(null);
   const drawingSnapshotRef = useRef(null);
 
   const [pages, setPages] = useState([]);
@@ -46,11 +43,13 @@ export default function ColoringBook({ onBack }) {
 
   const [selectedPage, setSelectedPage] = useState(null);
   const [pendingUnlockPage, setPendingUnlockPage] = useState(null);
-  const [unlockedPremiumPages, setUnlockedPremiumPages] = useState(() => readUnlockedPages());
+  const [unlockingPageId, setUnlockingPageId] = useState('');
+  const [unlockedPremiumPages, setUnlockedPremiumPages] = useState([]);
   const [brushColor, setBrushColor] = useState(PRESET_COLORS[0]);
   const [customColor, setCustomColor] = useState('#FF4136');
   const [brushSize, setBrushSize] = useState(12);
   const [imageLoadError, setImageLoadError] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
 
   const unlockedSet = useMemo(() => new Set(unlockedPremiumPages), [unlockedPremiumPages]);
 
@@ -60,13 +59,22 @@ export default function ColoringBook({ onBack }) {
         ...page,
         label: `🎨 Page ${index + 1}`,
       })),
-    [pages],
+    [pages]
   );
 
+  const showStatus = (message) => {
+    setStatusMessage(message);
+    window.setTimeout(() => setStatusMessage(''), 2800);
+  };
+
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(UNLOCKED_STORAGE_KEY, JSON.stringify(unlockedPremiumPages));
-  }, [unlockedPremiumPages]);
+    if (!user?.id) {
+      setUnlockedPremiumPages([]);
+      return;
+    }
+
+    setUnlockedPremiumPages(parseUnlockedColoringPageIds(profile?.unlocked_items));
+  }, [user?.id, profile?.unlocked_items]);
 
   useEffect(() => {
     let isMounted = true;
@@ -84,7 +92,7 @@ export default function ColoringBook({ onBack }) {
         if (error) throw error;
 
         const normalized = (data ?? []).filter(
-          (row) => row && typeof row.id === 'string' && typeof row.image_url === 'string' && row.image_url,
+          (row) => row && row.id && typeof row.image_url === 'string' && row.image_url
         );
 
         if (!isMounted) return;
@@ -98,7 +106,7 @@ export default function ColoringBook({ onBack }) {
       }
     };
 
-    loadColoringPages();
+    void loadColoringPages();
 
     return () => {
       isMounted = false;
@@ -174,9 +182,8 @@ export default function ColoringBook({ onBack }) {
       window.removeEventListener('resize', resizeCanvas);
       contextRef.current = null;
       isDrawingRef.current = false;
-      lastPointRef.current = null;
     };
-  }, [selectedPage]);
+  }, [selectedPage, brushColor, brushSize]);
 
   useEffect(() => {
     const ctx = contextRef.current;
@@ -185,7 +192,7 @@ export default function ColoringBook({ onBack }) {
     ctx.lineWidth = brushSize;
   }, [brushColor, brushSize]);
 
-  const isPageUnlocked = (page) => !page.is_premium || unlockedSet.has(page.id);
+  const isPageUnlocked = (page) => !page.is_premium || unlockedSet.has(String(page.id));
 
   const getPoint = (nativeEvent) => {
     const canvas = canvasRef.current;
@@ -212,21 +219,57 @@ export default function ColoringBook({ onBack }) {
       openCanvasForPage(page);
       return;
     }
+
+    if (!user?.id) {
+      showStatus('Please log in to unlock premium coloring pages.');
+      return;
+    }
+
     setPendingUnlockPage(page);
   };
 
-  const confirmUnlock = () => {
-    if (!pendingUnlockPage) return;
+  const confirmUnlock = async () => {
+    if (!pendingUnlockPage || unlockingPageId) return;
+    if (!user?.id) {
+      showStatus('Please log in to unlock premium coloring pages.');
+      return;
+    }
 
-    setUnlockedPremiumPages((prev) => {
-      if (prev.includes(pendingUnlockPage.id)) return prev;
-      return [...prev, pendingUnlockPage.id];
-    });
+    const pageId = String(pendingUnlockPage.id);
+    const itemKey = `${COLORING_PAGE_UNLOCK_PREFIX}${pageId}`;
 
-    const unlockedPage = pendingUnlockPage;
-    setPendingUnlockPage(null);
-    alert(`✨ Mock unlock successful! ${PREMIUM_UNLOCK_COST} Gems would be charged here.`);
-    openCanvasForPage(unlockedPage);
+    setUnlockingPageId(pageId);
+
+    try {
+      const unlockResult = await unlockItemWithGems({
+        userId: user.id,
+        itemKey,
+        costGems: PREMIUM_UNLOCK_COST,
+      });
+
+      if (!unlockResult.ok) {
+        showStatus(unlockResult.message || 'Unable to unlock this page right now.');
+        return;
+      }
+
+      setUnlockedPremiumPages((prev) => (prev.includes(pageId) ? prev : [...prev, pageId]));
+      await fetchProfile?.(user.id);
+
+      showStatus(
+        unlockResult.alreadyUnlocked
+          ? 'This page is already unlocked.'
+          : `Page unlocked permanently for ${PREMIUM_UNLOCK_COST} Gems.`
+      );
+
+      const unlockedPage = pendingUnlockPage;
+      setPendingUnlockPage(null);
+      openCanvasForPage(unlockedPage);
+    } catch (error) {
+      console.error('[ColoringBook] Unlock failed:', error);
+      showStatus('Unlock failed. Please try again.');
+    } finally {
+      setUnlockingPageId('');
+    }
   };
 
   const startDrawing = ({ nativeEvent }) => {
@@ -241,7 +284,6 @@ export default function ColoringBook({ onBack }) {
     ctx.stroke();
 
     isDrawingRef.current = true;
-    lastPointRef.current = point;
   };
 
   const draw = ({ nativeEvent }) => {
@@ -253,14 +295,12 @@ export default function ColoringBook({ onBack }) {
     const point = getPoint(nativeEvent);
     ctx.lineTo(point.x, point.y);
     ctx.stroke();
-    lastPointRef.current = point;
   };
 
   const stopDrawing = () => {
     if (!isDrawingRef.current) return;
     contextRef.current?.closePath?.();
     isDrawingRef.current = false;
-    lastPointRef.current = null;
 
     try {
       drawingSnapshotRef.current = canvasRef.current?.toDataURL('image/png') || null;
@@ -302,12 +342,17 @@ export default function ColoringBook({ onBack }) {
               Free pages open instantly. Premium pages unlock for {PREMIUM_UNLOCK_COST} Gems.
             </p>
           </div>
-          <button
-            onClick={handleBack}
-            className="rounded-full border border-sky-200 bg-white px-5 py-2.5 text-sm font-bold text-sky-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-50"
-          >
-            Back
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900">
+              Gems: {Number(profile?.gems || 0)}
+            </div>
+            <button
+              onClick={handleBack}
+              className="rounded-full border border-sky-200 bg-white px-5 py-2.5 text-sm font-bold text-sky-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-50"
+            >
+              Back
+            </button>
+          </div>
         </div>
 
         <section className="rounded-[1.8rem] border border-white/80 bg-white/85 p-4 shadow-[0_18px_50px_rgba(14,165,233,0.10)] backdrop-blur sm:p-5">
@@ -347,12 +392,13 @@ export default function ColoringBook({ onBack }) {
           {!pagesLoading && !pagesError && displayPages.length > 0 && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {displayPages.map((page) => {
+                const pageId = String(page.id);
                 const unlocked = isPageUnlocked(page);
                 const premiumLocked = Boolean(page.is_premium) && !unlocked;
 
                 return (
                   <button
-                    key={page.id}
+                    key={pageId}
                     type="button"
                     onClick={() => handleThumbnailClick(page)}
                     className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
@@ -526,7 +572,7 @@ export default function ColoringBook({ onBack }) {
                   <div className="mb-3 text-5xl">🎨📚✨</div>
                   <p className="text-lg font-black text-slate-900">Pick a coloring page above to start drawing</p>
                   <p className="mt-2 text-sm font-medium text-slate-600">
-                    Free pages open instantly. Premium pages show a {PREMIUM_UNLOCK_COST} Gems unlock popup first.
+                    Free pages open instantly. Premium pages require a one-time unlock.
                   </p>
                 </div>
               </div>
@@ -544,26 +590,34 @@ export default function ColoringBook({ onBack }) {
               Unlock this magical page for {PREMIUM_UNLOCK_COST} Gems?
             </p>
             <p className="mt-1 text-center text-xs font-medium text-slate-500">
-              {pendingUnlockPage.label} • Mock unlock flow (database integration later)
+              {pendingUnlockPage.label} • One-time unlock saved to your profile.
             </p>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setPendingUnlockPage(null)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                disabled={Boolean(unlockingPageId)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmUnlock}
-                className="rounded-xl border border-amber-300 bg-gradient-to-r from-amber-200 to-yellow-200 px-4 py-2.5 text-sm font-black text-amber-950 shadow-sm hover:brightness-95"
+                disabled={Boolean(unlockingPageId)}
+                className="rounded-xl border border-amber-300 bg-gradient-to-r from-amber-200 to-yellow-200 px-4 py-2.5 text-sm font-black text-amber-950 shadow-sm hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Unlock
+                {unlockingPageId ? 'Unlocking...' : 'Unlock'}
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {statusMessage && (
+        <div className="fixed bottom-6 right-4 z-50 rounded-2xl border border-indigo-200 bg-indigo-100 px-5 py-3 text-sm font-bold text-indigo-900 shadow-lg">
+          {statusMessage}
         </div>
       )}
     </div>

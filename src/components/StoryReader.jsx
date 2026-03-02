@@ -1,21 +1,19 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { addUserGems } from '../utils/gemWallet';
+import { claimRewardOnce } from '../utils/profileEconomy';
 
 const FOUNDER_STORY_REWARD_GEMS = 10;
-const STORY_REWARD_STORAGE_PREFIX = 'aiko_founder_story_reward_claimed_';
+const FOUNDER_STORY_REWARD_KEY = 'founder_story_reward_10';
 
 export default function StoryReader() {
-  const { user, fetchProfile } = useAuth();
+  const { user, profile, fetchProfile } = useAuth();
   const [isClaiming, setIsClaiming] = React.useState(false);
-  const [hasClaimedReward, setHasClaimedReward] = React.useState(false);
   const [notice, setNotice] = React.useState(null);
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const claimKey = `${STORY_REWARD_STORAGE_PREFIX}${user?.id || 'guest'}`;
-    setHasClaimedReward(window.localStorage.getItem(claimKey) === 'true');
-  }, [user?.id]);
+  const claimedRewards = React.useMemo(
+    () => (Array.isArray(profile?.claimed_rewards) ? profile.claimed_rewards : []),
+    [profile?.claimed_rewards]
+  );
+  const hasClaimedReward = claimedRewards.includes(FOUNDER_STORY_REWARD_KEY);
 
   const showNotice = React.useCallback((type, message) => {
     setNotice({ type, message });
@@ -33,9 +31,10 @@ export default function StoryReader() {
     setIsClaiming(true);
 
     try {
-      const result = await addUserGems({
+      const result = await claimRewardOnce({
         userId: user.id,
-        amount: FOUNDER_STORY_REWARD_GEMS,
+        rewardKey: FOUNDER_STORY_REWARD_KEY,
+        gemReward: FOUNDER_STORY_REWARD_GEMS,
       });
 
       if (!result.ok) {
@@ -44,14 +43,12 @@ export default function StoryReader() {
       }
 
       await fetchProfile?.(user.id);
-      setHasClaimedReward(true);
-
-      if (typeof window !== 'undefined') {
-        const claimKey = `${STORY_REWARD_STORAGE_PREFIX}${user.id}`;
-        window.localStorage.setItem(claimKey, 'true');
-      }
-
-      showNotice('success', `Reward claimed! +${FOUNDER_STORY_REWARD_GEMS} Gems added.`);
+      showNotice(
+        'success',
+        result.alreadyClaimed
+          ? 'Reward already claimed.'
+          : `Reward claimed! +${FOUNDER_STORY_REWARD_GEMS} Gems added.`
+      );
     } catch (error) {
       console.error('[StoryReader] Reward claim failed:', error);
       showNotice('error', 'Something went wrong while claiming your reward.');

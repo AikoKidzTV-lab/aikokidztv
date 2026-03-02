@@ -1,12 +1,8 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useKidsMode } from '../context/KidsModeContext';
-import {
-  LEARNING_ZONE_ENTRY_FEE_GEMS,
-  LEARNING_ZONE_PREMIUM_UNLOCKS,
-  LEARNING_ZONE_UNLOCK_STORAGE_PREFIX,
-} from '../constants/gemEconomy';
-import { spendUserGems } from '../utils/gemWallet';
+import { LEARNING_ZONE_PREMIUM_UNLOCKS } from '../constants/gemEconomy';
+import { unlockZoneWithGems } from '../utils/profileEconomy';
 
 const learningBoxes = [
   {
@@ -49,24 +45,15 @@ const learningBoxes = [
   },
 ];
 
-const defaultUnlockState = {
-  zoneUnlocked: false,
-  premiumUnlocked: {
-    colors: false,
-    animals: false,
-  },
-};
-
 export default function LearningZone({ onSelect }) {
   const { user, profile, fetchProfile } = useAuth();
   const { isKidsModeOn } = useKidsMode();
-  const [unlockState, setUnlockState] = React.useState(defaultUnlockState);
   const [statusMessage, setStatusMessage] = React.useState('');
   const [processingAction, setProcessingAction] = React.useState('');
 
-  const unlockStorageKey = React.useMemo(
-    () => `${LEARNING_ZONE_UNLOCK_STORAGE_PREFIX}${user?.id || 'guest'}`,
-    [user?.id]
+  const unlockedZones = React.useMemo(
+    () => (Array.isArray(profile?.unlocked_zones) ? profile.unlocked_zones : []),
+    [profile?.unlocked_zones]
   );
 
   const showStatus = React.useCallback((message) => {
@@ -74,37 +61,12 @@ export default function LearningZone({ onSelect }) {
     window.setTimeout(() => setStatusMessage(''), 2600);
   }, []);
 
-  React.useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(unlockStorageKey);
-      if (!raw) {
-        setUnlockState(defaultUnlockState);
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      setUnlockState({
-        zoneUnlocked: Boolean(parsed?.zoneUnlocked),
-        premiumUnlocked: {
-          colors: Boolean(parsed?.premiumUnlocked?.colors),
-          animals: Boolean(parsed?.premiumUnlocked?.animals),
-        },
-      });
-    } catch {
-      setUnlockState(defaultUnlockState);
-    }
-  }, [unlockStorageKey]);
-
-  React.useEffect(() => {
-    window.localStorage.setItem(unlockStorageKey, JSON.stringify(unlockState));
-  }, [unlockState, unlockStorageKey]);
-
   const canAccessCard = React.useCallback(
     (box) => {
-      if (!unlockState.zoneUnlocked) return false;
       if (box.tier === 'core') return true;
-      return Boolean(unlockState.premiumUnlocked[box.id]);
+      return unlockedZones.includes(box.id);
     },
-    [unlockState]
+    [unlockedZones]
   );
 
   const visibleCards = React.useMemo(() => {
@@ -131,61 +93,27 @@ export default function LearningZone({ onSelect }) {
     }
   };
 
-  const requireAuth = () => {
-    if (user?.id) return true;
-    showStatus('Please log in to unlock paid zones.');
-    return false;
-  };
-
-  const handleUnlockZone = async () => {
-    if (unlockState.zoneUnlocked || processingAction) return;
-    if (!requireAuth()) return;
-
-    setProcessingAction('zone');
-    try {
-      const spendResult = await spendUserGems({
-        userId: user.id,
-        amount: LEARNING_ZONE_ENTRY_FEE_GEMS,
-      });
-      if (!spendResult.ok) {
-        showStatus(spendResult.message || 'Unable to unlock zone.');
-        return;
-      }
-
-      setUnlockState((prev) => ({ ...prev, zoneUnlocked: true }));
-      await fetchProfile?.(user.id);
-      showStatus(`Zone unlocked for ${LEARNING_ZONE_ENTRY_FEE_GEMS} 💎`);
-    } catch (error) {
-      console.error('[LearningZone] Zone unlock failed:', error);
-      showStatus('Unlock failed. Please try again.');
-    } finally {
-      setProcessingAction('');
-    }
-  };
-
   const handleUnlockPremiumCard = async (box) => {
-    if (processingAction || !unlockState.zoneUnlocked) return;
-    if (unlockState.premiumUnlocked[box.id]) return;
-    if (!requireAuth()) return;
+    if (!box?.id || box.tier !== 'premium' || processingAction) return;
+    if (unlockedZones.includes(box.id)) return;
+    if (!user?.id) {
+      showStatus('Please log in to unlock paid zones.');
+      return;
+    }
 
     setProcessingAction(box.id);
     try {
-      const spendResult = await spendUserGems({
+      const unlockResult = await unlockZoneWithGems({
         userId: user.id,
-        amount: box.unlockCost,
+        zoneId: box.id,
+        costGems: box.unlockCost,
       });
-      if (!spendResult.ok) {
-        showStatus(spendResult.message || 'Unable to unlock premium card.');
+
+      if (!unlockResult.ok) {
+        showStatus(unlockResult.message || 'Unable to unlock premium card.');
         return;
       }
 
-      setUnlockState((prev) => ({
-        ...prev,
-        premiumUnlocked: {
-          ...prev.premiumUnlocked,
-          [box.id]: true,
-        },
-      }));
       await fetchProfile?.(user.id);
       showStatus(`${box.title} unlocked permanently for ${box.unlockCost} 💎`);
     } catch (error) {
@@ -203,52 +131,32 @@ export default function LearningZone({ onSelect }) {
           Welcome to the Learning Zone! 🚀
         </h1>
         <p className="text-gray-500 font-medium text-lg max-w-3xl mx-auto">
-          Unlock the zone once, then open premium cards permanently with Gems.
-          <span className="font-bold text-indigo-700"> Kids Mode hides every locked item.</span>
+          A to Z Letters and 1 to 100 Numbers are always free.
+          <span className="font-bold text-indigo-700"> Premium modules unlock once and stay unlocked forever.</span>
         </p>
       </div>
 
       <div className="mb-8 rounded-3xl border border-indigo-200 bg-indigo-50 p-5 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-700">Zone Entry Gate</p>
-            <p className="mt-1 text-base font-bold text-indigo-900">
-              One-time unlock fee: {LEARNING_ZONE_ENTRY_FEE_GEMS} 💎
-            </p>
-            <p className="mt-1 text-sm text-indigo-800">
-              Balance: <span className="font-black">{Number(profile?.gems || 0)} 💎</span>
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled={unlockState.zoneUnlocked || processingAction === 'zone'}
-            onClick={handleUnlockZone}
-            className={`rounded-2xl px-5 py-3 text-sm font-black transition ${
-              unlockState.zoneUnlocked
-                ? 'cursor-default bg-emerald-100 text-emerald-800'
-                : 'bg-indigo-700 text-white hover:bg-indigo-800'
-            }`}
-          >
-            {unlockState.zoneUnlocked
-              ? '✅ Zone Unlocked'
-              : processingAction === 'zone'
-                ? 'Unlocking...'
-                : `Unlock Zone for ${LEARNING_ZONE_ENTRY_FEE_GEMS} 💎`}
-          </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-base font-bold text-indigo-900">
+            Current Gems: <span className="font-black">{Number(profile?.gems || 0)} 💎</span>
+          </p>
+          <p className="text-sm font-semibold text-indigo-700">
+            Premium unlocks: Colors & Shapes ({LEARNING_ZONE_PREMIUM_UNLOCKS.colors} 💎), Animal Safari ({LEARNING_ZONE_PREMIUM_UNLOCKS.animals} 💎)
+          </p>
         </div>
       </div>
 
       {isKidsModeOn && visibleCards.length === 0 && (
         <div className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-bold text-amber-900">
-          Kids Mode is ON. Locked items are hidden until a parent unlocks them.
+          Kids Mode is ON. Locked premium items are hidden until a parent unlocks them.
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {visibleCards.map((box) => {
           const isAccessible = canAccessCard(box);
-          const needsZoneEntry = !unlockState.zoneUnlocked;
-          const premiumLocked = unlockState.zoneUnlocked && box.tier === 'premium' && !unlockState.premiumUnlocked[box.id];
+          const premiumLocked = box.tier === 'premium' && !isAccessible;
 
           return (
             <div
@@ -257,7 +165,7 @@ export default function LearningZone({ onSelect }) {
                 isAccessible ? 'hover:-translate-y-2 hover:shadow-2xl' : 'opacity-95'
               } ${box.bg}`}
             >
-              {!isAccessible && (
+              {premiumLocked && (
                 <div className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-black text-slate-700">
                   🔒 Locked
                 </div>
@@ -276,27 +184,18 @@ export default function LearningZone({ onSelect }) {
                   >
                     Play Now
                   </button>
-                ) : needsZoneEntry ? (
-                  <button
-                    type="button"
-                    onClick={handleUnlockZone}
-                    disabled={processingAction === 'zone'}
-                    className="w-full rounded-2xl bg-indigo-700 px-4 py-3 text-sm font-black text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {processingAction === 'zone'
-                      ? 'Unlocking...'
-                      : `Unlock for ${LEARNING_ZONE_ENTRY_FEE_GEMS} 💎`}
-                  </button>
-                ) : premiumLocked ? (
+                ) : (
                   <button
                     type="button"
                     onClick={() => handleUnlockPremiumCard(box)}
                     disabled={processingAction === box.id}
                     className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-black text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {processingAction === box.id ? 'Unlocking...' : `Unlock for ${box.unlockCost} 💎`}
+                    {processingAction === box.id
+                      ? 'Unlocking...'
+                      : `Unlock for ${box.unlockCost} 💎`}
                   </button>
-                ) : null}
+                )}
               </div>
             </div>
           );
@@ -311,3 +210,4 @@ export default function LearningZone({ onSelect }) {
     </section>
   );
 }
+

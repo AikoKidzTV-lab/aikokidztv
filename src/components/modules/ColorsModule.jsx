@@ -5,7 +5,7 @@ import COLOR_PALETTE from './colorPalette';
 import MixAndMatchLab from './MixAndMatchLab';
 import ShapesSection from './ShapesSection';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../supabaseClient';
+import { unlockItemWithGems } from '../../utils/profileEconomy';
 
 const COLOR_UNLOCK_PREFIX = 'color:';
 
@@ -43,58 +43,13 @@ const ColorsModule = ({ onBack, onHome }) => {
   const gemsBalance = Number(profile?.gems || 0);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadUnlockedColors = async () => {
-      if (!user?.id) {
-        if (isMounted) {
-          setUnlockedColorIds([]);
-        }
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('unlocked_items')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        if (!isMounted) return;
-        setUnlockedColorIds(parseUnlockedColorIds(data?.unlocked_items));
-      } catch (loadError) {
-        console.error('[ColorsModule] Failed to load unlocked colors:', loadError);
-        if (!isMounted) return;
-        setUnlockedColorIds(parseUnlockedColorIds(profile?.unlocked_items));
-      }
-    };
-
-    void loadUnlockedColors();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (!Array.isArray(profile?.unlocked_items)) return;
-
-    const fromProfile = parseUnlockedColorIds(profile?.unlocked_items);
-    if (!fromProfile.length && !unlockedColorIds.length) return;
-
-    const next = new Set(fromProfile);
-    const current = new Set(unlockedColorIds);
-    const hasChanged =
-      next.size !== current.size || [...next].some((colorId) => !current.has(colorId));
-
-    if (hasChanged) {
-      setUnlockedColorIds([...next]);
+    if (!user?.id) {
+      setUnlockedColorIds([]);
+      return;
     }
-  }, [profile?.unlocked_items, unlockedColorIds]);
+
+    setUnlockedColorIds(parseUnlockedColorIds(profile?.unlocked_items));
+  }, [user?.id, profile?.unlocked_items]);
 
   const speak = (text) => {
     if (!speechReady) return;
@@ -127,51 +82,21 @@ const ColorsModule = ({ onBack, onHome }) => {
     setUnlockingColorId(color.id);
 
     try {
-      const { data: latestProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('gems, unlocked_items')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      const currentGems = Number(latestProfile?.gems || 0);
-      const unlockedItems = Array.isArray(latestProfile?.unlocked_items)
-        ? latestProfile.unlocked_items.filter((value) => typeof value === 'string')
-        : [];
       const unlockKey = `${COLOR_UNLOCK_PREFIX}${color.id}`;
+      const unlockResult = await unlockItemWithGems({
+        userId: user.id,
+        itemKey: unlockKey,
+        costGems: color.unlockCost,
+      });
 
-      if (unlockedItems.includes(unlockKey)) {
-        setUnlockedColorIds((prev) => (prev.includes(color.id) ? prev : [...prev, color.id]));
-        setSelectedColor(color);
-        return;
-      }
-
-      if (currentGems < color.unlockCost) {
+      if (!unlockResult.ok) {
         Swal.fire({
-          title: 'Not enough Gems',
-          text: `You need ${color.unlockCost} Gems but only have ${currentGems}.`,
-          icon: 'warning',
-          confirmButtonColor: '#f59e0b',
+          title: unlockResult.code === 'insufficient_gems' ? 'Not enough Gems' : 'Unlock failed',
+          text: unlockResult.message || 'Could not unlock this color right now.',
+          icon: unlockResult.code === 'insufficient_gems' ? 'warning' : 'error',
+          confirmButtonColor: unlockResult.code === 'insufficient_gems' ? '#f59e0b' : '#ef4444',
         });
         return;
-      }
-
-      const nextUnlockedItems = [...unlockedItems, unlockKey];
-      const nextGems = currentGems - color.unlockCost;
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          gems: nextGems,
-          unlocked_items: nextUnlockedItems,
-        })
-        .eq('id', user.id);
-
-      if (updateError) {
-        throw updateError;
       }
 
       setUnlockedColorIds((prev) => (prev.includes(color.id) ? prev : [...prev, color.id]));
@@ -182,8 +107,10 @@ const ColorsModule = ({ onBack, onHome }) => {
       await fetchProfile?.(user.id);
 
       Swal.fire({
-        title: 'Unlocked!',
-        text: `${color.name} unlocked permanently for ${color.unlockCost} Gems.`,
+        title: unlockResult.alreadyUnlocked ? 'Already unlocked' : 'Unlocked!',
+        text: unlockResult.alreadyUnlocked
+          ? `${color.name} is already unlocked.`
+          : `${color.name} unlocked permanently for ${color.unlockCost} Gems.`,
         icon: 'success',
         confirmButtonColor: '#10b981',
       });
