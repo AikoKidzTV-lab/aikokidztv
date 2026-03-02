@@ -219,7 +219,7 @@ export default function LandingPageHabitat({
   const handleClaimFreeGems = () => {
     if (freeGemsClaimed) return;
     setFreeGemsClaimed(true);
-    setWatchEarnMessage('Success! 50 FREE GEMS were added to your balance (demo simulation).');
+    setWatchEarnMessage('Success! 50 FREE GEMS were added to your balance.');
   };
 
   const handleTaskQuestReward = () => {
