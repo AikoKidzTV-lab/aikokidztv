@@ -1,9 +1,21 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import confetti from 'canvas-confetti';
 import Swal from 'sweetalert2';
 import COLOR_PALETTE from './colorPalette';
 import MixAndMatchLab from './MixAndMatchLab';
 import ShapesSection from './ShapesSection';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../supabaseClient';
+
+const COLOR_UNLOCK_PREFIX = 'color:';
+
+const parseUnlockedColorIds = (unlockedItems) => {
+  if (!Array.isArray(unlockedItems)) return [];
+  return unlockedItems
+    .filter((value) => typeof value === 'string' && value.startsWith(COLOR_UNLOCK_PREFIX))
+    .map((value) => value.slice(COLOR_UNLOCK_PREFIX.length))
+    .filter(Boolean);
+};
 
 const getContrast = (hex) => {
   const clean = hex.replace('#', '');
@@ -15,15 +27,74 @@ const getContrast = (hex) => {
 };
 
 const ColorsModule = ({ onBack, onHome }) => {
+  const { user, profile, fetchProfile } = useAuth();
   const [selectedColor, setSelectedColor] = useState(null);
   const [fills, setFills] = useState({});
   const [activeShape, setActiveShape] = useState(null);
   const [isColorBlindMode, setIsColorBlindMode] = useState(false);
+  const [unlockedColorIds, setUnlockedColorIds] = useState([]);
+  const [unlockingColorId, setUnlockingColorId] = useState('');
 
   const speechReady = useMemo(
     () => typeof window !== 'undefined' && 'speechSynthesis' in window,
     []
   );
+  const unlockedColorSet = useMemo(() => new Set(unlockedColorIds), [unlockedColorIds]);
+  const gemsBalance = Number(profile?.gems || 0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadUnlockedColors = async () => {
+      if (!user?.id) {
+        if (isMounted) {
+          setUnlockedColorIds([]);
+        }
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('unlocked_items')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        if (!isMounted) return;
+        setUnlockedColorIds(parseUnlockedColorIds(data?.unlocked_items));
+      } catch (loadError) {
+        console.error('[ColorsModule] Failed to load unlocked colors:', loadError);
+        if (!isMounted) return;
+        setUnlockedColorIds(parseUnlockedColorIds(profile?.unlocked_items));
+      }
+    };
+
+    void loadUnlockedColors();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!Array.isArray(profile?.unlocked_items)) return;
+
+    const fromProfile = parseUnlockedColorIds(profile?.unlocked_items);
+    if (!fromProfile.length && !unlockedColorIds.length) return;
+
+    const next = new Set(fromProfile);
+    const current = new Set(unlockedColorIds);
+    const hasChanged =
+      next.size !== current.size || [...next].some((colorId) => !current.has(colorId));
+
+    if (hasChanged) {
+      setUnlockedColorIds([...next]);
+    }
+  }, [profile?.unlocked_items, unlockedColorIds]);
 
   const speak = (text) => {
     if (!speechReady) return;
@@ -34,8 +105,103 @@ const ColorsModule = ({ onBack, onHome }) => {
     window.speechSynthesis.speak(utter);
   };
 
+  const isColorLocked = (color) => color.unlockCost > 0 && !unlockedColorSet.has(color.id);
+
+  const handleUnlockColor = async (color) => {
+    if (!color || color.unlockCost <= 0 || unlockingColorId) return;
+    if (!isColorLocked(color)) {
+      setSelectedColor(color);
+      return;
+    }
+
+    if (!user?.id) {
+      Swal.fire({
+        title: 'Login required',
+        text: 'Please log in first to unlock premium colors.',
+        icon: 'info',
+        confirmButtonColor: '#4f46e5',
+      });
+      return;
+    }
+
+    setUnlockingColorId(color.id);
+
+    try {
+      const { data: latestProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('gems, unlocked_items')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const currentGems = Number(latestProfile?.gems || 0);
+      const unlockedItems = Array.isArray(latestProfile?.unlocked_items)
+        ? latestProfile.unlocked_items.filter((value) => typeof value === 'string')
+        : [];
+      const unlockKey = `${COLOR_UNLOCK_PREFIX}${color.id}`;
+
+      if (unlockedItems.includes(unlockKey)) {
+        setUnlockedColorIds((prev) => (prev.includes(color.id) ? prev : [...prev, color.id]));
+        setSelectedColor(color);
+        return;
+      }
+
+      if (currentGems < color.unlockCost) {
+        Swal.fire({
+          title: 'Not enough Gems',
+          text: `You need ${color.unlockCost} Gems but only have ${currentGems}.`,
+          icon: 'warning',
+          confirmButtonColor: '#f59e0b',
+        });
+        return;
+      }
+
+      const nextUnlockedItems = [...unlockedItems, unlockKey];
+      const nextGems = currentGems - color.unlockCost;
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          gems: nextGems,
+          unlocked_items: nextUnlockedItems,
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setUnlockedColorIds((prev) => (prev.includes(color.id) ? prev : [...prev, color.id]));
+      setSelectedColor(color);
+      speak(color.name);
+      confetti({ particleCount: 90, spread: 55, origin: { y: 0.65 } });
+
+      await fetchProfile?.(user.id);
+
+      Swal.fire({
+        title: 'Unlocked!',
+        text: `${color.name} unlocked permanently for ${color.unlockCost} Gems.`,
+        icon: 'success',
+        confirmButtonColor: '#10b981',
+      });
+    } catch (unlockError) {
+      console.error('[ColorsModule] Failed to unlock color:', unlockError);
+      Swal.fire({
+        title: 'Unlock failed',
+        text: unlockError?.message || 'Could not unlock this color right now.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444',
+      });
+    } finally {
+      setUnlockingColorId('');
+    }
+  };
+
   const handlePaletteSelect = (color) => {
-    if (color.unlockCost > 0) return;
+    if (isColorLocked(color)) return;
     setSelectedColor(color);
     speak(color.name);
   };
@@ -79,26 +245,30 @@ const ColorsModule = ({ onBack, onHome }) => {
             onClick={onBack}
             className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow hover:shadow-md transition"
           >
-            ⬅️ Back to Learning Zone
+            â¬…ï¸ Back to Learning Zone
           </button>
           <button
             onClick={onHome}
             className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-800 shadow hover:shadow-md hover:bg-sky-200 transition"
           >
-            🏠 Back to Home
+            ðŸ  Back to Home
           </button>
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-900 shadow">
+            <span>Gems:</span>
+            <span>{gemsBalance}</span>
+          </div>
           <div className="ml-auto flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-slate-700 shadow">
-            <span className="text-lg">🔊</span>
+            <span className="text-lg">ðŸ”Š</span>
             {speechReady ? 'Tap a palette then paint!' : 'Speech not supported'}
           </div>
         </div>
 
         <div className="flex flex-col gap-2 mb-8">
           <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">
-            AikoKidzTV • Learning Zone
+            AikoKidzTV â€¢ Learning Zone
           </p>
           <h1 className="text-4xl md:text-5xl font-black drop-shadow-sm flex items-center gap-3">
-            🎨 Color Fill Game & Shapes
+            ðŸŽ¨ Color Fill Game & Shapes
           </h1>
           <p className="text-base md:text-lg text-slate-700/90 max-w-2xl">
             Pick a paint color, tap a canvas to fill it, celebrate when you match, and keep exploring friendly shapes below.
@@ -108,7 +278,7 @@ const ColorsModule = ({ onBack, onHome }) => {
         {/* Empathy & Inclusion Zone */}
         <div className="bg-blue-50 rounded-xl p-6 mb-8 border-2 border-blue-800 shadow-md">
           <h3 className="text-2xl font-extrabold text-blue-900 mb-4 border-b-2 border-blue-200 pb-2">
-            🌍 Empathy & Inclusion Zone
+            ðŸŒ Empathy & Inclusion Zone
           </h3>
           <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border-2 border-gray-300">
@@ -133,10 +303,10 @@ const ColorsModule = ({ onBack, onHome }) => {
             </div>
             <div className="bg-yellow-100 p-4 rounded-lg border-l-8 border-yellow-500">
               <h4 className="font-bold text-lg text-black flex items-center gap-2">
-                👁️ Empathy Lens (For Everyone Else)
+                ðŸ‘ï¸ Empathy Lens (For Everyone Else)
               </h4>
               <p className="text-sm text-gray-800 font-medium mt-1">
-                Toggle the switch above to see how colorblind people see their world. <strong>Please understand their view—don't make any meme on them.</strong> Let's build empathy and understand that everyone's world is beautiful in its own way.
+                Toggle the switch above to see how colorblind people see their world. <strong>Please understand their viewâ€”don't make any meme on them.</strong> Let's build empathy and understand that everyone's world is beautiful in its own way.
               </p>
             </div>
           </div>
@@ -151,7 +321,7 @@ const ColorsModule = ({ onBack, onHome }) => {
           <div className="flex flex-wrap gap-3 max-h-48 overflow-y-auto p-2">
             {COLOR_PALETTE.map((color) => {
               const isActive = selectedColor?.id === color.id;
-              const isLocked = color.unlockCost > 0;
+              const isLocked = isColorLocked(color);
               const displayHex = isColorBlindMode ? color.cbHex : color.hex;
               return (
                 <button
@@ -169,7 +339,7 @@ const ColorsModule = ({ onBack, onHome }) => {
                 >
                   {isLocked && (
                     <span className="absolute inset-0 flex items-center justify-center text-white drop-shadow-md text-xs">
-                      🔒
+                      ðŸ”’
                     </span>
                   )}
                 </button>
@@ -186,7 +356,7 @@ const ColorsModule = ({ onBack, onHome }) => {
           </div>
           <div className="space-y-4 mt-2">
             {COLOR_PALETTE.map((color) => {
-              const isLocked = color.unlockCost > 0;
+              const isLocked = isColorLocked(color);
               const painted = fills[color.id] || 'transparent';
               const contrast = painted === 'transparent' ? 'text-slate-500' : getContrast(painted);
               const borderClass = color.border ? 'border-2 border-gray-200' : 'border border-gray-100';
@@ -202,7 +372,7 @@ const ColorsModule = ({ onBack, onHome }) => {
                       {color.name}
                       {isLocked && (
                         <span className="text-xs bg-amber-100 text-amber-800 border border-amber-300 px-2 py-1 rounded-full font-bold">
-                          🔒 {color.unlockCost} Gems required
+                          ðŸ”’ {color.unlockCost} Gems required
                         </span>
                       )}
                     </h3>
@@ -233,10 +403,20 @@ const ColorsModule = ({ onBack, onHome }) => {
 
                   {isLocked && (
                     <button
-                      className="px-6 py-2 rounded-full font-bold border-2 bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed w-full sm:w-auto"
-                      disabled
+                      type="button"
+                      onClick={() => handleUnlockColor(color)}
+                      disabled={Boolean(unlockingColorId)}
+                      className={`w-full sm:w-auto px-5 py-2 rounded-full font-bold border-2 transition ${
+                        unlockingColorId === color.id
+                          ? 'cursor-not-allowed border-amber-300 bg-amber-100 text-amber-700'
+                          : unlockingColorId
+                            ? 'cursor-not-allowed border-gray-300 bg-gray-100 text-gray-400'
+                            : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                      }`}
                     >
-                      Locked
+                      {unlockingColorId === color.id
+                        ? 'Unlocking...'
+                        : `Unlock for ${color.unlockCost} Gems`}
                     </button>
                   )}
                 </div>
@@ -257,3 +437,4 @@ const ColorsModule = ({ onBack, onHome }) => {
 };
 
 export default ColorsModule;
+
