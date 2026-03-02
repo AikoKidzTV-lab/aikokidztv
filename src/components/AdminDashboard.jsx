@@ -129,6 +129,37 @@ const extractYouTubeId = (input = '') => {
   return '';
 };
 
+const extractVideoStoragePath = (videoUrl = '') => {
+  const raw = typeof videoUrl === 'string' ? videoUrl.trim() : '';
+  if (!raw) return '';
+
+  try {
+    const parsed = new URL(raw);
+    const pathname = decodeURIComponent(parsed.pathname || '');
+    const markers = [
+      `/storage/v1/object/public/${VIDEO_STORAGE_BUCKET}/`,
+      `/storage/v1/object/sign/${VIDEO_STORAGE_BUCKET}/`,
+      `/storage/v1/object/${VIDEO_STORAGE_BUCKET}/`,
+    ];
+
+    for (const marker of markers) {
+      const markerIndex = pathname.indexOf(marker);
+      if (markerIndex >= 0) {
+        return pathname.slice(markerIndex + marker.length).replace(/^\/+/, '');
+      }
+    }
+
+    return '';
+  } catch {
+    if (/^https?:\/\//i.test(raw)) return '';
+    const normalized = raw.replace(/^\/+/, '');
+    if (normalized.startsWith(`${VIDEO_STORAGE_BUCKET}/`)) {
+      return normalized.slice(VIDEO_STORAGE_BUCKET.length + 1);
+    }
+    return normalized;
+  }
+};
+
 const AdminDashboard = ({ onBackToSite }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Dashboard');
@@ -139,6 +170,8 @@ const AdminDashboard = ({ onBackToSite }) => {
   const [videoFormError, setVideoFormError] = useState('');
   const [videoFormSuccess, setVideoFormSuccess] = useState('');
   const [videoListError, setVideoListError] = useState('');
+  const [editingVideo, setEditingVideo] = useState(null);
+  const [deletingVideoId, setDeletingVideoId] = useState('');
   const videoFileInputRef = useRef(null);
   const [videoFile, setVideoFile] = useState(null);
   const [isVideoDragActive, setIsVideoDragActive] = useState(false);
@@ -152,6 +185,7 @@ const AdminDashboard = ({ onBackToSite }) => {
   const [isDragActive, setIsDragActive] = useState(false);
 
   const isAuthorized = user?.email === ADMIN_EMAIL;
+  const isEditingVideo = Boolean(editingVideo?.id);
 
   const handleBackToSite = () => {
     if (onBackToSite) {
@@ -263,9 +297,90 @@ const AdminDashboard = ({ onBackToSite }) => {
   };
 
   const handleVideoSourceChange = (source) => {
+    if (isEditingVideo) return;
     handleFormChange('source', source);
     if (source === 'youtube') {
       clearSelectedVideoFile();
+    }
+  };
+
+  const startEditingVideo = (video) => {
+    if (!video?.id) return;
+
+    resetVideoMessages();
+    clearSelectedVideoFile();
+
+    const isYoutubeVideo = Boolean(video.youtube_id);
+    setEditingVideo(video);
+    setForm({
+      title: video.title || '',
+      youtubeUrl: isYoutubeVideo ? `https://www.youtube.com/watch?v=${video.youtube_id}` : '',
+      category: video.category || VIDEO_CATEGORIES[0],
+      isPromoHomepage: Boolean(video.is_promo_homepage),
+      source: isYoutubeVideo ? 'youtube' : 'upload',
+      isPremium: Boolean(video.is_premium),
+    });
+  };
+
+  const cancelEditingVideo = () => {
+    setEditingVideo(null);
+    setForm(emptyVideoForm);
+    clearSelectedVideoFile();
+    resetVideoMessages();
+  };
+
+  const handleDeleteVideo = async (video) => {
+    if (!video?.id || deletingVideoId) return;
+
+    const confirmed = window.confirm(
+      `Delete "${video.title || 'this video'}"? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    resetVideoMessages();
+    setVideoListError('');
+    setDeletingVideoId(video.id);
+
+    try {
+      const isLocalUpload = !video.youtube_id && Boolean(video.video_url);
+
+      if (isLocalUpload) {
+        const storagePath = extractVideoStoragePath(video.video_url);
+        if (!storagePath) {
+          throw new Error('Could not determine the storage file path for this uploaded video.');
+        }
+
+        const { error: storageDeleteError } = await supabase.storage
+          .from(VIDEO_STORAGE_BUCKET)
+          .remove([storagePath]);
+
+        const storageDeleteMessage = storageDeleteError?.message || '';
+        const isMissingFile =
+          /not found|does not exist|no such file|404/i.test(storageDeleteMessage);
+
+        if (storageDeleteError && !isMissingFile) {
+          throw new Error(`Storage delete failed: ${storageDeleteMessage}`);
+        }
+      }
+
+      const { error: deleteError } = await supabase
+        .from('videos')
+        .delete()
+        .eq('id', video.id);
+
+      if (deleteError) {
+        throw new Error(deleteError.message);
+      }
+
+      setVideos((prev) => prev.filter((row) => row.id !== video.id));
+      if (editingVideo?.id === video.id) {
+        cancelEditingVideo();
+      }
+      setVideoFormSuccess('Video deleted successfully.');
+    } catch (err) {
+      setVideoFormError(err?.message || 'Failed to delete video.');
+    } finally {
+      setDeletingVideoId('');
     }
   };
 
@@ -275,11 +390,43 @@ const AdminDashboard = ({ onBackToSite }) => {
 
     const title = form.title.trim();
     const youtubeUrl = form.youtubeUrl.trim();
-    const isUploadMode = form.source === 'upload';
+    const isUploadMode = form.source === 'upload' && !isEditingVideo;
     const isPremium = Boolean(form.isPremium);
 
     if (!title) {
       setVideoFormError('Please enter a video title.');
+      return;
+    }
+
+    if (isEditingVideo) {
+      setIsVideoSubmitting(true);
+
+      try {
+        const { data: updatedRow, error } = await supabase
+          .from('videos')
+          .update({
+            title,
+            category: form.category,
+            is_promo_homepage: form.isPromoHomepage,
+            is_premium: isPremium,
+          })
+          .eq('id', editingVideo.id)
+          .select('id, title, youtube_id, video_url, category, is_promo_homepage, is_premium, created_at')
+          .single();
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        setVideos((prev) => prev.map((row) => (row.id === updatedRow.id ? updatedRow : row)));
+        cancelEditingVideo();
+        setVideoFormSuccess('Video updated successfully.');
+      } catch (err) {
+        setVideoFormError(err?.message || 'Failed to update video.');
+      } finally {
+        setIsVideoSubmitting(false);
+      }
+
       return;
     }
 
@@ -509,29 +656,47 @@ const AdminDashboard = ({ onBackToSite }) => {
               <div className="mb-6 flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Content</p>
-                  <h2 className="text-xl font-semibold text-slate-900">Add New Video</h2>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    {isEditingVideo ? 'Edit Video' : 'Add New Video'}
+                  </h2>
                   <p className="mt-1 text-sm text-slate-600">
-                    Add videos for Cinema Magic and optionally surface them in the Homepage Free Gems section.
+                    {isEditingVideo
+                      ? 'Update this video metadata. Source URLs stay unchanged in edit mode.'
+                      : 'Add videos for Cinema Magic and optionally surface them in the Homepage Free Gems section.'}
                   </p>
                 </div>
-                <button
-                  type="submit"
-                  disabled={isVideoSubmitting}
-                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow transition ${
-                    isVideoSubmitting
-                      ? 'cursor-not-allowed bg-slate-200 text-slate-500'
-                      : 'bg-gradient-to-r from-pink-500 to-indigo-500 text-white hover:from-pink-400 hover:to-indigo-400'
-                  }`}
-                >
-                  {isVideoSubmitting ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Add Video'
+                <div className="flex items-center gap-2">
+                  {isEditingVideo && (
+                    <button
+                      type="button"
+                      onClick={cancelEditingVideo}
+                      disabled={isVideoSubmitting}
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
                   )}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={isVideoSubmitting}
+                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow transition ${
+                      isVideoSubmitting
+                        ? 'cursor-not-allowed bg-slate-200 text-slate-500'
+                        : 'bg-gradient-to-r from-pink-500 to-indigo-500 text-white hover:from-pink-400 hover:to-indigo-400'
+                    }`}
+                  >
+                    {isVideoSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Saving...
+                      </>
+                    ) : isEditingVideo ? (
+                      'Save Changes'
+                    ) : (
+                      'Add Video'
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -567,11 +732,12 @@ const AdminDashboard = ({ onBackToSite }) => {
                     <button
                       type="button"
                       onClick={() => handleVideoSourceChange('youtube')}
+                      disabled={isEditingVideo}
                       className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
                         form.source === 'youtube'
                           ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                           : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
-                      }`}
+                      } ${isEditingVideo ? 'cursor-not-allowed opacity-70' : ''}`}
                     >
                       <span className="block font-semibold">YouTube URL</span>
                       <span className="block text-xs text-slate-500">Paste a YouTube link</span>
@@ -579,11 +745,12 @@ const AdminDashboard = ({ onBackToSite }) => {
                     <button
                       type="button"
                       onClick={() => handleVideoSourceChange('upload')}
+                      disabled={isEditingVideo}
                       className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
                         form.source === 'upload'
                           ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                           : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
-                      }`}
+                      } ${isEditingVideo ? 'cursor-not-allowed opacity-70' : ''}`}
                     >
                       <span className="block font-semibold">Local File Upload</span>
                       <span className="block text-xs text-slate-500">Drag & drop MP4/WEBM/MOV/M4V</span>
@@ -597,9 +764,9 @@ const AdminDashboard = ({ onBackToSite }) => {
                     value={form.youtubeUrl}
                     onChange={(e) => handleFormChange('youtubeUrl', e.target.value)}
                     type="text"
-                    disabled={form.source !== 'youtube'}
+                    disabled={form.source !== 'youtube' || isEditingVideo}
                     className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none ${
-                      form.source === 'youtube'
+                      form.source === 'youtube' && !isEditingVideo
                         ? 'border-slate-200 bg-white'
                         : 'border-slate-200 bg-slate-100 text-slate-500'
                     }`}
@@ -622,7 +789,7 @@ const AdminDashboard = ({ onBackToSite }) => {
                 </div>
               </div>
 
-              {form.source === 'upload' && (
+              {form.source === 'upload' && !isEditingVideo && (
                 <div className="mt-4 space-y-3">
                   <input
                     ref={videoFileInputRef}
@@ -870,19 +1037,35 @@ const AdminDashboard = ({ onBackToSite }) => {
                           <div className="inline-flex items-center gap-2">
                             <button
                               type="button"
-                              disabled
-                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-600 hover:border-indigo-200 hover:text-indigo-600 transition"
+                              onClick={() => startEditingVideo(video)}
+                              disabled={isVideoSubmitting || Boolean(deletingVideoId)}
+                              className={`rounded-lg border px-2.5 py-1.5 transition ${
+                                isVideoSubmitting || Boolean(deletingVideoId)
+                                  ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600'
+                              }`}
                               title="Edit"
                             >
                               <Pencil size={16} />
                             </button>
                             <button
                               type="button"
-                              disabled
-                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-slate-600 hover:border-red-200 hover:text-red-600 transition"
+                              onClick={() => handleDeleteVideo(video)}
+                              disabled={Boolean(deletingVideoId) || isVideoSubmitting}
+                              className={`rounded-lg border px-2.5 py-1.5 transition ${
+                                deletingVideoId === video.id
+                                  ? 'cursor-not-allowed border-red-200 bg-red-50 text-red-600'
+                                  : Boolean(deletingVideoId) || isVideoSubmitting
+                                    ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:text-red-600'
+                              }`}
                               title="Delete"
                             >
-                              <Trash2 size={16} />
+                              {deletingVideoId === video.id ? (
+                                <Loader2 size={16} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={16} />
+                              )}
                             </button>
                           </div>
                         </td>
