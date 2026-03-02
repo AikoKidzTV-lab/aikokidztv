@@ -33,8 +33,11 @@ import {
 
 const ADMIN_EMAIL = 'advdeepakkumar26@gmail.com';
 const COLORING_STORAGE_BUCKET = 'coloring_images';
+const VIDEO_STORAGE_BUCKET = 'videos';
 const COLORING_PREMIUM_COST = applySmallItemEconomy(3);
 const COLORING_ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+const VIDEO_ACCEPTED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'];
+const VIDEO_ACCEPTED_EXTENSIONS = ['mp4', 'webm', 'mov', 'm4v'];
 const VIDEO_CATEGORIES = ['Learning', 'Stories', 'Songs'];
 
 const createColoringUploadPath = (file) => {
@@ -56,6 +59,25 @@ const createColoringUploadPath = (file) => {
   return `uploads/${Date.now()}-${unique}-${base}${safeExt}`;
 };
 
+const createVideoUploadPath = (file) => {
+  const rawName = file?.name || 'video-file';
+  const ext = rawName.includes('.') ? rawName.slice(rawName.lastIndexOf('.')).toLowerCase() : '.mp4';
+  const safeExt = ['.mp4', '.webm', '.mov', '.m4v'].includes(ext) ? ext : '.mp4';
+  const base = rawName
+    .replace(/\.[^/.]+$/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'video-file';
+
+  const unique =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  return `uploads/${Date.now()}-${unique}-${base}${safeExt}`;
+};
+
 const navItems = [
   { key: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'Manage Videos', label: 'Manage Videos', icon: PlaySquare },
@@ -68,6 +90,8 @@ const emptyVideoForm = {
   youtubeUrl: '',
   category: 'Learning',
   isPromoHomepage: false,
+  source: 'youtube',
+  isPremium: false,
 };
 
 const extractYouTubeId = (input = '') => {
@@ -115,6 +139,9 @@ const AdminDashboard = ({ onBackToSite }) => {
   const [videoFormError, setVideoFormError] = useState('');
   const [videoFormSuccess, setVideoFormSuccess] = useState('');
   const [videoListError, setVideoListError] = useState('');
+  const videoFileInputRef = useRef(null);
+  const [videoFile, setVideoFile] = useState(null);
+  const [isVideoDragActive, setIsVideoDragActive] = useState(false);
   const coloringFileInputRef = useRef(null);
   const [coloringFile, setColoringFile] = useState(null);
   const [coloringIsPremium, setColoringIsPremium] = useState(false);
@@ -148,7 +175,7 @@ const AdminDashboard = ({ onBackToSite }) => {
     try {
       const { data, error } = await supabase
         .from('videos')
-        .select('id, title, youtube_id, category, is_promo_homepage, created_at')
+        .select('id, title, youtube_id, video_url, category, is_promo_homepage, is_premium, created_at')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -168,37 +195,155 @@ const AdminDashboard = ({ onBackToSite }) => {
     loadVideos();
   }, [activeTab]);
 
-  const handleAddVideo = async (e) => {
-    e?.preventDefault();
+  const resetVideoMessages = () => {
     setVideoFormError('');
     setVideoFormSuccess('');
+  };
+
+  const clearSelectedVideoFile = () => {
+    setVideoFile(null);
+    setIsVideoDragActive(false);
+    if (videoFileInputRef.current) {
+      videoFileInputRef.current.value = '';
+    }
+  };
+
+  const validateVideoFile = (file) => {
+    if (!file) return 'Please choose a video file to upload.';
+    if (file.type && VIDEO_ACCEPTED_TYPES.includes(file.type)) return '';
+
+    const ext = file.name?.split('.').pop()?.toLowerCase() || '';
+    if (VIDEO_ACCEPTED_EXTENSIONS.includes(ext)) return '';
+
+    return 'Please upload an MP4, WEBM, MOV, or M4V file.';
+  };
+
+  const setSelectedVideoFile = (file) => {
+    resetVideoMessages();
+    const validationMessage = validateVideoFile(file);
+    if (validationMessage) {
+      setVideoFile(null);
+      setVideoFormError(validationMessage);
+      return;
+    }
+    setVideoFile(file);
+  };
+
+  const handleVideoFileChange = (event) => {
+    const nextFile = event.target.files?.[0] ?? null;
+    if (!nextFile) {
+      setVideoFile(null);
+      return;
+    }
+    setSelectedVideoFile(nextFile);
+  };
+
+  const handleVideoDragOver = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isVideoSubmitting || form.source !== 'upload') return;
+    setIsVideoDragActive(true);
+  };
+
+  const handleVideoDragLeave = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsVideoDragActive(false);
+  };
+
+  const handleVideoDrop = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsVideoDragActive(false);
+
+    if (isVideoSubmitting || form.source !== 'upload') return;
+    const nextFile = event.dataTransfer?.files?.[0] ?? null;
+    if (!nextFile) return;
+    setSelectedVideoFile(nextFile);
+  };
+
+  const handleVideoSourceChange = (source) => {
+    handleFormChange('source', source);
+    if (source === 'youtube') {
+      clearSelectedVideoFile();
+    }
+  };
+
+  const handleAddVideo = async (e) => {
+    e?.preventDefault();
+    resetVideoMessages();
 
     const title = form.title.trim();
     const youtubeUrl = form.youtubeUrl.trim();
+    const isUploadMode = form.source === 'upload';
+    const isPremium = Boolean(form.isPremium);
 
-    if (!title || !youtubeUrl) {
-      setVideoFormError('Please enter a video title and a YouTube URL.');
+    if (!title) {
+      setVideoFormError('Please enter a video title.');
       return;
     }
 
-    const youtubeId = extractYouTubeId(youtubeUrl);
-    if (!youtubeId) {
-      setVideoFormError('Invalid YouTube URL. Please paste a standard YouTube video link.');
-      return;
+    let youtubeId = null;
+    let uploadedVideoPublicUrl = null;
+
+    if (isUploadMode) {
+      const fileValidationMessage = validateVideoFile(videoFile);
+      if (fileValidationMessage) {
+        setVideoFormError(fileValidationMessage);
+        return;
+      }
+    } else {
+      if (!youtubeUrl) {
+        setVideoFormError('Please enter a video title and a YouTube URL.');
+        return;
+      }
+
+      youtubeId = extractYouTubeId(youtubeUrl);
+      if (!youtubeId) {
+        setVideoFormError('Invalid YouTube URL. Please paste a standard YouTube video link.');
+        return;
+      }
     }
 
     setIsVideoSubmitting(true);
 
     try {
+      if (isUploadMode) {
+        const uploadPath = createVideoUploadPath(videoFile);
+
+        const { error: uploadError } = await supabase.storage
+          .from(VIDEO_STORAGE_BUCKET)
+          .upload(uploadPath, videoFile, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: videoFile.type || undefined,
+          });
+
+        if (uploadError) {
+          throw new Error(`Storage upload failed: ${uploadError.message}`);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from(VIDEO_STORAGE_BUCKET)
+          .getPublicUrl(uploadPath);
+
+        uploadedVideoPublicUrl = publicUrlData?.publicUrl || null;
+        if (!uploadedVideoPublicUrl) {
+          throw new Error('Could not generate a public URL for the uploaded video.');
+        }
+      }
+
       const { data: insertedRow, error } = await supabase
         .from('videos')
         .insert({
           title,
-          youtube_id: youtubeId,
+          youtube_id: isUploadMode ? null : youtubeId,
+          video_url: isUploadMode ? uploadedVideoPublicUrl : `https://www.youtube.com/watch?v=${youtubeId}`,
           category: form.category,
           is_promo_homepage: form.isPromoHomepage,
+          is_premium: isPremium,
         })
-        .select('id, title, youtube_id, category, is_promo_homepage, created_at')
+        .select('id, title, youtube_id, video_url, category, is_promo_homepage, is_premium, created_at')
         .single();
 
       if (error) {
@@ -207,7 +352,12 @@ const AdminDashboard = ({ onBackToSite }) => {
 
       setVideos((prev) => [insertedRow, ...prev]);
       setForm(emptyVideoForm);
-      setVideoFormSuccess(`Video added successfully (${youtubeId}).`);
+      clearSelectedVideoFile();
+      setVideoFormSuccess(
+        isUploadMode
+          ? `Video uploaded and saved successfully${isPremium ? ' as Premium' : ' as Free'}.`
+          : `Video added successfully (${youtubeId})${isPremium ? ' as Premium' : ' as Free'}.`
+      );
     } catch (err) {
       setVideoFormError(err?.message || 'Failed to add video.');
     } finally {
@@ -395,19 +545,7 @@ const AdminDashboard = ({ onBackToSite }) => {
                     placeholder="Enter title"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">YouTube Video URL</label>
-                  <input
-                    value={form.youtubeUrl}
-                    onChange={(e) => handleFormChange('youtubeUrl', e.target.value)}
-                    type="text"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                  />
-                  <p className="text-xs text-slate-500">
-                    We automatically extract and save the standard YouTube video ID.
-                  </p>
-                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Category</label>
                   <select
@@ -422,6 +560,56 @@ const AdminDashboard = ({ onBackToSite }) => {
                     ))}
                   </select>
                 </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">Video Source</label>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => handleVideoSourceChange('youtube')}
+                      className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
+                        form.source === 'youtube'
+                          ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
+                      }`}
+                    >
+                      <span className="block font-semibold">YouTube URL</span>
+                      <span className="block text-xs text-slate-500">Paste a YouTube link</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleVideoSourceChange('upload')}
+                      className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
+                        form.source === 'upload'
+                          ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
+                      }`}
+                    >
+                      <span className="block font-semibold">Local File Upload</span>
+                      <span className="block text-xs text-slate-500">Drag & drop MP4/WEBM/MOV/M4V</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">YouTube Video URL</label>
+                  <input
+                    value={form.youtubeUrl}
+                    onChange={(e) => handleFormChange('youtubeUrl', e.target.value)}
+                    type="text"
+                    disabled={form.source !== 'youtube'}
+                    className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none ${
+                      form.source === 'youtube'
+                        ? 'border-slate-200 bg-white'
+                        : 'border-slate-200 bg-slate-100 text-slate-500'
+                    }`}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                  />
+                  <p className="text-xs text-slate-500">
+                    We automatically extract and save the standard YouTube video ID.
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Extracted YouTube ID (Preview)</label>
                   <input
@@ -433,6 +621,63 @@ const AdminDashboard = ({ onBackToSite }) => {
                   />
                 </div>
               </div>
+
+              {form.source === 'upload' && (
+                <div className="mt-4 space-y-3">
+                  <input
+                    ref={videoFileInputRef}
+                    type="file"
+                    accept=".mp4,.webm,.mov,.m4v,video/mp4,video/webm,video/quicktime,video/x-m4v"
+                    onChange={handleVideoFileChange}
+                    className="hidden"
+                    disabled={isVideoSubmitting}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => !isVideoSubmitting && videoFileInputRef.current?.click()}
+                    onDragEnter={handleVideoDragOver}
+                    onDragOver={handleVideoDragOver}
+                    onDragLeave={handleVideoDragLeave}
+                    onDrop={handleVideoDrop}
+                    className={`w-full rounded-2xl border-2 border-dashed p-6 text-left transition ${
+                      isVideoDragActive
+                        ? 'border-indigo-400 bg-indigo-50 shadow-inner'
+                        : 'border-slate-300 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/40'
+                    } ${isVideoSubmitting ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
+                  >
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <div
+                        className={`grid h-14 w-14 place-items-center rounded-2xl border ${
+                          isVideoDragActive
+                            ? 'border-indigo-300 bg-white text-indigo-600'
+                            : 'border-slate-200 bg-white text-slate-500'
+                        }`}
+                      >
+                        <UploadCloud size={24} />
+                      </div>
+                      <p className="mt-3 text-sm font-semibold text-slate-900">
+                        {videoFile ? videoFile.name : 'Drag and drop a video file here'}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-600">
+                        {videoFile
+                          ? `${(videoFile.size / (1024 * 1024)).toFixed(2)} MB - ${videoFile.type || 'video file'}`
+                          : 'or click to browse MP4, WEBM, MOV, M4V files'}
+                      </p>
+                    </div>
+                  </button>
+
+                  {videoFile && !isVideoSubmitting && (
+                    <button
+                      type="button"
+                      onClick={clearSelectedVideoFile}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Clear Selected File
+                    </button>
+                  )}
+                </div>
+              )}
 
               <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
                 <label className="flex items-start gap-3 text-sm font-medium text-slate-700">
@@ -451,6 +696,36 @@ const AdminDashboard = ({ onBackToSite }) => {
                     </span>
                   </span>
                 </label>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <p className="mb-3 text-sm font-semibold text-amber-900">Video Type</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => handleFormChange('isPremium', false)}
+                    className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
+                      !form.isPremium
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200'
+                    }`}
+                  >
+                    <span className="block font-semibold">Free</span>
+                    <span className="block text-xs text-slate-500">Accessible to everyone</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFormChange('isPremium', true)}
+                    className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
+                      form.isPremium
+                        ? 'border-amber-300 bg-amber-100 text-amber-800'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-amber-200'
+                    }`}
+                  >
+                    <span className="block font-semibold">Premium</span>
+                    <span className="block text-xs text-slate-500">Locked for premium users</span>
+                  </button>
+                </div>
               </div>
 
               {videoFormError && (
@@ -504,6 +779,8 @@ const AdminDashboard = ({ onBackToSite }) => {
                       <th className="px-6 py-3 font-semibold">Thumbnail</th>
                       <th className="px-6 py-3 font-semibold">Title</th>
                       <th className="px-6 py-3 font-semibold">Category</th>
+                      <th className="px-6 py-3 font-semibold">Source</th>
+                      <th className="px-6 py-3 font-semibold">Video Type</th>
                       <th className="px-6 py-3 font-semibold">Homepage Promo</th>
                       <th className="px-6 py-3 font-semibold">YouTube ID</th>
                       <th className="px-6 py-3 font-semibold text-right">Actions</th>
@@ -512,13 +789,13 @@ const AdminDashboard = ({ onBackToSite }) => {
                   <tbody>
                     {isVideosLoading && videos.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                        <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
                           Loading videos...
                         </td>
                       </tr>
                     ) : videos.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                        <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
                           No videos in the database yet. Add your first video above.
                         </td>
                       </tr>
@@ -536,8 +813,8 @@ const AdminDashboard = ({ onBackToSite }) => {
                                 className="h-full w-full object-cover"
                               />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
-                                No Image
+                              <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
+                                <Video size={14} />
                               </div>
                             )}
                           </div>
@@ -545,10 +822,34 @@ const AdminDashboard = ({ onBackToSite }) => {
                         <td className="px-6 py-3">
                           <div className="font-semibold text-slate-900">{video.title}</div>
                           <div className="text-xs text-slate-500 truncate max-w-xs">
-                            https://youtu.be/{video.youtube_id}
+                            {video.youtube_id
+                              ? `https://youtu.be/${video.youtube_id}`
+                              : video.video_url || 'Uploaded file URL'}
                           </div>
                         </td>
                         <td className="px-6 py-3 text-slate-700">{video.category}</td>
+                        <td className="px-6 py-3">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                              video.youtube_id
+                                ? 'bg-rose-100 text-rose-700'
+                                : 'bg-cyan-100 text-cyan-700'
+                            }`}
+                          >
+                            {video.youtube_id ? 'YouTube' : 'Upload'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                              video.is_premium
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-emerald-100 text-emerald-700'
+                            }`}
+                          >
+                            {video.is_premium ? 'Premium' : 'Free'}
+                          </span>
+                        </td>
                         <td className="px-6 py-3">
                           <span
                             className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
@@ -562,7 +863,7 @@ const AdminDashboard = ({ onBackToSite }) => {
                         </td>
                         <td className="px-6 py-3">
                           <code className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700">
-                            {video.youtube_id}
+                            {video.youtube_id || 'N/A'}
                           </code>
                         </td>
                         <td className="px-6 py-3 text-right">
