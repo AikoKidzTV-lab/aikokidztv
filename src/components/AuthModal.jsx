@@ -1,33 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Lock, Mail, Sparkles, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 import { isAdminEmail } from '../utils/admin';
-import { useAuth } from '../context/AuthContext';
+
+const AUTH_REQUEST_TIMEOUT_MS = 12000;
+
+const normalizeMode = (value) => (value === 'signup' ? 'signup' : 'login');
 
 const isDuplicateKeyError = (error) => {
   const message = `${error?.message || ''} ${error?.code || ''}`.toLowerCase();
   return message.includes('duplicate') || message.includes('unique');
 };
 
+const serializeAuthError = (authError) => ({
+  message: authError?.message || 'Unknown auth error',
+  code: authError?.code || null,
+  status: Number.isFinite(Number(authError?.status)) ? Number(authError.status) : null,
+  name: authError?.name || 'Error',
+  details: authError?.details || null,
+  hint: authError?.hint || null,
+});
+
 const formatAuthError = (authError) => {
-  const message = authError?.message || 'Authentication failed. Please try again.';
-  const code = authError?.code || authError?.name || 'unknown_error';
-  const status = Number.isFinite(Number(authError?.status)) ? Number(authError.status) : null;
-  const suffix = [code, status ? `status:${status}` : null].filter(Boolean).join(' | ');
+  const normalized = serializeAuthError(authError);
+  const suffix = [normalized.code, normalized.status ? `status:${normalized.status}` : null]
+    .filter(Boolean)
+    .join(' | ');
 
   return {
-    userMessage: suffix ? `${message} (${suffix})` : message,
-    debug: JSON.stringify(
-      {
-        message,
-        code,
-        status,
-      },
-      null,
-      2
-    ),
+    userMessage: suffix ? `${normalized.message} (${suffix})` : normalized.message,
+    debug: JSON.stringify(normalized, null, 2),
   };
 };
 
@@ -40,25 +44,13 @@ const getAuthRuntimeContext = (mode, email) => ({
   hasAnonKey: Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY),
 });
 
-const serializeAuthError = (authError) => ({
-  message: authError?.message || 'Unknown auth error',
-  code: authError?.code || null,
-  status: Number.isFinite(Number(authError?.status)) ? Number(authError.status) : null,
-  name: authError?.name || 'Error',
-  details: authError?.details || null,
-  hint: authError?.hint || null,
-});
-
 const logAuthError = (label, authError, runtimeContext) => {
-  const normalized = serializeAuthError(authError);
   console.error(`[AuthModal] ${label}`, {
-    ...normalized,
+    ...serializeAuthError(authError),
     runtimeContext,
     rawError: authError,
   });
 };
-
-const AUTH_REQUEST_TIMEOUT_MS = 12000;
 
 const withAuthTimeout = async (promise, label) => {
   let timeoutId;
@@ -80,10 +72,18 @@ const withAuthTimeout = async (promise, label) => {
   }
 };
 
+const getBackgroundCheckWarning = (error) => {
+  const message = error?.message || '';
+  if (/failed to fetch|network|timed out|connection/i.test(message)) {
+    return 'Auth service check is delayed. You can still use the login form immediately.';
+  }
+
+  return 'Auth service is still initializing in the background. You can continue now.';
+};
+
 const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
-  const { authError, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState(initialMode === 'signup' ? 'signup' : 'login');
+  const [mode, setMode] = useState(normalizeMode(initialMode));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -92,42 +92,108 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
   const [error, setError] = useState('');
   const [errorDetails, setErrorDetails] = useState('');
   const [info, setInfo] = useState('');
+  const [backgroundCheckPending, setBackgroundCheckPending] = useState(false);
+  const [backgroundCheckWarning, setBackgroundCheckWarning] = useState('');
+  const isOpenRef = useRef(open);
+  const modalRunIdRef = useRef(0);
 
-  useEffect(() => {
-    if (!open) return;
-    setMode(initialMode === 'signup' ? 'signup' : 'login');
-    setEmail('');
-    setPassword('');
-    setConfirmPassword('');
+  const clearFeedback = useCallback(() => {
     setError('');
     setErrorDetails('');
     setInfo('');
-  }, [open, initialMode]);
+  }, []);
+
+  const canApplyState = useCallback(
+    (runId) => runId === modalRunIdRef.current && isOpenRef.current,
+    []
+  );
+
+  const closeModal = useCallback(() => {
+    modalRunIdRef.current += 1;
+    setLoading(false);
+    setOtpLoading(false);
+    onClose?.();
+  }, [onClose]);
 
   useEffect(() => {
-    if (!open || !authError) return;
-    const formatted = formatAuthError(authError);
-    setError((current) => current || formatted.userMessage);
-    setErrorDetails((current) => current || formatted.debug);
-  }, [open, authError]);
+    isOpenRef.current = open;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    modalRunIdRef.current += 1;
+    setMode(normalizeMode(initialMode));
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setLoading(false); // Keep default false so UI is never blocked.
+    setOtpLoading(false);
+    setBackgroundCheckPending(false);
+    setBackgroundCheckWarning('');
+    clearFeedback();
+  }, [open, initialMode, clearFeedback]);
 
   useEffect(() => {
     if (!open) return undefined;
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     const onEscape = (event) => {
       if (event.key === 'Escape') {
-        onClose?.();
+        event.preventDefault();
+        closeModal();
       }
     };
 
     window.addEventListener('keydown', onEscape);
-    return () => window.removeEventListener('keydown', onEscape);
-  }, [open, onClose]);
+    return () => {
+      window.removeEventListener('keydown', onEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, closeModal]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const runId = modalRunIdRef.current;
+    const preflightContext = getAuthRuntimeContext('preflight', '');
+    setBackgroundCheckPending(true);
+    setBackgroundCheckWarning('');
+
+    const runBackgroundCheck = async () => {
+      try {
+        const { error: sessionError } = await withAuthTimeout(
+          supabase.auth.getSession(),
+          'Background session check'
+        );
+
+        if (!canApplyState(runId)) return;
+        if (sessionError) {
+          setBackgroundCheckWarning(getBackgroundCheckWarning(sessionError));
+          logAuthError('Background session check failed', sessionError, preflightContext);
+        }
+      } catch (backgroundError) {
+        if (!canApplyState(runId)) return;
+        setBackgroundCheckWarning(getBackgroundCheckWarning(backgroundError));
+        logAuthError('Background session check failed', backgroundError, preflightContext);
+      } finally {
+        if (canApplyState(runId)) {
+          setBackgroundCheckPending(false);
+        }
+      }
+    };
+
+    void runBackgroundCheck();
+    return undefined;
+  }, [open, canApplyState]);
 
   if (!open) return null;
 
   const ensureSignupProfile = async (userId) => {
     if (!userId) return;
+
     const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
       gems: NEW_USER_BONUS_GEMS,
@@ -152,7 +218,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     }
 
     onSuccess?.({ user: signedInUser, session, source });
-    onClose?.();
+    closeModal();
 
     if (isAdminEmail(signedInUser.email)) {
       console.info('[AuthModal] Admin login successful. Redirecting to /admin.', {
@@ -170,6 +236,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
     if (!email || !password) {
       setError('Please enter both email and password.');
       return;
@@ -183,10 +250,9 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       return;
     }
 
+    const runId = modalRunIdRef.current;
     setLoading(true);
-    setError('');
-    setErrorDetails('');
-    setInfo('');
+    clearFeedback();
     const runtimeContext = getAuthRuntimeContext(mode, email);
 
     try {
@@ -199,10 +265,13 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
           }),
           'signInWithPassword'
         );
+
         if (signInError) {
           logAuthError('signInWithPassword returned an error', signInError, runtimeContext);
           throw signInError;
         }
+
+        if (!canApplyState(runId)) return;
 
         const signedInUser = signInData?.user ?? signInData?.session?.user ?? null;
         setInfo('Welcome back! Redirecting...');
@@ -215,37 +284,43 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       }
 
       console.info('[AuthModal] Starting signUp request', runtimeContext);
-      const { data, error: signUpError } = await withAuthTimeout(
+      const { data: signUpData, error: signUpError } = await withAuthTimeout(
         supabase.auth.signUp({
           email,
           password,
         }),
         'signUp'
       );
+
       if (signUpError) {
         logAuthError('signUp returned an error', signUpError, runtimeContext);
         throw signUpError;
       }
 
-      await ensureSignupProfile(data?.user?.id);
+      await ensureSignupProfile(signUpData?.user?.id);
 
-      if (data?.session) {
+      if (!canApplyState(runId)) return;
+
+      if (signUpData?.session) {
         setInfo('Account created successfully!');
         handleAuthSuccess({
-          user: data?.user ?? data?.session?.user ?? null,
-          session: data?.session ?? null,
+          user: signUpData?.user ?? signUpData?.session?.user ?? null,
+          session: signUpData?.session ?? null,
           source: 'signup',
         });
       } else {
         setInfo('Account created! Please check your email to confirm your signup.');
       }
     } catch (authError) {
+      if (!canApplyState(runId)) return;
       const formatted = formatAuthError(authError);
       setError(formatted.userMessage);
       setErrorDetails(formatted.debug);
       logAuthError('Authentication failed', authError, runtimeContext);
     } finally {
-      setLoading(false);
+      if (canApplyState(runId)) {
+        setLoading(false);
+      }
     }
   };
 
@@ -255,10 +330,9 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       return;
     }
 
+    const runId = modalRunIdRef.current;
     setOtpLoading(true);
-    setError('');
-    setErrorDetails('');
-    setInfo('');
+    clearFeedback();
     const runtimeContext = getAuthRuntimeContext(mode, email);
 
     try {
@@ -272,25 +346,31 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
         }),
         'signInWithOtp'
       );
+
       if (otpError) {
         logAuthError('signInWithOtp returned an error', otpError, runtimeContext);
         throw otpError;
       }
+
+      if (!canApplyState(runId)) return;
       setInfo('OTP sent! Check your email for the login link or verification code.');
     } catch (otpAuthError) {
+      if (!canApplyState(runId)) return;
       const formatted = formatAuthError(otpAuthError);
       setError(formatted.userMessage || 'Could not send OTP. Please try again.');
       setErrorDetails(formatted.debug);
       logAuthError('OTP request failed', otpAuthError, runtimeContext);
     } finally {
-      setOtpLoading(false);
+      if (canApplyState(runId)) {
+        setOtpLoading(false);
+      }
     }
   };
 
   return (
     <div
       className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/55 px-4 py-8 backdrop-blur-sm"
-      onClick={onClose}
+      onClick={closeModal}
       role="dialog"
       aria-modal="true"
       aria-label="Authentication dialog"
@@ -301,7 +381,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       >
         <button
           type="button"
-          onClick={onClose}
+          onClick={closeModal}
           className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100"
           aria-label="Close authentication modal"
         >
@@ -325,9 +405,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
             type="button"
             onClick={() => {
               setMode('login');
-              setError('');
-              setErrorDetails('');
-              setInfo('');
+              clearFeedback();
             }}
             className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
               mode === 'login'
@@ -341,9 +419,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
             type="button"
             onClick={() => {
               setMode('signup');
-              setError('');
-              setErrorDetails('');
-              setInfo('');
+              clearFeedback();
             }}
             className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
               mode === 'signup'
@@ -366,14 +442,22 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
             ) : null}
           </div>
         ) : null}
+
         {info ? (
           <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             {info}
           </div>
         ) : null}
-        {open && authLoading ? (
+
+        {backgroundCheckPending ? (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Checking existing session in background. You can still log in now.
+            Checking auth service in background. The form is ready now.
+          </div>
+        ) : null}
+
+        {backgroundCheckWarning ? (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            {backgroundCheckWarning}
           </div>
         ) : null}
 
