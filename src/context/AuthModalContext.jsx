@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import AuthModal from '../components/AuthModal';
 import { useAuth } from './AuthContext';
+import { supabase } from '../supabaseClient';
 
 const AuthModalContext = createContext({
   isAuthModalOpen: false,
@@ -26,6 +27,24 @@ export const AuthModalProvider = ({ children }) => {
   const handleAuthSuccess = useCallback(
     async ({ user } = {}) => {
       if (!user?.id) return;
+
+      try {
+        // Force a fresh session read/refresh so RLS policies that depend on auth.uid() are
+        // applied immediately with the latest token state on production.
+        const { data: sessionData } = await supabase.auth.getSession();
+        const currentSession = sessionData?.session ?? null;
+        if (currentSession?.refresh_token) {
+          await supabase.auth.refreshSession({
+            refresh_token: currentSession.refresh_token,
+          });
+        }
+      } catch (sessionRefreshError) {
+        console.warn('[AuthModalContext] Session refresh after login failed; continuing with profile sync.', {
+          message: sessionRefreshError?.message || 'Unknown error',
+          userId: user.id,
+        });
+      }
+
       await fetchProfile?.(user.id, { retryCount: 2, preferDirect: true });
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('aiko:auth-refresh'));

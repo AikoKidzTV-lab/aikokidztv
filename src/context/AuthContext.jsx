@@ -303,6 +303,30 @@ export const AuthProvider = ({ children }) => {
         });
         safelyApplySession(session, event);
 
+        if (event === 'SIGNED_IN' && session?.refresh_token && typeof window !== 'undefined') {
+          window.setTimeout(async () => {
+            try {
+              const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession({
+                refresh_token: session.refresh_token,
+              });
+
+              if (refreshError) {
+                throw refreshError;
+              }
+
+              const refreshedUserId = refreshedData?.session?.user?.id || session?.user?.id;
+              if (refreshedUserId && isMountedRef.current && isActive) {
+                await fetchProfile(refreshedUserId, { retryCount: 2, preferDirect: true });
+              }
+            } catch (refreshError) {
+              console.warn('[AuthContext] Session refresh after SIGNED_IN failed:', {
+                message: refreshError?.message || 'Unknown error',
+                userId: session?.user?.id ?? null,
+              });
+            }
+          }, 100);
+        }
+
         if (session?.user?.id && typeof window !== 'undefined') {
           window.setTimeout(() => {
             if (!isMountedRef.current || !isActive) return;
