@@ -32,6 +32,10 @@ import ParentZoneJuniorLawPage from './components/parentZone/ParentZoneJuniorLaw
 import ParentZoneJuniorRightsPage from './components/parentZone/ParentZoneJuniorRightsPage';
 import ParentZoneSciencePage from './components/parentZone/ParentZoneSciencePage';
 import ParentZoneCalculatorPage from './components/parentZone/ParentZoneCalculatorPage';
+import AikoBioPage from './components/pages/AikoBioPage';
+import NikoBioPage from './components/pages/NikoBioPage';
+import KinuBioPage from './components/pages/KinuBioPage';
+import MimiBioPage from './components/pages/MimiBioPage';
 
 const themes = [
   { key: 'light', label: 'Light Mode' },
@@ -898,6 +902,10 @@ function App() {
               <Route path="/coloring" element={<ColoringBook />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/blender-credit" element={<BlenderCredit />} />
+              <Route path="/aiko-bio" element={<AikoBioPage />} />
+              <Route path="/niko-bio" element={<NikoBioPage />} />
+              <Route path="/kinu-bio" element={<KinuBioPage />} />
+              <Route path="/mimi-bio" element={<MimiBioPage />} />
               <Route path="/parent-zone" element={<ParentZoneHubPage />} />
               <Route path="/parent-zone/tables" element={<ParentZoneTablesPage />} />
               <Route path="/parent-zone/numbers" element={<ParentZoneNumbersPage />} />
