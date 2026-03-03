@@ -1,7 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, ChevronDown, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ADMIN_EMAIL } from '../utils/admin';
+
+const BELL_NOTIFICATION_EVENT = 'aiko:bell-notification';
+const INITIAL_NOTIFICATIONS = [
+  {
+    id: 'notif-easter-egg-hint',
+    title: 'New Hint',
+    message: '🥚 Hint: read carefully in the site to find the Easter Egg and get a surprise gift!',
+    unread: true,
+  },
+  {
+    id: 'notif-task-quest-update',
+    title: 'Quest Update',
+    message: '🌟 Quest Update: Tick all 5 daily habit boxes to unlock your 2 Free Gems!',
+    unread: true,
+  },
+];
 
 function ProfileDropdownMenu({
   open,
@@ -157,10 +173,49 @@ export default function HeaderNavbar({
 }) {
   const { user, profile } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [openProfile, setOpenProfile] = useState(false);
 
   const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
   const networkLabel = isForcedOffline ? 'Offline' : 'Online';
+  const unreadCount = useMemo(
+    () => notifications.reduce((count, notification) => count + (notification.unread ? 1 : 0), 0),
+    [notifications]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const onBellNotification = (event) => {
+      const message = String(event?.detail?.message || '').trim();
+      if (!message) return;
+
+      setNotifications((currentNotifications) => ([
+        {
+          id: `notif-${Date.now()}`,
+          title: 'Quest Update',
+          message,
+          unread: !showNotifications,
+        },
+        ...currentNotifications,
+      ]));
+    };
+
+    window.addEventListener(BELL_NOTIFICATION_EVENT, onBellNotification);
+    return () => {
+      window.removeEventListener(BELL_NOTIFICATION_EVENT, onBellNotification);
+    };
+  }, [showNotifications]);
+
+  const toggleNotifications = () => {
+    const willOpen = !showNotifications;
+    setShowNotifications(willOpen);
+    if (willOpen && unreadCount > 0) {
+      setNotifications((currentNotifications) => (
+        currentNotifications.map((notification) => ({ ...notification, unread: false }))
+      ));
+    }
+  };
 
   const navItems = [
     { label: 'Story Studio', target: 'story-studio' },
@@ -251,32 +306,41 @@ export default function HeaderNavbar({
         <div className="flex shrink-0 items-center gap-2">
           <div className="relative">
             <button
-              onClick={() => setShowNotifications((v) => !v)}
+              onClick={toggleNotifications}
               className="relative grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white shadow-sm transition hover:bg-pink-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
               aria-label="Notifications"
             >
               <Bell size={18} className="text-slate-700 dark:text-slate-100" />
-              <span className="absolute right-2 top-2 flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" />
-              </span>
+              {unreadCount > 0 ? (
+                <span className="absolute right-2 top-2 flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-800" />
+                </span>
+              ) : null}
             </button>
             {showNotifications && (
               <div className="absolute right-0 top-full mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800 z-50">
                 <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/50">
                   <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
                   <span className="rounded-full bg-pink-100 px-2 py-0.5 text-xs font-bold text-pink-700 dark:bg-pink-500/20 dark:text-pink-200">
-                    1 unread
+                    {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
                   </span>
                 </div>
                 <div className="p-3">
-                  <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-pink-50 to-cyan-50 p-3 shadow-sm dark:border-amber-900/40 dark:from-amber-900/20 dark:via-pink-900/20 dark:to-cyan-900/20">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
-                      New Hint
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      {'\u{1F95A} Hint: read carefully in the site to find the Easter Egg and get a surprise gift!'}
-                    </p>
+                  <div className="space-y-2">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 via-pink-50 to-cyan-50 p-3 shadow-sm dark:border-amber-900/40 dark:from-amber-900/20 dark:via-pink-900/20 dark:to-cyan-900/20"
+                      >
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 dark:text-amber-200">
+                          {notification.title}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                          {notification.message}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

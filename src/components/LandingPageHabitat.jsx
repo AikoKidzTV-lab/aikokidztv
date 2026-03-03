@@ -100,6 +100,7 @@ const YOUTUBE_SUBSCRIBE_REWARD_KEY = 'homepage_youtube_subscribe_50';
 const YOUTUBE_SUBSCRIBE_REWARD_GEMS = 50;
 const TASK_QUEST_REWARD_KEY = 'homepage_task_quest_2';
 const TASK_QUEST_REWARD_GEMS = 2;
+const TASK_QUEST_ANIMALS = ['🐶', '🐱', '🦊', '🐼', '🦁'];
 
 const WaveDivider = ({ fill = '#dcfce7', flip = false }) => (
   <div className={`absolute inset-x-0 ${flip ? 'bottom-0 rotate-180' : 'top-0 -translate-y-full'} pointer-events-none`}>
@@ -124,6 +125,7 @@ export default function LandingPageHabitat({
   const [paymentToast, setPaymentToast] = React.useState(null);
   const [heroSlideIndex, setHeroSlideIndex] = React.useState(0);
   const [activeTaskStart, setActiveTaskStart] = React.useState(0);
+  const [taskQuestChecks, setTaskQuestChecks] = React.useState(() => Array(TASKS_PER_QUEST).fill(false));
   const [showTaskQuest, setShowTaskQuest] = React.useState(false);
   const [isClaimingYoutubeReward, setIsClaimingYoutubeReward] = React.useState(false);
   const [isClaimingTaskQuestReward, setIsClaimingTaskQuestReward] = React.useState(false);
@@ -155,6 +157,11 @@ export default function LandingPageHabitat({
     ),
     [activeTaskStart]
   );
+  const allTaskHabitsChecked = React.useMemo(
+    () => taskQuestChecks.every(Boolean),
+    [taskQuestChecks]
+  );
+  const isTaskQuestRewardDisabled = !allTaskHabitsChecked || taskQuestClaimed || isClaimingTaskQuestReward;
 
   const showPaymentToast = React.useCallback((type, message) => {
     setPaymentToast({ type, message });
@@ -199,6 +206,10 @@ export default function LandingPageHabitat({
     };
   }, [pushBellNotification]);
 
+  React.useEffect(() => {
+    setTaskQuestChecks(Array(TASKS_PER_QUEST).fill(false));
+  }, [activeTaskStart]);
+
   const goToPrevBanner = () => {
     setHeroSlideIndex((current) => (current - 1 + HERO_BANNERS.length) % HERO_BANNERS.length);
   };
@@ -242,7 +253,7 @@ export default function LandingPageHabitat({
   };
 
   const handleTaskQuestReward = async () => {
-    if (taskQuestClaimed || isClaimingTaskQuestReward) return;
+    if (!allTaskHabitsChecked || taskQuestClaimed || isClaimingTaskQuestReward) return;
     if (!user?.id) {
       onOpenLogin?.();
       return;
@@ -275,6 +286,12 @@ export default function LandingPageHabitat({
     } finally {
       setIsClaimingTaskQuestReward(false);
     }
+  };
+
+  const handleToggleTaskQuestCheck = (indexToToggle) => {
+    setTaskQuestChecks((currentChecks) => currentChecks.map(
+      (isChecked, index) => (index === indexToToggle ? !isChecked : isChecked)
+    ));
   };
 
   const handlePayment = async (packName, amount, gemAmount, currency = 'INR') => {
@@ -685,9 +702,21 @@ export default function LandingPageHabitat({
                       </button>
                     </div>
                     <ul className="mt-3 space-y-2">
-                      {activeTaskQuestItems.map((task) => (
-                        <li key={task} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold !text-slate-700">
-                          {task}
+                      {activeTaskQuestItems.map((task, index) => (
+                        <li key={task} className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-sm font-semibold !text-slate-700">{task}</span>
+                            <label className="flex items-center gap-2">
+                              <span className="text-xl leading-none">{TASK_QUEST_ANIMALS[index % TASK_QUEST_ANIMALS.length]}</span>
+                              <input
+                                type="checkbox"
+                                checked={taskQuestChecks[index] || false}
+                                onChange={() => handleToggleTaskQuestCheck(index)}
+                                className="h-5 w-5 cursor-pointer rounded-md border-2 border-emerald-300 text-emerald-600 accent-emerald-500"
+                                aria-label={`Mark habit ${index + 1} as completed`}
+                              />
+                            </label>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -695,10 +724,10 @@ export default function LandingPageHabitat({
                       <button
                         type="button"
                         onClick={handleTaskQuestReward}
-                        disabled={taskQuestClaimed || isClaimingTaskQuestReward}
+                        disabled={isTaskQuestRewardDisabled}
                         className={`rounded-xl px-4 py-2 text-sm font-black transition ${
-                          taskQuestClaimed || isClaimingTaskQuestReward
-                            ? 'cursor-not-allowed border border-slate-200 bg-slate-100 !text-slate-500'
+                          isTaskQuestRewardDisabled
+                            ? 'cursor-not-allowed border border-slate-200 bg-slate-100 !text-slate-500 opacity-50'
                             : 'border border-emerald-200 bg-emerald-500 !text-white shadow hover:bg-emerald-600'
                         }`}
                       >
