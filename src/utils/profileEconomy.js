@@ -7,6 +7,8 @@ const MISSING_MAGIC_ART_USES_FALLBACK = 0;
 
 const ECONOMY_SELECT_COLUMNS = '*';
 const ECONOMY_SELECT_COLUMNS_FALLBACK =
+  'id, role, gems, unlocked_zones, unlocked_videos, unlocked_items, claimed_rewards, created_at, updated_at';
+const ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS =
   'id, role, gems, unlocked_zones, unlocked_items, claimed_rewards, created_at, updated_at';
 const LOCAL_MAGIC_ART_USES_PREFIX = 'aiko_magic_art_uses_v1_';
 
@@ -75,7 +77,7 @@ const readProfileRowById = async ({ userId, maybeSingle = false }) => {
 
   if (error && isMissingColumnError(error, 'unlocked_videos')) {
     markUnlockedVideosUnsupported();
-    ({ data, error } = await runQuery(ECONOMY_SELECT_COLUMNS_FALLBACK));
+    ({ data, error } = await runQuery(ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS));
   }
 
   if (data) {

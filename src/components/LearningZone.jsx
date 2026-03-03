@@ -4,6 +4,22 @@ import { useKidsMode } from '../context/KidsModeContext';
 import { LEARNING_ZONE_PREMIUM_UNLOCKS } from '../constants/gemEconomy';
 import { unlockZoneWithGems } from '../utils/profileEconomy';
 
+const isSchemaColumnError = (message = '') =>
+  /could not find.*column|schema cache|pgrst204|42703|unlocked_videos/i.test(String(message));
+
+const getUnlockStatusMessage = (unlockResult) => {
+  if (!unlockResult?.ok) {
+    if (unlockResult?.code === 'insufficient_gems') {
+      return unlockResult.message || 'Not enough Gems to unlock this zone.';
+    }
+    if (isSchemaColumnError(unlockResult?.message)) {
+      return 'Profile sync updated. Please try unlocking again.';
+    }
+    return 'Unable to unlock premium card right now.';
+  }
+  return '';
+};
+
 const learningBoxes = [
   {
     id: 'alphabets',
@@ -110,7 +126,7 @@ export default function LearningZone({ onSelect }) {
       });
 
       if (!unlockResult.ok) {
-        showStatus(unlockResult.message || 'Unable to unlock premium card.');
+        showStatus(getUnlockStatusMessage(unlockResult));
         return;
       }
 
@@ -210,4 +226,3 @@ export default function LearningZone({ onSelect }) {
     </section>
   );
 }
-

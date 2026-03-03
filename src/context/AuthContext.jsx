@@ -19,7 +19,24 @@ const isNetworkError = (error) => {
 
 const AUTH_TIMEOUT_MS = 20000;
 const PROFILE_FALLBACK_COLUMNS =
+  'id, role, gems, unlocked_zones, unlocked_videos, unlocked_items, claimed_rewards';
+const PROFILE_FALLBACK_COLUMNS_NO_UNLOCKED_VIDEOS =
   'id, role, gems, unlocked_zones, unlocked_items, claimed_rewards';
+
+const isMissingColumnError = (error, columnName) => {
+  if (!columnName) return false;
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  const normalizedColumn = String(columnName).toLowerCase();
+  return (
+    text.includes(normalizedColumn) &&
+    (
+      text.includes('column') ||
+      text.includes('schema cache') ||
+      error?.code === '42703' ||
+      error?.code === 'PGRST204'
+    )
+  );
+};
 
 const withTimeout = async (promise, timeoutMs, label) => {
   let timeoutId;
@@ -156,7 +173,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const { data: fallbackProfile, error: fallbackError } = await withTimeout(
+        let { data: fallbackProfile, error: fallbackError } = await withTimeout(
           supabase
             .from('profiles')
             .select(PROFILE_FALLBACK_COLUMNS)
@@ -165,6 +182,18 @@ export const AuthProvider = ({ children }) => {
           AUTH_TIMEOUT_MS,
           'Profile fallback fetch'
         );
+
+        if (fallbackError && isMissingColumnError(fallbackError, 'unlocked_videos')) {
+          ({ data: fallbackProfile, error: fallbackError } = await withTimeout(
+            supabase
+              .from('profiles')
+              .select(PROFILE_FALLBACK_COLUMNS_NO_UNLOCKED_VIDEOS)
+              .eq('id', userId)
+              .maybeSingle(),
+            AUTH_TIMEOUT_MS,
+            'Profile fallback fetch without unlocked_videos'
+          ));
+        }
 
         if (!fallbackError && fallbackProfile) {
           const normalizedFallback = normalizeFallbackProfile(fallbackProfile);
