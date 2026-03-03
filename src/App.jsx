@@ -1,7 +1,6 @@
 ﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useState, useMemo, useEffect } from 'react';
 import LandingPageHabitat from './components/LandingPageHabitat';
 import Footer from './components/Footer';
-import AuthModal from './components/AuthModal';
 import AdminDashboard from './components/AdminDashboard';
 import HeaderNavbar from './components/HeaderNavbar';
 import KidsMascot from './components/KidsMascot';
@@ -22,9 +21,17 @@ import BlenderCredit from './components/pages/BlenderCredit';
 import PoemsPage from './components/PoemsPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { KidsModeProvider, useKidsMode } from './context/KidsModeContext';
+import { AuthModalProvider, useAuthModal } from './context/AuthModalContext';
 import { Gem, ChevronDown, Sparkles, LogOut, Bell } from 'lucide-react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { ADMIN_EMAIL, isAdminEmail } from './utils/admin';
+import ParentZoneHubPage from './components/parentZone/ParentZoneHubPage';
+import ParentZoneTablesPage from './components/parentZone/ParentZoneTablesPage';
+import ParentZoneNumbersPage from './components/parentZone/ParentZoneNumbersPage';
+import ParentZoneJuniorLawPage from './components/parentZone/ParentZoneJuniorLawPage';
+import ParentZoneJuniorRightsPage from './components/parentZone/ParentZoneJuniorRightsPage';
+import ParentZoneSciencePage from './components/parentZone/ParentZoneSciencePage';
+import ParentZoneCalculatorPage from './components/parentZone/ParentZoneCalculatorPage';
 
 const themes = [
   { key: 'light', label: 'Light Mode' },
@@ -408,7 +415,7 @@ const Navbar = ({
 
 const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const { user, profile, signOut } = useAuth();
-  const [authMode, setAuthMode] = useState(null); // 'login' | 'signup' | null
+  const { openAuthModal, isAuthModalOpen } = useAuthModal();
   const [displayMode, setDisplayMode] = useState(() => {
     if (typeof window === 'undefined') return 'light';
     const savedMode = window.localStorage.getItem(DISPLAY_MODE_STORAGE_KEY);
@@ -428,7 +435,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const [learningModule, setLearningModule] = useState(null); // 'alphabets' | 'numbers' | 'colors' | 'safari' | null
   const [magicArt, setMagicArt] = useState(false);
   const [wellbeingUsage, setWellbeingUsage] = useState(() => readWellbeingUsage());
-  const isAdmin = isAdminEmail(user?.email);
+  const isAdmin = isAdminEmail(user?.email) || String(profile?.role || '').toLowerCase() === 'admin';
   const { isKidsModeOn } = useKidsMode();
   const usageAccumulatorMsRef = React.useRef(0);
   const openSettingsModal = React.useCallback(() => setShowSettings(true), []);
@@ -501,7 +508,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
       lastTick = now;
 
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
-      if (showSettings || authMode || parentZoneOpen) return;
+      if (showSettings || isAuthModalOpen || parentZoneOpen) return;
       if (isDailyLimitReached) return;
 
       usageAccumulatorMsRef.current += elapsed;
@@ -530,7 +537,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [authMode, showSettings, parentZoneOpen, isDailyLimitReached]);
+  }, [isAuthModalOpen, showSettings, parentZoneOpen, isDailyLimitReached]);
 
   const scrollToId = (id) => {
     if (id === 'magic-art') {
@@ -664,22 +671,16 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
             onBrightnessChange={setBrightness}
             onLogin={() => {
               setShowSettings(false);
-              setAuthMode('login');
+              openAuthModal('login');
             }}
             onCreateAccount={() => {
               setShowSettings(false);
-              setAuthMode('signup');
+              openAuthModal('signup');
             }}
             onLogout={signOut}
             user={user}
             isAdmin={isAdmin}
             onGoToAdmin={onGoToAdmin}
-          />
-          <AuthModal
-            open={Boolean(authMode)}
-            initialMode={authMode || 'login'}
-            onClose={() => setAuthMode(null)}
-            onSuccess={() => setAuthMode(null)}
           />
         </div>
       </>
@@ -765,8 +766,8 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
       >
       <HeaderNavbar
         onNav={scrollToId}
-        onOpenLogin={() => setAuthMode('login')}
-        onOpenSignup={() => setAuthMode('signup')}
+        onOpenLogin={() => openAuthModal('login')}
+        onOpenSignup={() => openAuthModal('signup')}
         onOpenParentZone={requestParentZoneAccess}
         isAdmin={isAdmin}
         onGoToAdmin={onGoToAdmin}
@@ -798,28 +799,22 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
         onBrightnessChange={setBrightness}
         onLogin={() => {
           setShowSettings(false);
-          setAuthMode('login');
+          openAuthModal('login');
         }}
         onCreateAccount={() => {
           setShowSettings(false);
-          setAuthMode('signup');
+          openAuthModal('signup');
         }}
         onLogout={signOut}
         user={user}
         isAdmin={isAdmin}
         onGoToAdmin={onGoToAdmin}
       />
-      <AuthModal
-        open={Boolean(authMode)}
-        initialMode={authMode || 'login'}
-        onClose={() => setAuthMode(null)}
-        onSuccess={() => setAuthMode(null)}
-      />
       <main className="pt-24">
         <div className="mx-auto max-w-[1400px] px-4">
           <LandingPageHabitat
             user={user}
-            onOpenLogin={() => setAuthMode('login')}
+            onOpenLogin={() => openAuthModal('login')}
             onNav={scrollToId}
             onSelectLearningModule={handleSelectLearningModule}
           />
@@ -840,8 +835,9 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
 };
 
 function AdminRouteGuard({ onBackToSite }) {
-  const { user } = useAuth();
-  const isAllowedAdmin = isAdminEmail(user?.email) && user?.email === ADMIN_EMAIL;
+  const { user, profile } = useAuth();
+  const hasAdminRole = String(profile?.role || '').toLowerCase() === 'admin';
+  const isAllowedAdmin = hasAdminRole || (isAdminEmail(user?.email) && user?.email === ADMIN_EMAIL);
 
   if (!isAllowedAdmin) {
     return (
@@ -892,16 +888,27 @@ function App() {
     <AuthProvider>
       <KidsModeProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomeRoutePage />} />
-            <Route path="/admin" element={<AdminRoutePage />} />
-            <Route path="/videos" element={<VideoZone />} />
-            <Route path="/poems" element={<PoemsPage />} />
-            <Route path="/story" element={<StoryReader />} />
-            <Route path="/coloring" element={<ColoringBook />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/blender-credit" element={<BlenderCredit />} />
-          </Routes>
+          <AuthModalProvider>
+            <Routes>
+              <Route path="/" element={<HomeRoutePage />} />
+              <Route path="/admin" element={<AdminRoutePage />} />
+              <Route path="/videos" element={<VideoZone />} />
+              <Route path="/poems" element={<PoemsPage />} />
+              <Route path="/story" element={<StoryReader />} />
+              <Route path="/coloring" element={<ColoringBook />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/blender-credit" element={<BlenderCredit />} />
+              <Route path="/parent-zone" element={<ParentZoneHubPage />} />
+              <Route path="/parent-zone/tables" element={<ParentZoneTablesPage />} />
+              <Route path="/parent-zone/numbers" element={<ParentZoneNumbersPage />} />
+              <Route path="/parent-zone/law" element={<ParentZoneJuniorLawPage />} />
+              <Route path="/parent-zone/rights" element={<ParentZoneJuniorRightsPage />} />
+              <Route path="/parent-zone/junior-law" element={<ParentZoneJuniorLawPage />} />
+              <Route path="/parent-zone/junior-rights" element={<ParentZoneJuniorRightsPage />} />
+              <Route path="/parent-zone/science" element={<ParentZoneSciencePage />} />
+              <Route path="/parent-zone/calculator" element={<ParentZoneCalculatorPage />} />
+            </Routes>
+          </AuthModalProvider>
         </BrowserRouter>
       </KidsModeProvider>
     </AuthProvider>

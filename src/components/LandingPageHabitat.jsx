@@ -102,32 +102,13 @@ const TASK_QUEST_REWARD_KEY = 'homepage_task_quest_2';
 const TASK_QUEST_REWARD_GEMS = 2;
 const TASK_QUEST_ANIMALS = ['🐶', '🐱', '🦊', '🐼', '🦁'];
 const YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY = 'aiko_subscribe_click_v1';
-const TEST_MODE_STORAGE_KEY = 'aiko_parent_test_mode_v1';
-const TEST_MODE_SYNC_EVENT = 'aiko:test-mode-sync';
-
-const TEST_ACTIVITY_ITEMS = [
-  { id: 'tables', label: 'Tables', question: '7 x 8 = ?', answer: '56', emoji: '🧮' },
-  {
-    id: 'numeric_alphabetic',
-    label: 'Numeric/Alphabetic',
-    question: 'What comes after Z?',
-    answer: 'AA',
-    emoji: '🔠',
-  },
-  {
-    id: 'junior_law',
-    label: 'Junior Law/Rights',
-    question: 'Kids have a right to what?',
-    answer: 'Safety and Education',
-    emoji: '⚖️',
-  },
-  {
-    id: 'junior_science',
-    label: 'Junior Science & Calc',
-    question: 'Water formula is?',
-    answer: 'H2O',
-    emoji: '🔬',
-  },
+const PARENT_ZONE_PRACTICE_ROUTES = [
+  { id: 'tables', label: 'Tables', emoji: '🧮', to: '/parent-zone/tables' },
+  { id: 'numbers', label: 'Numbers', emoji: '🔢', to: '/parent-zone/numbers' },
+  { id: 'junior-law', label: 'Junior Law', emoji: '⚖️', to: '/parent-zone/law' },
+  { id: 'junior-rights', label: 'Junior Rights', emoji: '🛡️', to: '/parent-zone/rights' },
+  { id: 'science', label: 'Science', emoji: '🔬', to: '/parent-zone/science' },
+  { id: 'calculator', label: 'Calculator', emoji: '🧠', to: '/parent-zone/calculator' },
 ];
 
 const WaveDivider = ({ fill = '#dcfce7', flip = false }) => (
@@ -161,11 +142,6 @@ export default function LandingPageHabitat({
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY) === 'true';
   });
-  const [isTestMode, setIsTestMode] = React.useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(TEST_MODE_STORAGE_KEY) === 'true';
-  });
-  const [activePracticeId, setActivePracticeId] = React.useState(TEST_ACTIVITY_ITEMS[0].id);
   const paymentToastTimerRef = React.useRef(null);
 
   const claimedRewards = React.useMemo(
@@ -176,8 +152,6 @@ export default function LandingPageHabitat({
   const taskQuestClaimed = claimedRewards.includes(TASK_QUEST_REWARD_KEY);
   const gemsBalance = Number(profile?.gems || 0);
   const canClaimYoutubeReward = hasClickedSubscribe && !freeGemsClaimed && !isClaimingYoutubeReward;
-  const activePractice =
-    TEST_ACTIVITY_ITEMS.find((item) => item.id === activePracticeId) || TEST_ACTIVITY_ITEMS[0];
 
   const pushBellNotification = React.useCallback((message) => {
     if (typeof window === 'undefined') return;
@@ -221,21 +195,6 @@ export default function LandingPageHabitat({
 
   React.useEffect(() => {
     loadRazorpayScript();
-  }, []);
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    const syncTestMode = () => {
-      setIsTestMode(window.localStorage.getItem(TEST_MODE_STORAGE_KEY) === 'true');
-    };
-
-    window.addEventListener(TEST_MODE_SYNC_EVENT, syncTestMode);
-    window.addEventListener('storage', syncTestMode);
-    return () => {
-      window.removeEventListener(TEST_MODE_SYNC_EVENT, syncTestMode);
-      window.removeEventListener('storage', syncTestMode);
-    };
   }, []);
 
   React.useEffect(() => {
@@ -541,31 +500,25 @@ export default function LandingPageHabitat({
             <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-black">
               Practice Container
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              {TEST_ACTIVITY_ITEMS.map((item) => (
-                <button
+            <div className="space-y-3">
+              {PARENT_ZONE_PRACTICE_ROUTES.map((item) => (
+                <Link
                   key={item.id}
-                  type="button"
-                  onClick={() => setActivePracticeId(item.id)}
-                  className={`rounded-xl border px-3 py-3 text-left transition ${
-                    activePracticeId === item.id
-                      ? 'border-white/80 bg-white/30'
-                      : 'border-white/35 bg-white/10 hover:bg-white/20'
-                  }`}
+                  to={item.to}
+                  className="flex items-center justify-between rounded-2xl border border-white/70 bg-white/30 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:bg-white/45"
                 >
-                  <p className="text-xs font-black uppercase tracking-wide text-black">{item.label}</p>
-                  <p className="mt-1 text-lg">{item.emoji}</p>
-                </button>
+                  <span className="text-sm font-black tracking-wide text-black">{item.label}</span>
+                  <span className="text-xl">{item.emoji}</span>
+                </Link>
               ))}
             </div>
 
             <div className="mt-4 rounded-2xl border border-white/35 bg-gradient-to-r from-white/20 to-white/10 p-4">
-              <p className="text-sm font-black text-black">{activePractice.question}</p>
-              <p className="mt-2 text-sm font-black text-black">
-                Answer: {isTestMode ? 'Hidden in Test Mode' : activePractice.answer}
+              <p className="text-sm font-black text-black">
+                Parent Zone practice now uses dedicated routes with one activity per page.
               </p>
               <p className="mt-1 text-sm font-black text-black">
-                Parent Test Mode is currently {isTestMode ? 'ON' : 'OFF'}.
+                Open <code>/parent-zone</code> to access the full vertical menu.
               </p>
             </div>
           </div>

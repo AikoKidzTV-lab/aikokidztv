@@ -6,6 +6,8 @@ export const FREE_VIDEO_REWARD_GEMS = 5;
 const MISSING_MAGIC_ART_USES_FALLBACK = 0;
 
 const ECONOMY_SELECT_COLUMNS = '*';
+const ECONOMY_SELECT_COLUMNS_FALLBACK =
+  'id, role, gems, unlocked_zones, unlocked_videos, unlocked_items, claimed_rewards, created_at, updated_at';
 const LOCAL_MAGIC_ART_USES_PREFIX = 'aiko_magic_art_uses_v1_';
 
 let supportsMagicArtUsesColumn = true;
@@ -29,6 +31,23 @@ const isMissingColumnError = (error, columnName) => {
 
 const markMagicArtUsesUnsupported = () => {
   supportsMagicArtUsesColumn = false;
+};
+
+const readProfileRowById = async ({ userId, maybeSingle = false }) => {
+  const runQuery = (columns) => {
+    let query = supabase.from('profiles').select(columns).eq('id', userId);
+    query = maybeSingle ? query.maybeSingle() : query.single();
+    return query;
+  };
+
+  let { data, error } = await runQuery(ECONOMY_SELECT_COLUMNS);
+
+  if (error && isMissingColumnError(error, 'magic_art_uses')) {
+    markMagicArtUsesUnsupported();
+    ({ data, error } = await runQuery(ECONOMY_SELECT_COLUMNS_FALLBACK));
+  }
+
+  return { data, error };
 };
 
 const getLocalMagicUsesKey = (userId) => `${LOCAL_MAGIC_ART_USES_PREFIX}${userId || 'guest'}`;
@@ -148,11 +167,10 @@ export const ensureEconomyProfile = async (userId) => {
   }
 
   try {
-    const { data: existing, error: fetchError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
+    const { data: existing, error: fetchError } = await readProfileRowById({
+      userId,
+      maybeSingle: true,
+    });
 
     if (fetchError) {
       return { ok: false, code: 'profile_fetch_error', message: fetchError.message || 'Failed to load profile.' };
@@ -236,14 +254,22 @@ export const readEconomyState = async (userId) => {
       return ensured;
     }
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(ECONOMY_SELECT_COLUMNS)
-      .eq('id', userId)
-      .single();
+    const { data, error } = await readProfileRowById({ userId, maybeSingle: false });
 
     if (error) {
-      return { ok: false, code: 'profile_fetch_error', message: error.message || 'Failed to read profile economy.' };
+      if (ensured.profile) {
+        return {
+          ok: true,
+          profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(ensured.profile)),
+          warning: error.message || 'Profile refresh failed. Using last known profile data.',
+        };
+      }
+
+      return {
+        ok: false,
+        code: 'profile_fetch_error',
+        message: error.message || 'Failed to read profile economy.',
+      };
     }
 
     return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(data)) };

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useKidsMode } from '../context/KidsModeContext';
+import { useNavigate } from 'react-router-dom';
 
 const PARENT_PIN_STORAGE_KEY = 'aiko_parent_pin';
 const EYE_TRACKER_STORAGE_KEY = 'aiko_eye_health_tracker_v1';
@@ -8,6 +9,14 @@ const WELLBEING_SYNC_EVENT = 'aiko:wellbeing-sync';
 const TEST_MODE_STORAGE_KEY = 'aiko_parent_test_mode_v1';
 const TEST_MODE_SYNC_EVENT = 'aiko:test-mode-sync';
 const DAILY_LIMIT_MINUTES = 300;
+const PARENT_ZONE_ACTIVITY_ROUTES = [
+  { id: 'tables', label: 'Tables', path: '/parent-zone/tables', emoji: '🧮' },
+  { id: 'numbers', label: 'Numbers', path: '/parent-zone/numbers', emoji: '🔢' },
+  { id: 'junior-law', label: 'Junior Law', path: '/parent-zone/law', emoji: '⚖️' },
+  { id: 'junior-rights', label: 'Junior Rights', path: '/parent-zone/rights', emoji: '🛡️' },
+  { id: 'science', label: 'Science', path: '/parent-zone/science', emoji: '🔬' },
+  { id: 'calculator', label: 'Calculator', path: '/parent-zone/calculator', emoji: '🧠' },
+];
 
 const mockRecentActivities = [
   { name: 'Magic Art', minutes: 0, emoji: '🎨', tone: 'from-pink-100 to-rose-100' },
@@ -63,6 +72,7 @@ const formatMinutes = (minutes = 0) => {
 };
 
 export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinGate = false }) {
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState(skipPinGate ? 'dashboard' : 'pin_setup'); // pin_setup | pin_auth | pin_reset | dashboard
   const [savedPin, setSavedPin] = useState(null);
   const [pinInput, setPinInput] = useState('');
@@ -342,6 +352,31 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
               <h2 className="text-3xl font-extrabold text-gray-900">Digital Wellbeing & Analytics</h2>
               <p className="text-gray-500 mt-1">Track eye care, monitor play time, and manage daily usage limits.</p>
             </div>
+
+            <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
+              <div className="flex flex-col gap-5">
+                <div>
+                  <h3 className="text-xl font-extrabold text-gray-900">Practice Container</h3>
+                  <p className="text-gray-500 mt-1">
+                    Parent Zone activities now open on dedicated routes with one activity per page.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {PARENT_ZONE_ACTIVITY_ROUTES.map((activity) => (
+                    <button
+                      key={activity.id}
+                      type="button"
+                      onClick={() => navigate(activity.path)}
+                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-sky-50 px-4 py-3 text-left font-black text-indigo-900 hover:-translate-y-0.5 transition"
+                    >
+                      <span>{activity.label}</span>
+                      <span className="text-xl">{activity.emoji}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </section>
 
             <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
               <div className="flex flex-col gap-6">

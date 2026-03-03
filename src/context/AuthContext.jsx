@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { ensureEconomyProfile } from '../utils/profileEconomy';
+import { readEconomyState } from '../utils/profileEconomy';
 
 const AuthContext = createContext({
   user: null,
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const profileResult = await withTimeout(
-        ensureEconomyProfile(userId),
+        readEconomyState(userId),
         AUTH_TIMEOUT_MS,
         'Profile fetch'
       );
@@ -72,6 +72,14 @@ export const AuthProvider = ({ children }) => {
         setAuthError(null);
       }
 
+      if (profileResult?.profile) {
+        console.info('[AuthContext] Profile synced after auth/session event:', {
+          userId,
+          role: profileResult.profile.role || null,
+          gems: Number(profileResult.profile.gems || 0),
+        });
+      }
+
       return profileResult.profile ?? null;
     } catch (error) {
       console.error('[AuthContext] Failed to fetch profile:', error);
@@ -80,7 +88,6 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
 
-      setProfile(null);
       setAuthError(error ?? null);
       if (isNetworkError(error)) {
         setIsOffline(true);
@@ -110,6 +117,10 @@ export const AuthProvider = ({ children }) => {
         setAuthError(null);
         return;
       }
+
+      setProfile((currentProfile) =>
+        currentProfile?.id && currentProfile.id !== nextUser.id ? null : currentProfile
+      );
 
       await fetchProfile(nextUser.id);
     };

@@ -38,7 +38,8 @@ function ProfileDropdownMenu({
 
   const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
   const isLoggedIn = Boolean(user);
-  const canSeeAdminPanel = user?.email === ADMIN_EMAIL;
+  const canSeeAdminPanel =
+    user?.email === ADMIN_EMAIL || String(profile?.role || '').toLowerCase() === 'admin';
   const modeOptions = [
     { key: 'light', label: 'Light', icon: '\u2600\uFE0F' },
     { key: 'dark', label: 'Dark', icon: '\uD83C\uDF19' },
