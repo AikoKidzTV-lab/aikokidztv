@@ -18,9 +18,18 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_RAZORPAY_KEY_ID: ${{ secrets.VITE_RAZORPAY_KEY_ID }}
+      VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+      VITE_PUBLIC_SITE_URL: https://aikokidztv.com
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -31,13 +40,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate required production secrets
+        shell: bash
+        run: |
+          required_secrets=(
+            "VITE_SUPABASE_URL"
+            "VITE_SUPABASE_ANON_KEY"
+            "VITE_RAZORPAY_KEY_ID"
+            "VITE_GEMINI_API_KEY"
+          )
+
+          missing_count=0
+          for key in "${required_secrets[@]}"; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing required repository secret: ${key}"
+              missing_count=$((missing_count + 1))
+            fi
+          done
+
+          if [ "${missing_count}" -gt 0 ]; then
+            exit 1
+          fi
+
       - name: Build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_RAZORPAY_KEY_ID: ${{ secrets.VITE_RAZORPAY_KEY_ID }}
-          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
-          VITE_PUBLIC_SITE_URL: ${{ secrets.VITE_PUBLIC_SITE_URL }}
         run: npm run build
 
       - name: Upload Pages artifact
