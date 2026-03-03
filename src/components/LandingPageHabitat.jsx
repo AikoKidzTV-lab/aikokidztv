@@ -436,7 +436,7 @@ export default function LandingPageHabitat({
                 to="/videos"
                 className="rounded-2xl border border-purple-500 bg-purple-600 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-purple-400/40 transition hover:-translate-y-1 hover:bg-purple-700"
               >
-                🎬 Movies (200 💎)
+                🎬 Movies (500 💎)
               </Link>
               <Link
                 to="/coloring"

@@ -4,29 +4,36 @@ import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import {
   FREE_VIDEO_REWARD_GEMS,
-  PREMIUM_VIDEO_UNLOCK_COST_GEMS,
   claimRewardOnce,
-  unlockVideoWithGems,
 } from '../utils/profileEconomy';
 
 const UNKNOWN_CATEGORY = 'Uncategorized';
+const MOVIES_UNLOCK_COST_GEMS = 500;
+const MOVIES_FEATURE_KEY = 'movies';
+
+const normalizeUnlockedFeatures = (value) => (
+  Array.isArray(value)
+    ? value
+      .map((item) => (typeof item === 'string' ? item.trim() : String(item || '').trim()))
+      .filter(Boolean)
+    : []
+);
 
 const normalizeVideoRow = (row) => {
-  const imageUrl = typeof row?.image_url === 'string' ? row.image_url.trim() : '';
+  const imageUrl = typeof row?.thumbnail_url === 'string' ? row.thumbnail_url.trim() : '';
   const videoUrl = typeof row?.video_url === 'string' ? row.video_url.trim() : '';
 
-  if (!imageUrl || !videoUrl) return null;
+  if (!videoUrl) return null;
 
   const id = row?.id ? String(row.id) : `${row?.title || 'video'}-${videoUrl}`;
 
   return {
     id,
     title: typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled Movie',
-    category:
-      typeof row?.category === 'string' && row.category.trim() ? row.category.trim() : UNKNOWN_CATEGORY,
+    category: UNKNOWN_CATEGORY,
     imageUrl,
     videoUrl,
-    isPremium: Boolean(row?.is_premium),
+    isPremium: false,
   };
 };
 
@@ -40,16 +47,17 @@ export default function VideoZone() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [actionVideoId, setActionVideoId] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
-
-  const unlockedVideos = useMemo(
-    () => (Array.isArray(profile?.unlocked_videos) ? profile.unlocked_videos : []).map(String),
-    [profile?.unlocked_videos]
-  );
+  const [isMoviesUnlocked, setIsMoviesUnlocked] = useState(false);
+  const [isCheckingUnlockState, setIsCheckingUnlockState] = useState(true);
+  const [isUnlockingMovies, setIsUnlockingMovies] = useState(false);
 
   const claimedRewards = useMemo(
     () => (Array.isArray(profile?.claimed_rewards) ? profile.claimed_rewards : []),
     [profile?.claimed_rewards]
   );
+  const currentGems = Number(profile?.gems || 0);
+  const canUnlockMovies = Boolean(user?.id) && currentGems >= MOVIES_UNLOCK_COST_GEMS;
+  const isMoviesUnlockButtonDisabled = isCheckingUnlockState || isUnlockingMovies || !canUnlockMovies;
 
   const showStatus = (message) => {
     setStatusMessage(message);
@@ -59,15 +67,69 @@ export default function VideoZone() {
   useEffect(() => {
     let mounted = true;
 
+    const checkMoviesUnlockState = async () => {
+      if (!user?.id) {
+        if (mounted) {
+          setIsMoviesUnlocked(false);
+          setIsCheckingUnlockState(false);
+        }
+        return;
+      }
+
+      setIsCheckingUnlockState(true);
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('unlocked_features')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        if (!mounted) return;
+        const unlockedFeatures = normalizeUnlockedFeatures(data?.unlocked_features);
+        setIsMoviesUnlocked(unlockedFeatures.includes(MOVIES_FEATURE_KEY));
+      } catch (error) {
+        if (!mounted) return;
+        console.error('[VideoZone] Failed to check movies unlock state:', error);
+        setIsMoviesUnlocked(false);
+      } finally {
+        if (mounted) {
+          setIsCheckingUnlockState(false);
+        }
+      }
+    };
+
+    void checkMoviesUnlockState();
+
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    let mounted = true;
+
     const loadMovieCards = async () => {
+      if (!isMoviesUnlocked) {
+        if (mounted) {
+          setVideos([]);
+          setLoadError('');
+          setIsLoading(false);
+        }
+        return;
+      }
+
       setIsLoading(true);
       setLoadError('');
 
       try {
         const { data, error } = await supabase
           .from('videos')
-          .select('id, title, category, image_url, video_url, is_premium, created_at')
-          .order('created_at', { ascending: false });
+          .select('id, title, video_url, thumbnail_url');
 
         if (error) {
           throw new Error(error.message);
@@ -91,7 +153,7 @@ export default function VideoZone() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [isMoviesUnlocked]);
 
   const categoryOptions = useMemo(() => {
     const unique = Array.from(new Set(videos.map((video) => video.category).filter(Boolean)));
@@ -110,39 +172,66 @@ export default function VideoZone() {
     }
   }, [activeCategory, categoryOptions]);
 
-  const isVideoUnlocked = (video) => !video.isPremium || unlockedVideos.includes(video.id);
-
   const openVideoInNewTab = (videoUrl) => {
     if (typeof window === 'undefined') return;
     window.open(videoUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const handlePremiumVideoUnlockAndPlay = async (video) => {
+  const handleUnlockMoviesSection = async () => {
+    if (isUnlockingMovies) return;
+
     if (!user?.id) {
-      showStatus('Please log in to unlock premium videos.');
+      showStatus('Please log in to unlock the Movies section.');
       return;
     }
 
-    const unlockResult = await unlockVideoWithGems({
-      userId: user.id,
-      videoId: video.id,
-      costGems: PREMIUM_VIDEO_UNLOCK_COST_GEMS,
-    });
+    setIsUnlockingMovies(true);
 
-    if (!unlockResult.ok) {
-      showStatus(unlockResult.message || 'Unable to unlock this premium video right now.');
-      return;
+    try {
+      const { data: profileRow, error: profileError } = await supabase
+        .from('profiles')
+        .select('gems, unlocked_features')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+
+      const unlockedFeatures = normalizeUnlockedFeatures(profileRow?.unlocked_features);
+      if (unlockedFeatures.includes(MOVIES_FEATURE_KEY)) {
+        setIsMoviesUnlocked(true);
+        showStatus('Movies are already unlocked. Enjoy!');
+        return;
+      }
+
+      const availableGems = Number(profileRow?.gems || 0);
+      if (availableGems < MOVIES_UNLOCK_COST_GEMS) {
+        showStatus(`You need ${MOVIES_UNLOCK_COST_GEMS} Gems but only have ${availableGems}.`);
+        return;
+      }
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          gems: availableGems - MOVIES_UNLOCK_COST_GEMS,
+          unlocked_features: [...unlockedFeatures, MOVIES_FEATURE_KEY],
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      setIsMoviesUnlocked(true);
+      await fetchProfile?.(user.id);
+      showStatus(`🎬 Movies unlocked! ${MOVIES_UNLOCK_COST_GEMS} Gems spent.`);
+    } catch (error) {
+      console.error('[VideoZone] Failed to unlock Movies section:', error);
+      showStatus(error?.message || 'Could not unlock Movies right now.');
+    } finally {
+      setIsUnlockingMovies(false);
     }
-
-    await fetchProfile?.(user.id);
-    openVideoInNewTab(video.videoUrl);
-
-    if (unlockResult.alreadyUnlocked) {
-      showStatus('Video already unlocked. Opening now.');
-      return;
-    }
-
-    showStatus(`Premium video unlocked for ${PREMIUM_VIDEO_UNLOCK_COST_GEMS} Gems.`);
   };
 
   const handleFreeVideoReward = async (video) => {
@@ -174,23 +263,13 @@ export default function VideoZone() {
   };
 
   const handleVideoAction = async (video) => {
-    if (!video?.videoUrl || actionVideoId) return;
+    if (!video?.videoUrl || actionVideoId || !isMoviesUnlocked) return;
 
     setActionVideoId(video.id);
 
     try {
-      const unlocked = isVideoUnlocked(video);
-
-      if (video.isPremium && !unlocked) {
-        await handlePremiumVideoUnlockAndPlay(video);
-        return;
-      }
-
       openVideoInNewTab(video.videoUrl);
-
-      if (!video.isPremium) {
-        await handleFreeVideoReward(video);
-      }
+      await handleFreeVideoReward(video);
     } catch (error) {
       console.error('[VideoZone] Video action failed:', error);
       showStatus('Something went wrong. Please try again.');
@@ -216,17 +295,21 @@ export default function VideoZone() {
                 Aiko&apos;s Cinema Magic
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-200 sm:text-base">
-                Free videos reward +{FREE_VIDEO_REWARD_GEMS} Gems once per video. Premium videos cost {PREMIUM_VIDEO_UNLOCK_COST_GEMS} Gems to unlock permanently.
+                Unlock the Movies section once for {MOVIES_UNLOCK_COST_GEMS} Gems, then watch and earn +{FREE_VIDEO_REWARD_GEMS} Gems on each first watch.
               </p>
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-slate-900/70 px-4 py-2 text-xs font-semibold text-cyan-100">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              {isLoading ? 'Loading...' : `${filteredVideos.length} videos`}
+              {isCheckingUnlockState
+                ? 'Checking access...'
+                : isMoviesUnlocked
+                  ? (isLoading ? 'Loading...' : `${filteredVideos.length} videos`)
+                  : 'Movies Locked'}
             </div>
           </div>
 
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-100">
-            Current Gems: {Number(profile?.gems || 0)}
+            Current Gems: {currentGems}
           </div>
 
           {loadError && (
@@ -236,110 +319,126 @@ export default function VideoZone() {
           )}
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-3">
-          {categoryOptions.map((category) => {
-            const active = activeCategory === category;
-            return (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setActiveCategory(category)}
-                aria-pressed={active}
-                className={`rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
-                  active
-                    ? 'bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-950 shadow-[0_8px_24px_rgba(34,211,238,0.25)]'
-                    : 'border border-white/15 bg-white/5 text-white hover:bg-white/10'
-                }`}
-              >
-                {category}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
-          {filteredVideos.map((video) => {
-            const rewardKey = getWatchRewardKey(video.id);
-            const rewardClaimed = claimedRewards.includes(rewardKey);
-            const unlocked = isVideoUnlocked(video);
-            const lockedPremium = video.isPremium && !unlocked;
-            const isBusy = actionVideoId === video.id;
-
-            let actionLabel = 'Watch Now';
-            if (lockedPremium) actionLabel = `Unlock for ${PREMIUM_VIDEO_UNLOCK_COST_GEMS} 💎`;
-            if (video.isPremium && unlocked) actionLabel = 'Watch Premium';
-            if (!video.isPremium && !rewardClaimed) actionLabel = `Watch +${FREE_VIDEO_REWARD_GEMS} 💎`;
-            if (!video.isPremium && rewardClaimed) actionLabel = 'Watch Again';
-
-            return (
-              <article
-                key={video.id}
-                className="group overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-300/40 hover:bg-white/10"
-              >
-                <div className="relative">
-                  <img
-                    src={video.imageUrl}
-                    alt={`${video.title} banner`}
-                    className="aspect-video w-full object-cover"
-                    loading="lazy"
-                  />
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                    <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-slate-900">
-                      {video.category}
-                    </span>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                        video.isPremium
-                          ? unlocked
-                            ? 'bg-emerald-100 text-emerald-900'
-                            : 'bg-amber-100 text-amber-900'
-                          : 'bg-slate-900/80 text-white'
-                      }`}
-                    >
-                      {video.isPremium ? (unlocked ? 'Premium Unlocked' : 'Premium') : rewardClaimed ? 'Reward Claimed' : 'Free Reward'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-4">
-                  <h3 className="min-h-[3rem] text-base font-extrabold text-white">{video.title}</h3>
-                  <p className="mt-2 text-xs text-slate-300">
-                    {video.isPremium
-                      ? lockedPremium
-                        ? `Unlock once for ${PREMIUM_VIDEO_UNLOCK_COST_GEMS} Gems.`
-                        : 'Already unlocked. Watch anytime.'
-                      : rewardClaimed
-                        ? 'Reward already claimed for this video.'
-                        : `First watch grants +${FREE_VIDEO_REWARD_GEMS} Gems.`}
-                  </p>
-
+        {isMoviesUnlocked ? (
+          <>
+            <div className="mb-6 flex flex-wrap gap-3">
+              {categoryOptions.map((category) => {
+                const active = activeCategory === category;
+                return (
                   <button
+                    key={category}
                     type="button"
-                    onClick={() => handleVideoAction(video)}
-                    disabled={Boolean(actionVideoId)}
-                    className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition ${
-                      isBusy
-                        ? 'cursor-not-allowed bg-slate-600 text-slate-200'
-                        : lockedPremium
-                          ? 'bg-amber-400 text-slate-950 hover:bg-amber-300'
-                          : 'bg-cyan-300 text-slate-950 hover:bg-cyan-200'
-                    } ${Boolean(actionVideoId) && !isBusy ? 'opacity-60' : ''}`}
+                    onClick={() => setActiveCategory(category)}
+                    aria-pressed={active}
+                    className={`rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
+                      active
+                        ? 'bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-950 shadow-[0_8px_24px_rgba(34,211,238,0.25)]'
+                        : 'border border-white/15 bg-white/5 text-white hover:bg-white/10'
+                    }`}
                   >
-                    {isBusy ? 'Processing...' : actionLabel}
-                    {!isBusy && <ExternalLink size={14} />}
+                    {category}
                   </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
 
-        {filteredVideos.length === 0 && (
-          <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-slate-200">
-            {isLoading ? 'Loading videos...' : 'No videos found in this category.'}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
+              {filteredVideos.map((video) => {
+                const rewardKey = getWatchRewardKey(video.id);
+                const rewardClaimed = claimedRewards.includes(rewardKey);
+                const isBusy = actionVideoId === video.id;
+                const actionLabel = rewardClaimed ? 'Watch Again' : `Watch +${FREE_VIDEO_REWARD_GEMS} 💎`;
+
+                return (
+                  <article
+                    key={video.id}
+                    className="group overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-300/40 hover:bg-white/10"
+                  >
+                    <div className="relative">
+                      <img
+                        src={video.imageUrl || '/logo.png.webp'}
+                        alt={`${video.title} banner`}
+                        className="aspect-video w-full object-cover"
+                        loading="lazy"
+                      />
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+
+                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                        <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-slate-900">
+                          {video.category}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] font-bold text-white">
+                          {rewardClaimed ? 'Reward Claimed' : 'Free Reward'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-4">
+                      <h3 className="min-h-[3rem] text-base font-extrabold text-white">{video.title}</h3>
+                      <p className="mt-2 text-xs text-slate-300">
+                        {rewardClaimed
+                          ? 'Reward already claimed for this video.'
+                          : `First watch grants +${FREE_VIDEO_REWARD_GEMS} Gems.`}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => handleVideoAction(video)}
+                        disabled={Boolean(actionVideoId)}
+                        className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-black transition ${
+                          isBusy
+                            ? 'cursor-not-allowed bg-slate-600 text-slate-200'
+                            : 'bg-cyan-300 text-slate-950 hover:bg-cyan-200'
+                        } ${Boolean(actionVideoId) && !isBusy ? 'opacity-60' : ''}`}
+                      >
+                        {isBusy ? 'Processing...' : actionLabel}
+                        {!isBusy && <ExternalLink size={14} />}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            {filteredVideos.length === 0 && (
+              <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-slate-200">
+                {isLoading ? 'Loading videos...' : '🧸 Coming Soon! Fresh movie adventures will pop up here very soon.'}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center shadow-2xl backdrop-blur-xl">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200/85">Movies Unlock</p>
+            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">🎬 Unlock Aiko&apos;s Movies</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">
+              Spend <span className="font-black text-cyan-100">{MOVIES_UNLOCK_COST_GEMS} Gems</span> once to unlock the full Movies section.
+            </p>
+            <button
+              type="button"
+              onClick={handleUnlockMoviesSection}
+              disabled={isMoviesUnlockButtonDisabled}
+              className={`mt-5 inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-black transition ${
+                isMoviesUnlockButtonDisabled
+                  ? 'cursor-not-allowed border border-slate-500 bg-slate-700 text-slate-200 opacity-70'
+                  : 'border border-cyan-200 bg-cyan-300 text-slate-950 hover:bg-cyan-200'
+              }`}
+            >
+              {isCheckingUnlockState
+                ? 'Checking unlock status...'
+                : isUnlockingMovies
+                  ? 'Unlocking Movies...'
+                  : !user?.id
+                    ? 'Login to Unlock Movies'
+                    : canUnlockMovies
+                      ? `Unlock Movies for ${MOVIES_UNLOCK_COST_GEMS} 💎`
+                      : `Need ${MOVIES_UNLOCK_COST_GEMS} 💎`}
+            </button>
+            {!user?.id && (
+              <p className="mt-3 text-xs font-semibold text-slate-300">
+                Please log in first to unlock with Gems.
+              </p>
+            )}
           </div>
         )}
       </div>
