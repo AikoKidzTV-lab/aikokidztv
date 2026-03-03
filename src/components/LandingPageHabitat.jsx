@@ -87,27 +87,6 @@ const HERO_BANNERS = [
     gradient: 'from-sky-300 via-cyan-300 to-blue-500',
     emoji: '❄️✨',
   },
-  {
-    id: 'banner-8',
-    title: 'Robot Fun Lab',
-    subtitle: 'Build playful bots and activate mini missions.',
-    gradient: 'from-slate-400 via-slate-500 to-slate-700',
-    emoji: '🤖⚙️',
-  },
-  {
-    id: 'banner-9',
-    title: 'Pirate Treasure Tide',
-    subtitle: 'Sail for maps, keys, and mystery chests.',
-    gradient: 'from-teal-500 via-cyan-600 to-blue-700',
-    emoji: '🏴‍☠️💎',
-  },
-  {
-    id: 'banner-10',
-    title: 'Starry Story Night',
-    subtitle: 'Read glowing bedtime tales under moonlight.',
-    gradient: 'from-violet-500 via-purple-600 to-indigo-700',
-    emoji: '🌙📚',
-  },
 ];
 
 const sanskariTasks = [
@@ -657,7 +636,7 @@ export default function LandingPageHabitat({
                   type="button"
                   className="cursor-default rounded-full border border-white/80 bg-white/55 px-4 py-1.5 text-xs font-black !text-slate-800 shadow-sm"
                 >
-                  10 Banners Ready
+                  7 Banners Ready
                 </button>
                 <button
                   type="button"
