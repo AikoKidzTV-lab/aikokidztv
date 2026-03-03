@@ -6,6 +6,7 @@ import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 import { isAdminEmail } from '../utils/admin';
 
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
+const PRODUCTION_AUTH_REDIRECT_URL = 'https://aikokidztv.com/';
 
 const normalizeMode = (value) => (value === 'signup' ? 'signup' : 'login');
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
@@ -42,7 +43,7 @@ const getAuthRuntimeContext = (mode, email) => ({
   email,
   origin: typeof window !== 'undefined' ? window.location.origin : 'server',
   path: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
-  authRedirectUrl: getAuthRedirectUrl('/'),
+  authRedirectUrl: PRODUCTION_AUTH_REDIRECT_URL,
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '(missing)',
   hasAnonKey: Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY),
 });
@@ -82,6 +83,16 @@ const getBackgroundCheckWarning = (error) => {
   }
 
   return 'Auth service is still initializing in the background. You can continue now.';
+};
+
+const getAuthRedirectUrlForRequest = () => {
+  const mode = String(import.meta.env.MODE || '').trim();
+  const isProdLikeHost =
+    typeof window !== 'undefined' && /(^|\.)aikokidztv\.com$/i.test(window.location.hostname);
+  if (mode === 'production' || isProdLikeHost) {
+    return PRODUCTION_AUTH_REDIRECT_URL;
+  }
+  return getAuthRedirectUrl('/');
 };
 
 const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
@@ -247,28 +258,22 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     }
   };
 
-  const verifyOtpWithFallbackTypes = async ({ emailToUse, token, authMode }) => {
-    const otpTypes = authMode === 'signup' ? ['signup', 'email'] : ['email', 'magiclink'];
-    let lastError = null;
+  const verifyOtpWithConfiguredType = async ({ emailToUse, token, authMode }) => {
+    const otpType = authMode === 'signup' ? 'signup' : 'magiclink';
+    const { data, error } = await withAuthTimeout(
+      supabase.auth.verifyOtp({
+        email: emailToUse,
+        token,
+        type: otpType,
+      }),
+      `verifyOtp:${otpType}`
+    );
 
-    for (const otpType of otpTypes) {
-      const { data, error: verifyError } = await withAuthTimeout(
-        supabase.auth.verifyOtp({
-          email: emailToUse,
-          token,
-          type: otpType,
-        }),
-        `verifyOtp:${otpType}`
-      );
-
-      if (!verifyError) {
-        return data;
-      }
-
-      lastError = verifyError;
+    if (error) {
+      throw error;
     }
 
-    throw lastError || new Error('Unable to verify OTP.');
+    return data;
   };
 
   const handleSubmit = async (event) => {
@@ -292,7 +297,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       const runtimeContext = getAuthRuntimeContext(`${mode}-otp-verify`, emailToUse);
 
       try {
-        const verifyData = await verifyOtpWithFallbackTypes({
+        const verifyData = await verifyOtpWithConfiguredType({
           emailToUse,
           token,
           authMode: mode,
@@ -388,7 +393,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
           email: emailToUse,
           password,
           options: {
-            emailRedirectTo: getAuthRedirectUrl('/'),
+            emailRedirectTo: getAuthRedirectUrlForRequest(),
           },
         }),
         'signUp'
@@ -427,15 +432,18 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
   };
 
   const handleOtpRequest = async () => {
+    setAuthStep('otp');
+    setOtpCode('');
+    clearFeedback();
+
     const emailToUse = normalizeEmail(email);
     if (!emailToUse) {
-      setError('Enter your email first to receive an OTP.');
+      setError('Enter your email first, then tap Resend OTP.');
       return;
     }
 
     const runId = modalRunIdRef.current;
     setOtpLoading(true);
-    clearFeedback();
     const runtimeContext = getAuthRuntimeContext(`${mode}-otp-request`, emailToUse);
 
     try {
@@ -445,7 +453,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
           email: emailToUse,
           options: {
             shouldCreateUser: mode === 'signup',
-            emailRedirectTo: getAuthRedirectUrl('/'),
+            emailRedirectTo: getAuthRedirectUrlForRequest(),
           },
         }),
         'signInWithOtp'
@@ -457,8 +465,6 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       }
 
       if (!canApplyState(runId)) return;
-      setAuthStep('otp');
-      setOtpCode('');
       setInfo('OTP sent! Enter the verification code from your email.');
     } catch (otpAuthError) {
       if (!canApplyState(runId)) return;
@@ -716,4 +722,3 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 };
 
 export default AuthModal;
-
