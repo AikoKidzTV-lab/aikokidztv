@@ -4,15 +4,30 @@ export const DEFAULT_MAGIC_ART_USES = 10;
 export const PREMIUM_VIDEO_UNLOCK_COST_GEMS = 10;
 export const FREE_VIDEO_REWARD_GEMS = 5;
 
-const ECONOMY_SELECT_COLUMNS = `
-  id,
-  gems,
-  magic_art_uses,
-  unlocked_zones,
-  unlocked_videos,
-  unlocked_items,
-  claimed_rewards
-`;
+const ECONOMY_SELECT_COLUMNS = '*';
+
+let supportsMagicArtUsesColumn = true;
+
+const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
+
+const isMissingColumnError = (error, columnName) => {
+  if (!columnName) return false;
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  const normalizedColumn = String(columnName).toLowerCase();
+  return (
+    text.includes(normalizedColumn) &&
+    (
+      text.includes('column') ||
+      text.includes('schema cache') ||
+      error?.code === '42703' ||
+      error?.code === 'PGRST204'
+    )
+  );
+};
+
+const markMagicArtUsesUnsupported = () => {
+  supportsMagicArtUsesColumn = false;
+};
 
 const normalizeNumber = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -51,17 +66,22 @@ export const normalizeEconomyProfile = (profile = null) => {
 
 const getEconomyDefaults = () => ({
   gems: 0,
-  magic_art_uses: DEFAULT_MAGIC_ART_USES,
   unlocked_zones: [],
   unlocked_videos: [],
   unlocked_items: [],
   claimed_rewards: [],
+  ...(supportsMagicArtUsesColumn ? { magic_art_uses: DEFAULT_MAGIC_ART_USES } : {}),
 });
 
 const buildEconomyBackfill = (profile = null) => {
   const patch = {};
 
-  if (!Number.isFinite(Number(profile?.magic_art_uses))) {
+  const hasMagicArtUses = hasOwn(profile, 'magic_art_uses');
+  if (!hasMagicArtUses) {
+    markMagicArtUsesUnsupported();
+  }
+
+  if (supportsMagicArtUsesColumn && hasMagicArtUses && !Number.isFinite(Number(profile?.magic_art_uses))) {
     patch.magic_art_uses = DEFAULT_MAGIC_ART_USES;
   }
   if (!Array.isArray(profile?.unlocked_zones)) {
@@ -98,11 +118,24 @@ export const ensureEconomyProfile = async (userId) => {
 
     if (!existing) {
       const defaults = getEconomyDefaults();
-      const { data: inserted, error: insertError } = await supabase
+      let { data: inserted, error: insertError } = await supabase
         .from('profiles')
         .insert({ id: userId, ...defaults })
         .select('*')
         .single();
+
+      if (insertError && isMissingColumnError(insertError, 'magic_art_uses') && hasOwn(defaults, 'magic_art_uses')) {
+        markMagicArtUsesUnsupported();
+
+        const retryPayload = { ...defaults };
+        delete retryPayload.magic_art_uses;
+
+        ({ data: inserted, error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, ...retryPayload })
+          .select('*')
+          .single());
+      }
 
       if (insertError) {
         return { ok: false, code: 'profile_insert_error', message: insertError.message || 'Failed to create profile.' };
@@ -116,12 +149,29 @@ export const ensureEconomyProfile = async (userId) => {
       return { ok: true, profile: normalizeEconomyProfile(existing) };
     }
 
-    const { data: updated, error: updateError } = await supabase
+    let { data: updated, error: updateError } = await supabase
       .from('profiles')
       .update(patch)
       .eq('id', userId)
       .select('*')
       .single();
+
+    if (updateError && isMissingColumnError(updateError, 'magic_art_uses') && hasOwn(patch, 'magic_art_uses')) {
+      markMagicArtUsesUnsupported();
+      const retryPatch = { ...patch };
+      delete retryPatch.magic_art_uses;
+
+      if (Object.keys(retryPatch).length === 0) {
+        return { ok: true, profile: normalizeEconomyProfile(existing) };
+      }
+
+      ({ data: updated, error: updateError } = await supabase
+        .from('profiles')
+        .update(retryPatch)
+        .eq('id', userId)
+        .select('*')
+        .single());
+    }
 
     if (updateError) {
       return { ok: false, code: 'profile_backfill_error', message: updateError.message || 'Failed to patch profile.' };
@@ -161,12 +211,29 @@ export const readEconomyState = async (userId) => {
 };
 
 const persistEconomyState = async (userId, patch) => {
+  if (!supportsMagicArtUsesColumn && hasOwn(patch, 'magic_art_uses')) {
+    return {
+      ok: false,
+      code: 'profile_schema_mismatch',
+      message: 'Profile schema is missing magic_art_uses column.',
+    };
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .update(patch)
     .eq('id', userId)
     .select(ECONOMY_SELECT_COLUMNS)
     .single();
+
+  if (error && isMissingColumnError(error, 'magic_art_uses')) {
+    markMagicArtUsesUnsupported();
+    return {
+      ok: false,
+      code: 'profile_schema_mismatch',
+      message: 'Profile schema is missing magic_art_uses column.',
+    };
+  }
 
   if (error) {
     return { ok: false, code: 'profile_update_error', message: error.message || 'Failed to update profile.' };

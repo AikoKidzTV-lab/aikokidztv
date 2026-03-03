@@ -2,16 +2,63 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const publicSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL;
 const appMode = import.meta.env.MODE;
+const PRODUCTION_SITE_ORIGIN = 'https://aikokidztv.com';
+
+const normalizeOrigin = (value) => {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  try {
+    const url = new URL(value.trim());
+    if (!/^https?:$/i.test(url.protocol)) return null;
+    return `${url.origin}`.replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
+};
+
+const resolveRuntimeOrigin = () => {
+  if (typeof window === 'undefined') return null;
+  return normalizeOrigin(window.location.origin);
+};
+
+const resolveSiteOrigin = () => {
+  const envOrigin = normalizeOrigin(publicSiteUrl);
+  if (envOrigin) return envOrigin;
+
+  const runtimeOrigin = resolveRuntimeOrigin();
+  if (appMode !== 'production' && runtimeOrigin) return runtimeOrigin;
+
+  return PRODUCTION_SITE_ORIGIN;
+};
+
+export const appSiteOrigin = resolveSiteOrigin();
+
+export const getAuthRedirectUrl = (path = '/') => {
+  const safePath = typeof path === 'string' && path.trim() ? path.trim() : '/';
+  const normalizedPath = safePath.startsWith('/') ? safePath : `/${safePath}`;
+
+  try {
+    return new URL(normalizedPath, `${appSiteOrigin}/`).toString();
+  } catch {
+    return `${PRODUCTION_SITE_ORIGIN}${normalizedPath}`;
+  }
+};
 
 const hasSupabaseUrl = typeof supabaseUrl === 'string' && supabaseUrl.trim().length > 0;
 const hasSupabaseAnonKey = typeof supabaseAnonKey === 'string' && supabaseAnonKey.trim().length > 0;
 const hasValidSupabaseUrl =
   hasSupabaseUrl && /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(supabaseUrl.trim());
 
+const isProductionHost =
+  typeof window !== 'undefined' && /(^|\.)aikokidztv\.com$/i.test(window.location.hostname);
+const isProductionLike = appMode === 'production' || isProductionHost || appSiteOrigin === PRODUCTION_SITE_ORIGIN;
+const authStorageKey = isProductionLike ? 'aikokidztv.auth.prod' : 'aikokidztv.auth.dev';
+
 const runtimeContext = {
   mode: appMode,
   origin: typeof window !== 'undefined' ? window.location.origin : 'server',
+  siteOrigin: appSiteOrigin,
   hasSupabaseUrl,
   hasSupabaseAnonKey,
   supabaseUrl: hasSupabaseUrl ? supabaseUrl : '(missing)',
@@ -20,7 +67,7 @@ const runtimeContext = {
 
 if (!hasSupabaseUrl || !hasSupabaseAnonKey) {
   console.error(
-    '[SupabaseClient] Missing required env vars. Check Netlify site env: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+    '[SupabaseClient] Missing required env vars. Check deployment env: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
     runtimeContext
   );
 }
@@ -37,11 +84,12 @@ const safeSupabaseAnonKey = hasSupabaseAnonKey ? supabaseAnonKey : 'missing-supa
 
 export const supabase = createClient(safeSupabaseUrl, safeSupabaseAnonKey, {
   auth: {
-    // Prevent background refresh-token retry storms when the auth server is unreachable.
-    // We handle auth/session checks explicitly in AuthContext and fall back to offline mode.
-    autoRefreshToken: false,
+    // GitHub Pages is static hosting; Supabase browser auth uses local storage sessions.
+    autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    flowType: 'pkce',
+    storageKey: authStorageKey,
   },
   global: {
     fetch: async (...args) => {
