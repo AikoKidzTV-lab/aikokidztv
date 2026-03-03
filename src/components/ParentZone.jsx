@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useKidsMode } from '../context/KidsModeContext';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const PARENT_PIN_STORAGE_KEY = 'aiko_parent_pin';
 const EYE_TRACKER_STORAGE_KEY = 'aiko_eye_health_tracker_v1';
@@ -72,7 +72,6 @@ const formatMinutes = (minutes = 0) => {
 };
 
 export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinGate = false }) {
-  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState(skipPinGate ? 'dashboard' : 'pin_setup'); // pin_setup | pin_auth | pin_reset | dashboard
   const [savedPin, setSavedPin] = useState(null);
   const [pinInput, setPinInput] = useState('');
@@ -364,15 +363,14 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
 
                 <div className="space-y-3">
                   {PARENT_ZONE_ACTIVITY_ROUTES.map((activity) => (
-                    <button
+                    <Link
                       key={activity.id}
-                      type="button"
-                      onClick={() => navigate(activity.path)}
+                      to={activity.path}
                       className="w-full flex items-center justify-between rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-sky-50 px-4 py-3 text-left font-black text-indigo-900 hover:-translate-y-0.5 transition"
                     >
                       <span>{activity.label}</span>
                       <span className="text-xl">{activity.emoji}</span>
-                    </button>
+                    </Link>
                   ))}
                 </div>
               </div>

@@ -909,6 +909,7 @@ function App() {
               <Route path="/parent-zone" element={<ParentZoneHubPage />} />
               <Route path="/parent-zone/tables" element={<ParentZoneTablesPage />} />
               <Route path="/parent-zone/numbers" element={<ParentZoneNumbersPage />} />
+              <Route path="/numbers" element={<ParentZoneNumbersPage />} />
               <Route path="/parent-zone/law" element={<ParentZoneJuniorLawPage />} />
               <Route path="/parent-zone/rights" element={<ParentZoneJuniorRightsPage />} />
               <Route path="/parent-zone/junior-law" element={<ParentZoneJuniorLawPage />} />
