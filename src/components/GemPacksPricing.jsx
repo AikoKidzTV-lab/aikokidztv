@@ -6,32 +6,32 @@ const gemPacks = [
     id: 'safari-pro',
     title: 'Safari Pro',
     gems: 200,
-    mascot: '🦁',
-    prices: { INR: 149, USD: 1.99 },
-    accent: 'from-yellow-200 via-amber-100 to-orange-100',
-    border: 'border-orange-300/90',
-    glow: 'shadow-[0_24px_70px_rgba(249,115,22,0.22)]',
+    mascot: '\u{1F43C}',
+    prices: { INR: 299, USD: 1.99 },
+    accent: 'from-pink-300 via-rose-200 to-yellow-200',
+    border: 'border-pink-300/90',
+    glow: 'shadow-[0_18px_40px_rgba(244,114,182,0.32)]',
     featured: true,
   },
   {
     id: 'jungle-king',
     title: 'Jungle King',
     gems: 500,
-    mascot: '🐘',
-    prices: { INR: 450, USD: 5.99 },
-    accent: 'from-cyan-100 via-sky-100 to-blue-100',
+    mascot: '\u{1F426}',
+    prices: { INR: 699, USD: 5.99 },
+    accent: 'from-cyan-300 via-sky-200 to-blue-200',
     border: 'border-cyan-300/90',
-    glow: 'shadow-[0_24px_70px_rgba(14,165,233,0.2)]',
+    glow: 'shadow-[0_18px_40px_rgba(14,165,233,0.3)]',
   },
   {
     id: 'treasure-gems',
     title: 'Treasure Gems',
     gems: 1000,
-    mascot: '👑',
-    prices: { INR: 899, USD: 10.99 },
-    accent: 'from-violet-100 via-fuchsia-100 to-amber-100',
-    border: 'border-violet-300/90',
-    glow: 'shadow-[0_26px_72px_rgba(124,58,237,0.25)]',
+    mascot: '\u{1F420}',
+    prices: { INR: 1299, USD: 10.99 },
+    accent: 'from-yellow-300 via-amber-200 to-fuchsia-200',
+    border: 'border-amber-300/90',
+    glow: 'shadow-[0_18px_40px_rgba(245,158,11,0.3)]',
   },
 ];
 
@@ -120,18 +120,23 @@ export default function GemPacksPricing({ onPay }) {
         </p>
       </div>
 
-      <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="group relative overflow-hidden rounded-[1.7rem] border border-rose-300/90 bg-gradient-to-b from-rose-100 via-pink-50 to-orange-50 p-5 shadow-[0_24px_70px_rgba(244,63,94,0.18)] transition duration-300 hover:-translate-y-2 hover:shadow-2xl sm:p-6">
-          <div className="flex flex-col items-center text-center">
-            <div className="grid h-20 w-20 place-items-center rounded-2xl border border-white/80 bg-white/75 text-5xl shadow">
-              ☕
-            </div>
-            <p className="mt-4 text-lg font-black !text-slate-900">Buy Me a Coffee</p>
-            <p className="text-xs font-bold uppercase tracking-widest !text-rose-700">Donation</p>
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="group relative min-w-0 overflow-hidden rounded-2xl border border-rose-300/90 bg-gradient-to-br from-pink-200 via-rose-100 to-yellow-100 p-4 shadow-[0_12px_30px_rgba(244,63,94,0.24)] transition-all duration-300 transform-gpu hover:-translate-y-1 hover:scale-105 hover:shadow-[0_20px_42px_rgba(244,63,94,0.34)] sm:p-5">
+          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-2 text-xs opacity-85">
+            <span>🌸</span>
+            <span>🐼</span>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-white/90 bg-white/75 p-4 shadow-sm">
-            <label className="block text-left text-xs font-black uppercase tracking-widest !text-slate-600">
+          <div className="mt-3 flex flex-col items-center text-center">
+            <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/90 bg-white/80 text-3xl shadow-md">
+              ☕
+            </div>
+            <p className="mt-3 text-base font-black !text-slate-900">Buy Me a Coffee</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] !text-rose-700">Your Will</p>
+          </div>
+
+          <div className="mt-3 rounded-xl border border-white/90 bg-white/80 p-3 shadow-sm">
+            <label className="block text-left text-[11px] font-black uppercase tracking-widest !text-slate-600">
               Custom Amount
             </label>
             <input
@@ -141,27 +146,27 @@ export default function GemPacksPricing({ onPay }) {
               step={supportLimits.step}
               value={customSupportAmount}
               onChange={(event) => setCustomSupportAmount(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-lg font-black !text-slate-900 outline-none transition focus:border-rose-400"
+              className="mt-2 w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-base font-black !text-slate-900 outline-none transition focus:border-rose-400"
             />
-            <p className="mt-2 text-xs font-bold !text-slate-600">
+            <p className="mt-2 text-[11px] font-bold !text-slate-600">
               Min: {formatCurrency(supportLimits.min, activeCurrency)} / Max: {formatCurrency(supportLimits.max, activeCurrency)}
             </p>
-            <p className="mt-2 text-xs font-semibold !text-rose-700">
+            <p className="mt-1 text-[11px] font-semibold !text-rose-700">
               Gem rewards are calculated dynamically based on your support! ❤️
             </p>
-            <div className="mt-3 rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-center">
-              <p className="text-[11px] font-black uppercase tracking-wider !text-rose-500">Estimated Reward</p>
-              <p className="mt-1 text-xl font-black !text-slate-900">{donationGemReward} Gems 💎</p>
+            <div className="mt-2 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-center">
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] !text-rose-500">Estimated Reward</p>
+              <p className="mt-1 text-lg font-black !text-slate-900">{donationGemReward} Gems 💎</p>
             </div>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-3">
             <button
               type="button"
               onClick={() =>
                 onPay?.('Buy Me a Coffee', normalizedSupportAmount, donationGemReward, activeCurrency)
               }
-              className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-black !text-white shadow-lg transition hover:bg-slate-800"
+              className="w-full rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(244,63,94,0.35)] transition-all hover:brightness-105"
             >
               Buy Now
             </button>
@@ -172,34 +177,40 @@ export default function GemPacksPricing({ onPay }) {
           <div
             key={pack.id}
             className={[
-              'group relative overflow-hidden rounded-[1.7rem] border bg-gradient-to-b p-5 transition duration-300 hover:-translate-y-2 hover:shadow-2xl sm:p-6',
+              'group relative min-w-0 overflow-hidden rounded-2xl border bg-gradient-to-br p-4 transition-all duration-300 transform-gpu hover:-translate-y-1 hover:scale-105 hover:shadow-2xl sm:p-5',
               pack.accent,
               pack.border,
               pack.glow,
               pack.featured ? 'ring-2 ring-rose-300/70' : '',
             ].join(' ')}
           >
-            <div className="flex flex-col items-center text-center">
-              <div className="grid h-20 w-20 place-items-center rounded-2xl border border-white/70 bg-white/70 text-5xl shadow">
-                {pack.mascot}
-              </div>
-              <p className="mt-4 text-lg font-black !text-slate-900">{pack.title}</p>
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-2 text-xs opacity-85">
+              <span>🐦</span>
+              <span>🐠</span>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/80 bg-white/70 p-4 text-center shadow-sm">
-              <p className="text-3xl font-black !text-slate-900">
-                {pack.gems} Gems <span className="text-2xl">💎</span>
+            <div className="mt-3 flex flex-col items-center text-center">
+              <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/85 bg-white/80 text-3xl shadow-md">
+                {pack.mascot}
+              </div>
+              <p className="mt-3 text-base font-black !text-slate-900">{pack.title}</p>
+              <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] !text-slate-700">🌸 Shiny Pack</p>
+            </div>
+
+            <div className="mt-3 rounded-xl border border-white/85 bg-white/80 p-3 text-center shadow-sm">
+              <p className="text-2xl font-black !text-slate-900">
+                {pack.gems} Gems <span className="text-xl">💎</span>
               </p>
-              <p className="mt-2 text-2xl font-black !text-slate-900">
+              <p className="mt-1.5 text-xl font-black !text-slate-900">
                 {formatCurrency(pack.prices[activeCurrency], activeCurrency)}
               </p>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-3">
               <button
                 type="button"
                 onClick={() => onPay?.(pack.title, pack.prices[activeCurrency], pack.gems, activeCurrency)}
-                className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-black !text-white shadow-lg transition hover:bg-slate-800"
+                className="w-full rounded-xl bg-gradient-to-r from-sky-600 via-cyan-500 to-blue-500 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(14,165,233,0.35)] transition-all hover:brightness-105"
               >
                 Buy Now
               </button>
@@ -207,7 +218,6 @@ export default function GemPacksPricing({ onPay }) {
           </div>
         ))}
       </div>
-
       <div className="mt-6 rounded-2xl border border-white/90 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 px-4 py-4 shadow-xl sm:px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
