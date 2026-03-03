@@ -44,7 +44,7 @@ const withTimeout = async (promise, timeoutMs, label) => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
   const [authError, setAuthError] = useState(null);
   const isMountedRef = useRef(false);
@@ -74,6 +74,41 @@ export const AuthProvider = ({ children }) => {
     const retryCount = Number.isFinite(Number(options?.retryCount))
       ? Math.max(0, Math.floor(Number(options.retryCount)))
       : 0;
+    const preferDirect = Boolean(options?.preferDirect);
+
+    if (preferDirect) {
+      try {
+        const { data: directProfile, error: directError } = await withTimeout(
+          supabase.from('profiles').select('*').eq('id', userId).single(),
+          AUTH_TIMEOUT_MS,
+          'Profile direct fetch'
+        );
+
+        if (directError) {
+          throw directError;
+        }
+
+        const normalizedDirectProfile = normalizeFallbackProfile(directProfile);
+        if (isMountedRef.current) {
+          setProfile(normalizedDirectProfile);
+          setIsOffline(false);
+          setAuthError(null);
+        }
+
+        console.info('[AuthContext] Direct profile sync succeeded:', {
+          userId,
+          role: normalizedDirectProfile?.role || null,
+          gems: Number(normalizedDirectProfile?.gems || 0),
+        });
+
+        return normalizedDirectProfile;
+      } catch (directFetchError) {
+        console.warn('[AuthContext] Direct profile fetch failed. Falling back to economy profile flow.', {
+          userId,
+          message: directFetchError?.message || 'Unknown error',
+        });
+      }
+    }
 
     try {
       const profileResult = await withTimeout(
@@ -117,7 +152,7 @@ export const AuthProvider = ({ children }) => {
           }
         });
 
-        return fetchProfile(userId, { retryCount: retryCount - 1 });
+        return fetchProfile(userId, { retryCount: retryCount - 1, preferDirect });
       }
 
       try {
@@ -181,12 +216,12 @@ export const AuthProvider = ({ children }) => {
         currentProfile?.id && currentProfile.id !== nextUser.id ? null : currentProfile
       );
 
-      await fetchProfile(nextUser.id, { retryCount: 2 });
+      await fetchProfile(nextUser.id, { retryCount: 2, preferDirect: true });
 
       if (typeof window !== 'undefined') {
         window.setTimeout(() => {
           if (!isMountedRef.current || !isActive) return;
-          void fetchProfile(nextUser.id, { retryCount: 0 });
+          void fetchProfile(nextUser.id, { retryCount: 0, preferDirect: true });
         }, 250);
       }
     };
@@ -271,7 +306,7 @@ export const AuthProvider = ({ children }) => {
         if (session?.user?.id && typeof window !== 'undefined') {
           window.setTimeout(() => {
             if (!isMountedRef.current || !isActive) return;
-            void fetchProfile(session.user.id, { retryCount: 1 });
+            void fetchProfile(session.user.id, { retryCount: 1, preferDirect: true });
           }, 350);
         }
       });
@@ -343,7 +378,7 @@ export const AuthProvider = ({ children }) => {
         { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
         () => {
           if (!disposed) {
-            void fetchProfile(user.id);
+            void fetchProfile(user.id, { retryCount: 1, preferDirect: true });
           }
         }
       )
@@ -353,7 +388,7 @@ export const AuthProvider = ({ children }) => {
       typeof window !== 'undefined'
         ? window.setInterval(() => {
             if (!disposed) {
-              void fetchProfile(user.id);
+              void fetchProfile(user.id, { retryCount: 1, preferDirect: true });
             }
           }, 45000)
         : null;

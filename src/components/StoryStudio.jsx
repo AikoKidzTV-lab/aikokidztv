@@ -33,7 +33,7 @@ const suggestions = [
 const bannedKeywords = ['violence', 'blood', 'kill', 'death', 'murder', 'fight', 'weapon', 'gun', 'knife', 'attack', 'hate', 'stupid', 'idiot', 'adult', 'sex', 'nude', 'naked'];
 
 const StoryStudio = () => {
-  const { user, profile, fetchProfile } = useAuth(); 
+  const { user, profile, loading: authLoading, fetchProfile } = useAuth();
   const { triggerConfetti } = useKidsMode();
   const [selectedChar, setSelectedChar] = useState(characters[0]);
   const [input, setInput] = useState('');
@@ -54,6 +54,26 @@ const StoryStudio = () => {
   useEffect(() => {
     checkApiConnectivity();
   }, []);
+
+  useEffect(() => {
+    if (!user?.id || !fetchProfile) return;
+    if (profile?.id === user.id && Number.isFinite(Number(profile?.gems))) return;
+    void fetchProfile(user.id, { retryCount: 2, preferDirect: true });
+  }, [user?.id, profile?.id, profile?.gems, fetchProfile]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (user?.id) {
+      setError((current) =>
+        /please log in to create magic|syncing your profile/i.test(current || '') ? '' : current
+      );
+      return;
+    }
+
+    setError((current) =>
+      /syncing your profile/i.test(current || '') ? '' : current
+    );
+  }, [authLoading, user?.id, profile?.id, profile?.gems]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -126,6 +146,11 @@ const StoryStudio = () => {
   const handleSend = async () => {
     setError('');
     
+    if (authLoading) {
+      setError('Checking your login session. Please try again in a moment.');
+      return;
+    }
+
     if (cooldownTime > 0) {
       setError(`Please wait ${cooldownTime} seconds before sending another request.`);
       return;
@@ -138,7 +163,7 @@ const StoryStudio = () => {
 
     let activeProfile = profile;
     if (!activeProfile && fetchProfile) {
-      activeProfile = await fetchProfile(user.id, { retryCount: 1 });
+      activeProfile = await fetchProfile(user.id, { retryCount: 2, preferDirect: true });
     }
     if (!activeProfile) {
       setError("Syncing your profile. Please try again in a moment.");
@@ -157,7 +182,7 @@ const StoryStudio = () => {
     }
 
     const cost = COSTS.story;
-    const currentGems = activeProfile.gems || 0;
+    const currentGems = Number(activeProfile.gems ?? 0);
 
     if (currentGems < cost) {
       await Swal.fire({
@@ -274,7 +299,7 @@ const StoryStudio = () => {
         .eq('id', user.id);
 
       if (updateError) throw updateError;
-      if (fetchProfile) await fetchProfile(user.id);
+      if (fetchProfile) await fetchProfile(user.id, { retryCount: 2, preferDirect: true });
 
     } catch (err) {
       console.error('Story Generation Error:', err);
@@ -319,6 +344,12 @@ const StoryStudio = () => {
         return <Wifi size={16} className="text-yellow-400 animate-pulse" />;
     }
   };
+
+  const visibleGems = user?.id
+    ? profile?.id === user.id && Number.isFinite(Number(profile?.gems))
+      ? Number(profile.gems)
+      : null
+    : 0;
 
   return (
     <div className="w-full max-w-5xl mx-auto h-[85vh] flex flex-col bg-secondary/50 border border-white/10 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm mb-10 kid-card">
@@ -496,7 +527,7 @@ const StoryStudio = () => {
                Powered by Gemini (free tier): 2.5 Flash for stories
             </span>
             <div className="flex gap-4 text-gray-400">
-               <span>Gems: {profile?.gems || 0}</span>
+               <span>Gems: {visibleGems ?? 'syncing...'}</span>
                <span>Sessions: {sessionCount}/5</span>
                {cooldownTime > 0 && <span>Cooldown: {cooldownTime}s</span>}
             </div>

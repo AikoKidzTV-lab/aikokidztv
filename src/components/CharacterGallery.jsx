@@ -9,7 +9,7 @@ const featuredCharacters = [
     role: 'Energetic Leader',
     emoji: '🌟',
     route: '/aiko-bio',
-    theme: 'border-yellow-300 bg-yellow-100 text-yellow-900',
+    theme: 'border-white/40 bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-500',
   },
   {
     key: 'niko',
@@ -17,7 +17,7 @@ const featuredCharacters = [
     role: 'The Calm Singer',
     emoji: '🎤',
     route: '/niko-bio',
-    theme: 'border-rose-300 bg-rose-100 text-rose-900',
+    theme: 'border-white/40 bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600',
   },
   {
     key: 'kinu',
@@ -25,7 +25,7 @@ const featuredCharacters = [
     role: 'Smart Dancer',
     emoji: '🕺',
     route: '/kinu-bio',
-    theme: 'border-violet-300 bg-violet-100 text-violet-900',
+    theme: 'border-white/40 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600',
   },
   {
     key: 'mimi',
@@ -33,7 +33,7 @@ const featuredCharacters = [
     role: 'Creative Artist',
     emoji: '🎨',
     route: '/mimi-bio',
-    theme: 'border-pink-300 bg-pink-100 text-pink-900',
+    theme: 'border-white/40 bg-gradient-to-br from-sky-500 via-cyan-500 to-blue-600',
   },
 ];
 
@@ -59,18 +59,25 @@ const CharacterGallery = () => {
           >
             <Link
               to={char.route}
-              className={`group block rounded-2xl border-2 p-6 shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl ${char.theme}`}
+              className={`group relative block overflow-hidden rounded-2xl border-2 p-6 shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl ${char.theme}`}
             >
-              <div className="flex items-center gap-4">
-                <div className="grid h-14 w-14 place-items-center rounded-full border border-white/70 bg-white/80 text-2xl shadow-inner">
-                  {char.emoji}
+              <div className="pointer-events-none absolute inset-0 bg-slate-900/35" />
+
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="grid h-14 w-14 place-items-center rounded-full border border-white/70 bg-white/90 text-2xl shadow-inner">
+                  <span className="[text-shadow:0_2px_4px_rgba(0,0,0,0.45)]">{char.emoji}</span>
                 </div>
                 <div className="min-w-0">
-                  <h3 className="truncate text-lg font-black tracking-wide">{char.name}</h3>
-                  <p className="text-sm font-bold opacity-90">{char.role}</p>
+                  <h3 className="truncate text-lg font-black tracking-wide text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.9)]">
+                    {char.name}
+                  </h3>
+                  <p className="text-sm font-bold text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.9)]">
+                    {char.role}
+                  </p>
                 </div>
               </div>
-              <div className="mt-4 rounded-xl border border-white/70 bg-white/80 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-slate-900">
+
+              <div className="relative z-10 mt-4 rounded-xl border border-white/70 bg-white/95 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-slate-900">
                 Open Page
               </div>
             </Link>
@@ -82,4 +89,3 @@ const CharacterGallery = () => {
 };
 
 export default CharacterGallery;
-

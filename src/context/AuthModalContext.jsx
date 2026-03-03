@@ -26,7 +26,7 @@ export const AuthModalProvider = ({ children }) => {
   const handleAuthSuccess = useCallback(
     async ({ user } = {}) => {
       if (!user?.id) return;
-      await fetchProfile?.(user.id);
+      await fetchProfile?.(user.id, { retryCount: 2, preferDirect: true });
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('aiko:auth-refresh'));
       }
