@@ -7,10 +7,11 @@ const MISSING_MAGIC_ART_USES_FALLBACK = 0;
 
 const ECONOMY_SELECT_COLUMNS = '*';
 const ECONOMY_SELECT_COLUMNS_FALLBACK =
-  'id, role, gems, unlocked_zones, unlocked_videos, unlocked_items, claimed_rewards, created_at, updated_at';
+  'id, role, gems, unlocked_zones, unlocked_items, claimed_rewards, created_at, updated_at';
 const LOCAL_MAGIC_ART_USES_PREFIX = 'aiko_magic_art_uses_v1_';
 
 let supportsMagicArtUsesColumn = true;
+let supportsUnlockedVideosColumn = true;
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
 
@@ -33,6 +34,31 @@ const markMagicArtUsesUnsupported = () => {
   supportsMagicArtUsesColumn = false;
 };
 
+const markUnlockedVideosUnsupported = () => {
+  supportsUnlockedVideosColumn = false;
+};
+
+const stripUnsupportedColumnsFromPatch = (patch = {}) => {
+  const dbPatch = { ...patch };
+  if (!supportsMagicArtUsesColumn) {
+    delete dbPatch.magic_art_uses;
+  }
+  if (!supportsUnlockedVideosColumn) {
+    delete dbPatch.unlocked_videos;
+  }
+  return dbPatch;
+};
+
+const reconcileColumnSupportFromRow = (profile = null) => {
+  if (!profile) return;
+  if (!hasOwn(profile, 'magic_art_uses')) {
+    markMagicArtUsesUnsupported();
+  }
+  if (!hasOwn(profile, 'unlocked_videos')) {
+    markUnlockedVideosUnsupported();
+  }
+};
+
 const readProfileRowById = async ({ userId, maybeSingle = false }) => {
   const runQuery = (columns) => {
     let query = supabase.from('profiles').select(columns).eq('id', userId);
@@ -45,6 +71,15 @@ const readProfileRowById = async ({ userId, maybeSingle = false }) => {
   if (error && isMissingColumnError(error, 'magic_art_uses')) {
     markMagicArtUsesUnsupported();
     ({ data, error } = await runQuery(ECONOMY_SELECT_COLUMNS_FALLBACK));
+  }
+
+  if (error && isMissingColumnError(error, 'unlocked_videos')) {
+    markUnlockedVideosUnsupported();
+    ({ data, error } = await runQuery(ECONOMY_SELECT_COLUMNS_FALLBACK));
+  }
+
+  if (data) {
+    reconcileColumnSupportFromRow(data);
   }
 
   return { data, error };
@@ -105,7 +140,9 @@ export const normalizeEconomyProfile = (profile = null) => {
     gems: normalizeNumber(profile.gems, 0),
     magic_art_uses: normalizeNumber(profile.magic_art_uses, magicArtFallback),
     unlocked_zones: normalizeStringArray(profile.unlocked_zones),
-    unlocked_videos: normalizeStringArray(profile.unlocked_videos),
+    unlocked_videos: supportsUnlockedVideosColumn
+      ? normalizeStringArray(profile.unlocked_videos)
+      : [],
     unlocked_items: normalizeStringArray(profile.unlocked_items),
     claimed_rewards: normalizeStringArray(profile.claimed_rewards),
   };
@@ -128,7 +165,7 @@ const applyMagicUsesFallback = (userId, profile) => {
 const getEconomyDefaults = () => ({
   gems: 0,
   unlocked_zones: [],
-  unlocked_videos: [],
+  ...(supportsUnlockedVideosColumn ? { unlocked_videos: [] } : {}),
   unlocked_items: [],
   claimed_rewards: [],
   ...(supportsMagicArtUsesColumn ? { magic_art_uses: DEFAULT_MAGIC_ART_USES } : {}),
@@ -138,23 +175,27 @@ const buildEconomyBackfill = (profile = null) => {
   const patch = {};
 
   const hasMagicArtUses = hasOwn(profile, 'magic_art_uses');
+  const hasUnlockedVideos = hasOwn(profile, 'unlocked_videos');
   if (!hasMagicArtUses) {
     markMagicArtUsesUnsupported();
+  }
+  if (!hasUnlockedVideos) {
+    markUnlockedVideosUnsupported();
   }
 
   if (supportsMagicArtUsesColumn && hasMagicArtUses && !Number.isFinite(Number(profile?.magic_art_uses))) {
     patch.magic_art_uses = DEFAULT_MAGIC_ART_USES;
   }
-  if (!Array.isArray(profile?.unlocked_zones)) {
+  if (hasOwn(profile, 'unlocked_zones') && !Array.isArray(profile?.unlocked_zones)) {
     patch.unlocked_zones = [];
   }
-  if (!Array.isArray(profile?.unlocked_videos)) {
+  if (supportsUnlockedVideosColumn && hasUnlockedVideos && !Array.isArray(profile?.unlocked_videos)) {
     patch.unlocked_videos = [];
   }
-  if (!Array.isArray(profile?.unlocked_items)) {
+  if (hasOwn(profile, 'unlocked_items') && !Array.isArray(profile?.unlocked_items)) {
     patch.unlocked_items = [];
   }
-  if (!Array.isArray(profile?.claimed_rewards)) {
+  if (hasOwn(profile, 'claimed_rewards') && !Array.isArray(profile?.claimed_rewards)) {
     patch.claimed_rewards = [];
   }
 
@@ -184,17 +225,29 @@ export const ensureEconomyProfile = async (userId) => {
         .select('*')
         .single();
 
-      if (insertError && isMissingColumnError(insertError, 'magic_art_uses') && hasOwn(defaults, 'magic_art_uses')) {
-        markMagicArtUsesUnsupported();
-
+      if (insertError) {
         const retryPayload = { ...defaults };
-        delete retryPayload.magic_art_uses;
+        let shouldRetryInsert = false;
 
-        ({ data: inserted, error: insertError } = await supabase
-          .from('profiles')
-          .insert({ id: userId, ...retryPayload })
-          .select('*')
-          .single());
+        if (hasOwn(retryPayload, 'magic_art_uses') && isMissingColumnError(insertError, 'magic_art_uses')) {
+          markMagicArtUsesUnsupported();
+          delete retryPayload.magic_art_uses;
+          shouldRetryInsert = true;
+        }
+
+        if (hasOwn(retryPayload, 'unlocked_videos') && isMissingColumnError(insertError, 'unlocked_videos')) {
+          markUnlockedVideosUnsupported();
+          delete retryPayload.unlocked_videos;
+          shouldRetryInsert = true;
+        }
+
+        if (shouldRetryInsert) {
+          ({ data: inserted, error: insertError } = await supabase
+            .from('profiles')
+            .insert({ id: userId, ...retryPayload })
+            .select('*')
+            .single());
+        }
       }
 
       if (insertError) {
@@ -204,7 +257,7 @@ export const ensureEconomyProfile = async (userId) => {
       return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(inserted)) };
     }
 
-    const patch = buildEconomyBackfill(existing);
+    const patch = stripUnsupportedColumnsFromPatch(buildEconomyBackfill(existing));
     if (Object.keys(patch).length === 0) {
       return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(existing)) };
     }
@@ -216,21 +269,34 @@ export const ensureEconomyProfile = async (userId) => {
       .select('*')
       .single();
 
-    if (updateError && isMissingColumnError(updateError, 'magic_art_uses') && hasOwn(patch, 'magic_art_uses')) {
-      markMagicArtUsesUnsupported();
+    if (updateError) {
       const retryPatch = { ...patch };
-      delete retryPatch.magic_art_uses;
+      let shouldRetryPatch = false;
 
-      if (Object.keys(retryPatch).length === 0) {
-        return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(existing)) };
+      if (hasOwn(retryPatch, 'magic_art_uses') && isMissingColumnError(updateError, 'magic_art_uses')) {
+        markMagicArtUsesUnsupported();
+        delete retryPatch.magic_art_uses;
+        shouldRetryPatch = true;
       }
 
-      ({ data: updated, error: updateError } = await supabase
-        .from('profiles')
-        .update(retryPatch)
-        .eq('id', userId)
-        .select('*')
-        .single());
+      if (hasOwn(retryPatch, 'unlocked_videos') && isMissingColumnError(updateError, 'unlocked_videos')) {
+        markUnlockedVideosUnsupported();
+        delete retryPatch.unlocked_videos;
+        shouldRetryPatch = true;
+      }
+
+      if (shouldRetryPatch) {
+        if (Object.keys(retryPatch).length === 0) {
+          return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(existing)) };
+        }
+
+        ({ data: updated, error: updateError } = await supabase
+          .from('profiles')
+          .update(retryPatch)
+          .eq('id', userId)
+          .select('*')
+          .single());
+      }
     }
 
     if (updateError) {
@@ -288,15 +354,11 @@ const persistWithoutMagicArtColumn = async (userId, patch) => {
     writeLocalMagicUses(userId, nextMagicUses);
   }
 
-  const dbPatch = { ...patch };
+  const dbPatch = stripUnsupportedColumnsFromPatch(patch);
   delete dbPatch.magic_art_uses;
 
   if (Object.keys(dbPatch).length === 0) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(ECONOMY_SELECT_COLUMNS)
-      .eq('id', userId)
-      .single();
+    const { data, error } = await readProfileRowById({ userId, maybeSingle: false });
 
     if (error) {
       return { ok: false, code: 'profile_fetch_error', message: error.message || 'Failed to read profile economy.' };
@@ -338,13 +400,18 @@ const persistWithoutMagicArtColumn = async (userId, patch) => {
 };
 
 const persistEconomyState = async (userId, patch) => {
-  if (!supportsMagicArtUsesColumn && hasOwn(patch, 'magic_art_uses')) {
-    return persistWithoutMagicArtColumn(userId, patch);
+  const dbPatch = stripUnsupportedColumnsFromPatch(patch);
+  if (Object.keys(dbPatch).length === 0) {
+    const { data, error } = await readProfileRowById({ userId, maybeSingle: false });
+    if (error) {
+      return { ok: false, code: 'profile_fetch_error', message: error.message || 'Failed to read profile economy.' };
+    }
+    return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(data)) };
   }
 
   const { data, error } = await supabase
     .from('profiles')
-    .update(patch)
+    .update(dbPatch)
     .eq('id', userId)
     .select(ECONOMY_SELECT_COLUMNS)
     .single();
@@ -352,6 +419,11 @@ const persistEconomyState = async (userId, patch) => {
   if (error && isMissingColumnError(error, 'magic_art_uses')) {
     markMagicArtUsesUnsupported();
     return persistWithoutMagicArtColumn(userId, patch);
+  }
+
+  if (error && isMissingColumnError(error, 'unlocked_videos')) {
+    markUnlockedVideosUnsupported();
+    return persistEconomyState(userId, patch);
   }
 
   if (error) {

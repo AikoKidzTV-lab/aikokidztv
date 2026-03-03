@@ -836,7 +836,7 @@ export default function LandingPageHabitat({
                   New stories, playful learning, and kid-safe entertainment updates are published on our official channel.
                 </p>
                 <a
-                  href="http://www.youtube.com/@AikoKidzTV"
+                  href="https://www.youtube.com/@AikoKidzTV"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={handleSubscribeClick}

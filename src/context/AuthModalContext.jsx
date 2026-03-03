@@ -11,6 +11,14 @@ const AuthModalContext = createContext({
 });
 
 const normalizeMode = (mode) => (mode === 'signup' ? 'signup' : 'login');
+const wait = (ms) =>
+  new Promise((resolve) => {
+    if (typeof window !== 'undefined') {
+      window.setTimeout(resolve, ms);
+      return;
+    }
+    setTimeout(resolve, ms);
+  });
 
 export const AuthModalProvider = ({ children }) => {
   const { fetchProfile } = useAuth();
@@ -46,6 +54,8 @@ export const AuthModalProvider = ({ children }) => {
       }
 
       await fetchProfile?.(user.id, { retryCount: 2, preferDirect: true });
+      await wait(220);
+      await fetchProfile?.(user.id, { retryCount: 1, preferDirect: true });
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('aiko:auth-refresh'));
       }

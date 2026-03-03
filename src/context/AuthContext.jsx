@@ -19,7 +19,7 @@ const isNetworkError = (error) => {
 
 const AUTH_TIMEOUT_MS = 20000;
 const PROFILE_FALLBACK_COLUMNS =
-  'id, role, gems, unlocked_zones, unlocked_videos, unlocked_items, claimed_rewards';
+  'id, role, gems, unlocked_zones, unlocked_items, claimed_rewards';
 
 const withTimeout = async (promise, timeoutMs, label) => {
   let timeoutId;

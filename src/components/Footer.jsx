@@ -145,7 +145,7 @@ const Footer = () => {
             <h4 className="font-semibold mb-4 uppercase text-sm tracking-wider">Connect</h4>
             <div className="flex items-center gap-3">
               <a
-                href="http://www.youtube.com/@AikoKidzTV"
+                href="https://www.youtube.com/@AikoKidzTV"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="YouTube"

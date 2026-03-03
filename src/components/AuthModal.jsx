@@ -17,6 +17,21 @@ const isDuplicateKeyError = (error) => {
   return message.includes('duplicate') || message.includes('unique');
 };
 
+const isMissingColumnError = (error, columnName) => {
+  if (!columnName) return false;
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  const normalizedColumn = String(columnName).toLowerCase();
+  return (
+    text.includes(normalizedColumn) &&
+    (
+      text.includes('column') ||
+      text.includes('schema cache') ||
+      error?.code === '42703' ||
+      error?.code === 'PGRST204'
+    )
+  );
+};
+
 const serializeAuthError = (authError) => ({
   message: authError?.message || 'Unknown auth error',
   code: authError?.code || null,
@@ -214,21 +229,29 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
   const ensureSignupProfile = async (userId) => {
     if (!userId) return;
 
-    const { error: profileError } = await supabase.from('profiles').insert({
+    const baseProfilePayload = {
       id: userId,
       gems: NEW_USER_BONUS_GEMS,
       unlocked_zones: [],
       unlocked_videos: [],
       unlocked_items: [],
       claimed_rewards: [],
-    });
+    };
+
+    let { error: profileError } = await supabase.from('profiles').insert(baseProfilePayload);
+
+    if (profileError && isMissingColumnError(profileError, 'unlocked_videos')) {
+      const retryPayload = { ...baseProfilePayload };
+      delete retryPayload.unlocked_videos;
+      ({ error: profileError } = await supabase.from('profiles').insert(retryPayload));
+    }
 
     if (profileError && !isDuplicateKeyError(profileError)) {
       console.warn('[AuthModal] Could not initialize profile row:', profileError);
     }
   };
 
-  const handleAuthSuccess = ({ user: signedInUser = null, session = null, source = 'password' } = {}) => {
+  const handleAuthSuccess = async ({ user: signedInUser = null, session = null, source = 'password' } = {}) => {
     if (!signedInUser) {
       const missingSessionError = new Error('Sign-in succeeded but Supabase returned no active user/session.');
       const formatted = formatAuthError(missingSessionError);
@@ -241,7 +264,16 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       return;
     }
 
-    onSuccess?.({ user: signedInUser, session, source });
+    try {
+      await onSuccess?.({ user: signedInUser, session, source });
+    } catch (syncError) {
+      console.warn('[AuthModal] Post-login profile sync failed; continuing with authenticated session.', {
+        message: syncError?.message || 'Unknown error',
+        source,
+        userId: signedInUser?.id || null,
+      });
+    }
+
     closeModal();
 
     if (isAdminEmail(signedInUser.email)) {
@@ -310,7 +342,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
         if (!canApplyState(runId)) return;
 
         setInfo('OTP verified! Redirecting...');
-        handleAuthSuccess({
+        await handleAuthSuccess({
           user: verifyData?.user ?? verifyData?.session?.user ?? null,
           session: verifyData?.session ?? null,
           source: 'otp',
@@ -379,7 +411,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
         const signedInUser = signInData?.user ?? signInData?.session?.user ?? null;
         setInfo('Welcome back! Redirecting...');
-        handleAuthSuccess({
+        await handleAuthSuccess({
           user: signedInUser,
           session: signInData?.session ?? null,
           source: 'password',
@@ -410,7 +442,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
       if (signUpData?.session) {
         setInfo('Account created successfully!');
-        handleAuthSuccess({
+        await handleAuthSuccess({
           user: signUpData?.user ?? signUpData?.session?.user ?? null,
           session: signUpData?.session ?? null,
           source: 'signup',
