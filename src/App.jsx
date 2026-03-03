@@ -915,6 +915,7 @@ function App() {
               <Route path="/parent-zone/junior-law" element={<ParentZoneJuniorLawPage />} />
               <Route path="/parent-zone/junior-rights" element={<ParentZoneJuniorRightsPage />} />
               <Route path="/parent-zone/science" element={<ParentZoneSciencePage />} />
+              <Route path="/parent-zone/junior-science" element={<ParentZoneSciencePage />} />
               <Route path="/parent-zone/calculator" element={<ParentZoneCalculatorPage />} />
             </Routes>
           </AuthModalProvider>

@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom';
 import ParentZoneRouteLayout from './ParentZoneRouteLayout';
 
 const PARENT_ZONE_ACTIVITIES = [
-  { id: 'tables', label: 'Tables', emoji: '🧮', to: '/parent-zone/tables' },
-  { id: 'numbers', label: 'Numbers', emoji: '🔢', to: '/parent-zone/numbers' },
-  { id: 'junior-law', label: 'Junior Law', emoji: '⚖️', to: '/parent-zone/law' },
-  { id: 'junior-rights', label: 'Junior Rights', emoji: '🛡️', to: '/parent-zone/rights' },
-  { id: 'science', label: 'Science', emoji: '🔬', to: '/parent-zone/science' },
-  { id: 'calculator', label: 'Calculator', emoji: '🧠', to: '/parent-zone/calculator' },
+  { id: 'tables', label: 'Tables', emoji: '\u{1F9EE}', to: '/parent-zone/tables' },
+  { id: 'numbers', label: 'Numbers', emoji: '\u{1F522}', to: '/parent-zone/numbers' },
+  { id: 'junior-law', label: 'Junior Law', emoji: '\u2696\uFE0F', to: '/parent-zone/junior-law' },
+  { id: 'junior-rights', label: 'Junior Rights', emoji: '\u{1F6E1}\uFE0F', to: '/parent-zone/rights' },
+  { id: 'science', label: 'Science', emoji: '\u{1F52C}', to: '/parent-zone/junior-science' },
+  { id: 'calculator', label: 'Calculator', emoji: '\u{1F9E0}', to: '/parent-zone/calculator' },
 ];
 
 export default function ParentZoneHubPage() {

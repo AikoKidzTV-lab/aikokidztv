@@ -1,20 +1,16 @@
 import React from 'react';
-import ParentZoneRouteLayout from './ParentZoneRouteLayout';
+import ParentZoneQuizPage from './ParentZoneQuizPage';
+import { JUNIOR_SCIENCE_QUIZ_QUESTIONS } from '../../constants/juniorQuizzes';
 
 export default function ParentZoneSciencePage() {
   return (
-    <ParentZoneRouteLayout
-      title="Science"
-      description="Dedicated Science route. The full 30-question science worksheet will be added next."
-    >
-      <section className="rounded-3xl border border-dashed border-cyan-300 bg-cyan-50/70 p-8 text-center">
-        <p className="text-4xl">🔬</p>
-        <h2 className="mt-3 text-2xl font-black text-cyan-900">Science Placeholder</h2>
-        <p className="mt-2 text-sm font-semibold text-cyan-700">
-          Upcoming: daily-life science, discovery prompts, and concept checks.
-        </p>
-      </section>
-    </ParentZoneRouteLayout>
+    <ParentZoneQuizPage
+      title="Junior Science"
+      description="30-question interactive science quiz with instant feedback for curious kids."
+      quizEmoji="🔬"
+      variant="science"
+      questions={JUNIOR_SCIENCE_QUIZ_QUESTIONS}
+      rewardKey="parent_zone_junior_science_quiz_50"
+    />
   );
 }
-

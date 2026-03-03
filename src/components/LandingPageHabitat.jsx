@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import AIStudio from './AIStudio';
 import GemPacksPricing from './GemPacksPricing';
@@ -105,9 +105,9 @@ const YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY = 'aiko_subscribe_click_v1';
 const PARENT_ZONE_PRACTICE_ROUTES = [
   { id: 'tables', label: 'Tables', emoji: '🧮', to: '/parent-zone/tables' },
   { id: 'numbers', label: 'Numbers', emoji: '🔢', to: '/parent-zone/numbers' },
-  { id: 'junior-law', label: 'Junior Law', emoji: '⚖️', to: '/parent-zone/law' },
+  { id: 'junior-law', label: 'Junior Law', emoji: '⚖️', to: '/parent-zone/junior-law' },
   { id: 'junior-rights', label: 'Junior Rights', emoji: '🛡️', to: '/parent-zone/rights' },
-  { id: 'science', label: 'Science', emoji: '🔬', to: '/parent-zone/science' },
+  { id: 'science', label: 'Science', emoji: '🔬', to: '/parent-zone/junior-science' },
   { id: 'calculator', label: 'Calculator', emoji: '🧠', to: '/parent-zone/calculator' },
 ];
 
@@ -913,11 +913,3 @@ export default function LandingPageHabitat({
     </div>
   );
 }
-
-
-
-
-
-
-
-

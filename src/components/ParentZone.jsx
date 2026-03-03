@@ -10,19 +10,19 @@ const TEST_MODE_STORAGE_KEY = 'aiko_parent_test_mode_v1';
 const TEST_MODE_SYNC_EVENT = 'aiko:test-mode-sync';
 const DAILY_LIMIT_MINUTES = 300;
 const PARENT_ZONE_ACTIVITY_ROUTES = [
-  { id: 'tables', label: 'Tables', path: '/parent-zone/tables', emoji: '🧮' },
-  { id: 'numbers', label: 'Numbers', path: '/parent-zone/numbers', emoji: '🔢' },
-  { id: 'junior-law', label: 'Junior Law', path: '/parent-zone/law', emoji: '⚖️' },
-  { id: 'junior-rights', label: 'Junior Rights', path: '/parent-zone/rights', emoji: '🛡️' },
-  { id: 'science', label: 'Science', path: '/parent-zone/science', emoji: '🔬' },
-  { id: 'calculator', label: 'Calculator', path: '/parent-zone/calculator', emoji: '🧠' },
+  { id: 'tables', label: 'Tables', path: '/parent-zone/tables', emoji: '\u{1F9EE}' },
+  { id: 'numbers', label: 'Numbers', path: '/parent-zone/numbers', emoji: '\u{1F522}' },
+  { id: 'junior-law', label: 'Junior Law', path: '/parent-zone/junior-law', emoji: '\u2696\uFE0F' },
+  { id: 'junior-rights', label: 'Junior Rights', path: '/parent-zone/rights', emoji: '\u{1F6E1}\uFE0F' },
+  { id: 'science', label: 'Science', path: '/parent-zone/junior-science', emoji: '\u{1F52C}' },
+  { id: 'calculator', label: 'Calculator', path: '/parent-zone/calculator', emoji: '\u{1F9E0}' },
 ];
 
 const mockRecentActivities = [
-  { name: 'Magic Art', minutes: 0, emoji: '🎨', tone: 'from-pink-100 to-rose-100' },
-  { name: 'Animal Safari', minutes: 0, emoji: '🦁', tone: 'from-amber-100 to-yellow-100' },
-  { name: 'Story Studio', minutes: 0, emoji: '✨', tone: 'from-sky-100 to-cyan-100' },
-  { name: 'Color Splash', minutes: 0, emoji: '🌈', tone: 'from-violet-100 to-fuchsia-100' },
+  { name: 'Magic Art', minutes: 0, emoji: '\u{1F3A8}', tone: 'from-pink-100 to-rose-100' },
+  { name: 'Animal Safari', minutes: 0, emoji: '\u{1F981}', tone: 'from-amber-100 to-yellow-100' },
+  { name: 'Story Studio', minutes: 0, emoji: '\u2728', tone: 'from-sky-100 to-cyan-100' },
+  { name: 'Color Splash', minutes: 0, emoji: '\u{1F308}', tone: 'from-violet-100 to-fuchsia-100' },
 ];
 
 const getTodayDateStamp = () => new Date().toISOString().slice(0, 10);
@@ -248,7 +248,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
     <div className="min-h-screen w-full bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col font-sans">
       <header className="bg-white/95 backdrop-blur border-b border-gray-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10 shadow-sm">
         <h1 className="text-xl sm:text-2xl font-extrabold text-indigo-900 flex items-center gap-3">
-          🛡️ Parent Dashboard
+          {'\u{1F6E1}\uFE0F'} Parent Dashboard
           <span className="hidden sm:inline-block text-sm bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">
             Secure Zone
           </span>
@@ -266,7 +266,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
           <div className="flex-1 flex flex-col items-center justify-center mt-6">
             <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl border border-gray-100 max-w-md w-full text-center">
               <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
-                🔒
+                {'\u{1F512}'}
               </div>
               <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
                 {currentView === 'pin_setup' ? 'Set Parent PIN' : 'Enter PIN'}
@@ -279,7 +279,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
 
               {currentView === 'pin_setup' && (
                 <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-8 text-left">
-                  <p className="text-amber-800 text-sm font-bold flex items-center gap-2">📸 Take a screenshot!</p>
+                  <p className="text-amber-800 text-sm font-bold flex items-center gap-2">{'\u{1F4F8}'} Take a screenshot!</p>
                   <p className="text-amber-700 text-xs mt-1">Please screenshot your PIN so you don&apos;t forget it.</p>
                 </div>
               )}
@@ -301,7 +301,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                   className="absolute right-6 top-1/2 -translate-y-1/2 text-2xl opacity-50 hover:opacity-100 transition-opacity"
                   title={showPin ? 'Hide PIN' : 'Show PIN'}
                 >
-                  {showPin ? '🙈' : '👁️'}
+                  {showPin ? '\u{1F648}' : '\u{1F441}\uFE0F'}
                 </button>
               </div>
 
@@ -465,7 +465,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                     <h3 className="text-xl font-extrabold text-gray-900">Eye Health Tracker</h3>
                     <p className="text-sm text-gray-500 mt-1">Save Left Eye (OS) and Right Eye (OD) prescription values.</p>
                   </div>
-                  <div className="text-3xl">👓</div>
+                  <div className="text-3xl">{'\u{1F453}'}</div>
                 </div>
 
                 <form onSubmit={handleSaveEyeHealth} className="space-y-4">
@@ -504,7 +504,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                     </button>
                     {eyeSaveStatus && (
                       <span className="text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
-                        ✅ {eyeSaveStatus}
+                        {'\u2705'} {eyeSaveStatus}
                       </span>
                     )}
                   </div>
@@ -523,7 +523,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                     <h3 className="text-xl font-extrabold text-gray-900">Activity Report Card</h3>
                     <p className="text-sm text-gray-500 mt-1">Today&apos;s screen time and recent activities snapshot.</p>
                   </div>
-                  <div className="text-3xl">📊</div>
+                  <div className="text-3xl">{'\u{1F4CA}'}</div>
                 </div>
 
                 <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-sky-50 p-5 mb-5">
@@ -680,7 +680,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
             </section>
 
             <section className="bg-red-50 p-6 sm:p-8 rounded-3xl border-2 border-red-200 mt-2">
-              <h3 className="text-xl font-extrabold text-red-700 flex items-center gap-2 mb-2">🚨 Danger Zone</h3>
+              <h3 className="text-xl font-extrabold text-red-700 flex items-center gap-2 mb-2">{'\u{1F6A8}'} Danger Zone</h3>
               <p className="text-red-900 font-medium mb-6 text-sm sm:text-base">
                 Warning: Permanent action. Once deleted, we cannot undo this. All unlocked colors, gems, and account progress will be permanently erased.
               </p>
@@ -712,4 +712,3 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
     </div>
   );
 }
-
