@@ -27,6 +27,9 @@ export const AuthModalProvider = ({ children }) => {
     async ({ user } = {}) => {
       if (!user?.id) return;
       await fetchProfile?.(user.id);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('aiko:auth-refresh'));
+      }
     },
     [fetchProfile]
   );
@@ -55,4 +58,3 @@ export const AuthModalProvider = ({ children }) => {
 };
 
 export const useAuthModal = () => useContext(AuthModalContext);
-

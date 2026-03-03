@@ -1,22 +1,25 @@
 {
   "name": "AikoKidzTV",
   "short_name": "AikoKidzTV",
-  "description": "AikoKidzTV — playful AI-powered stories and learning.",
+  "description": "AikoKidzTV - playful AI-powered stories and learning.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/vite.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
+      "src": "/logo.png.webp",
+      "sizes": "192x192 512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
     },
     {
-      "src": "/vite.svg",
+      "src": "/logo.png.webp",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/webp",
+      "purpose": "any"
     }
   ]
 }

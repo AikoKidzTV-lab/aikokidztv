@@ -17,7 +17,9 @@ const isNetworkError = (error) => {
   return /failed to fetch|network|timed out|err_connection_timed_out|fetch/i.test(text);
 };
 
-const AUTH_TIMEOUT_MS = 10000;
+const AUTH_TIMEOUT_MS = 20000;
+const PROFILE_FALLBACK_COLUMNS =
+  'id, role, gems, unlocked_zones, unlocked_videos, unlocked_items, claimed_rewards';
 
 const withTimeout = async (promise, timeoutMs, label) => {
   let timeoutId;
@@ -47,13 +49,31 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const isMountedRef = useRef(false);
 
-  const fetchProfile = useCallback(async (userId) => {
+  const normalizeFallbackProfile = useCallback((rawProfile = null) => {
+    if (!rawProfile) return null;
+    const toStringArray = (value) => (Array.isArray(value) ? value.filter(Boolean).map(String) : []);
+    const gems = Number(rawProfile.gems);
+    return {
+      ...rawProfile,
+      gems: Number.isFinite(gems) ? Math.max(0, Math.floor(gems)) : 0,
+      unlocked_zones: toStringArray(rawProfile.unlocked_zones),
+      unlocked_videos: toStringArray(rawProfile.unlocked_videos),
+      unlocked_items: toStringArray(rawProfile.unlocked_items),
+      claimed_rewards: toStringArray(rawProfile.claimed_rewards),
+    };
+  }, []);
+
+  const fetchProfile = useCallback(async (userId, options = {}) => {
     if (!userId) {
       if (isMountedRef.current) {
         setProfile(null);
       }
       return null;
     }
+
+    const retryCount = Number.isFinite(Number(options?.retryCount))
+      ? Math.max(0, Math.floor(Number(options.retryCount)))
+      : 0;
 
     try {
       const profileResult = await withTimeout(
@@ -88,6 +108,45 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
 
+      if (retryCount > 0) {
+        await new Promise((resolve) => {
+          if (typeof window !== 'undefined') {
+            window.setTimeout(resolve, 450);
+          } else {
+            setTimeout(resolve, 450);
+          }
+        });
+
+        return fetchProfile(userId, { retryCount: retryCount - 1 });
+      }
+
+      try {
+        const { data: fallbackProfile, error: fallbackError } = await withTimeout(
+          supabase
+            .from('profiles')
+            .select(PROFILE_FALLBACK_COLUMNS)
+            .eq('id', userId)
+            .maybeSingle(),
+          AUTH_TIMEOUT_MS,
+          'Profile fallback fetch'
+        );
+
+        if (!fallbackError && fallbackProfile) {
+          const normalizedFallback = normalizeFallbackProfile(fallbackProfile);
+          setProfile(normalizedFallback);
+          setAuthError(null);
+          setIsOffline(false);
+          console.info('[AuthContext] Fallback profile sync succeeded:', {
+            userId,
+            role: normalizedFallback?.role || null,
+            gems: Number(normalizedFallback?.gems || 0),
+          });
+          return normalizedFallback;
+        }
+      } catch (fallbackFetchError) {
+        console.error('[AuthContext] Fallback profile fetch failed:', fallbackFetchError);
+      }
+
       setAuthError(error ?? null);
       if (isNetworkError(error)) {
         setIsOffline(true);
@@ -95,7 +154,7 @@ export const AuthProvider = ({ children }) => {
 
       return null;
     }
-  }, []);
+  }, [normalizeFallbackProfile]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -122,7 +181,14 @@ export const AuthProvider = ({ children }) => {
         currentProfile?.id && currentProfile.id !== nextUser.id ? null : currentProfile
       );
 
-      await fetchProfile(nextUser.id);
+      await fetchProfile(nextUser.id, { retryCount: 2 });
+
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          if (!isMountedRef.current || !isActive) return;
+          void fetchProfile(nextUser.id, { retryCount: 0 });
+        }, 250);
+      }
     };
 
     const safelyApplySession = (session, eventLabel = 'unknown') => {
@@ -201,6 +267,13 @@ export const AuthProvider = ({ children }) => {
           userId: session?.user?.id ?? null,
         });
         safelyApplySession(session, event);
+
+        if (session?.user?.id && typeof window !== 'undefined') {
+          window.setTimeout(() => {
+            if (!isMountedRef.current || !isActive) return;
+            void fetchProfile(session.user.id, { retryCount: 1 });
+          }, 350);
+        }
       });
 
       authSubscription = data?.subscription;
@@ -232,9 +305,18 @@ export const AuthProvider = ({ children }) => {
       setIsOffline(false);
     };
 
+    const handleAuthRefresh = () => {
+      if (!isMountedRef.current || !isActive) {
+        return;
+      }
+      setLoading(true);
+      void initializeAuth();
+    };
+
     if (typeof window !== 'undefined') {
       window.addEventListener('offline', handleOffline);
       window.addEventListener('online', handleOnline);
+      window.addEventListener('aiko:auth-refresh', handleAuthRefresh);
     }
 
     return () => {
@@ -245,6 +327,7 @@ export const AuthProvider = ({ children }) => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('offline', handleOffline);
         window.removeEventListener('online', handleOnline);
+        window.removeEventListener('aiko:auth-refresh', handleAuthRefresh);
       }
     };
   }, [fetchProfile]);

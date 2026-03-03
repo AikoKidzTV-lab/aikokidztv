@@ -131,8 +131,17 @@ const StoryStudio = () => {
       return;
     }
 
-    if (!profile) {
+    if (!user?.id) {
       setError("Please log in to create magic.");
+      return;
+    }
+
+    let activeProfile = profile;
+    if (!activeProfile && fetchProfile) {
+      activeProfile = await fetchProfile(user.id, { retryCount: 1 });
+    }
+    if (!activeProfile) {
+      setError("Syncing your profile. Please try again in a moment.");
       return;
     }
 
@@ -148,7 +157,7 @@ const StoryStudio = () => {
     }
 
     const cost = COSTS.story;
-    const currentGems = profile.gems || 0;
+    const currentGems = activeProfile.gems || 0;
 
     if (currentGems < cost) {
       await Swal.fire({
