@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { ensureEconomyProfile } from '../utils/profileEconomy';
 
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const isMountedRef = useRef(false);
 
-  const fetchProfile = async (userId) => {
+  const fetchProfile = useCallback(async (userId) => {
     if (!userId) {
       if (isMountedRef.current) {
         setProfile(null);
@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }) => {
 
       return null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -236,7 +236,42 @@ export const AuthProvider = ({ children }) => {
         window.removeEventListener('online', handleOnline);
       }
     };
-  }, []);
+  }, [fetchProfile]);
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+
+    let disposed = false;
+    const profileChannel = supabase
+      .channel(`profile-sync-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+        () => {
+          if (!disposed) {
+            void fetchProfile(user.id);
+          }
+        }
+      )
+      .subscribe();
+
+    const pollTimer =
+      typeof window !== 'undefined'
+        ? window.setInterval(() => {
+            if (!disposed) {
+              void fetchProfile(user.id);
+            }
+          }, 45000)
+        : null;
+
+    return () => {
+      disposed = true;
+      if (pollTimer && typeof window !== 'undefined') {
+        window.clearInterval(pollTimer);
+      }
+      void supabase.removeChannel(profileChannel);
+    };
+  }, [user?.id, fetchProfile]);
 
   const signOut = async () => {
     try {

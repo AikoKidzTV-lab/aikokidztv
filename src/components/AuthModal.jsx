@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { getAuthRedirectUrl, supabase } from '../supabaseClient';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 import { isAdminEmail } from '../utils/admin';
-import { DEFAULT_MAGIC_ART_USES } from '../utils/profileEconomy';
 
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
 
@@ -13,21 +12,6 @@ const normalizeMode = (value) => (value === 'signup' ? 'signup' : 'login');
 const isDuplicateKeyError = (error) => {
   const message = `${error?.message || ''} ${error?.code || ''}`.toLowerCase();
   return message.includes('duplicate') || message.includes('unique');
-};
-
-const isMissingColumnError = (error, columnName) => {
-  if (!columnName) return false;
-  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
-  const lowerColumn = String(columnName).toLowerCase();
-  return (
-    text.includes(lowerColumn) &&
-    (
-      text.includes('column') ||
-      text.includes('schema cache') ||
-      error?.code === '42703' ||
-      error?.code === 'PGRST204'
-    )
-  );
 };
 
 const serializeAuthError = (authError) => ({
@@ -210,24 +194,14 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
   const ensureSignupProfile = async (userId) => {
     if (!userId) return;
 
-    const basePayload = {
+    const { error: profileError } = await supabase.from('profiles').insert({
       id: userId,
       gems: NEW_USER_BONUS_GEMS,
       unlocked_zones: [],
       unlocked_videos: [],
       unlocked_items: [],
       claimed_rewards: [],
-    };
-
-    let profileError = null;
-    ({ error: profileError } = await supabase.from('profiles').insert({
-      ...basePayload,
-      magic_art_uses: DEFAULT_MAGIC_ART_USES,
-    }));
-
-    if (profileError && isMissingColumnError(profileError, 'magic_art_uses')) {
-      ({ error: profileError } = await supabase.from('profiles').insert(basePayload));
-    }
+    });
 
     if (profileError && !isDuplicateKeyError(profileError)) {
       console.warn('[AuthModal] Could not initialize profile row:', profileError);
