@@ -378,8 +378,8 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
 
                   <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-slate-50 p-4">
                     <div className="text-right">
-                      <p className="text-sm font-bold text-gray-700">Test Mode</p>
-                      <p className={`text-xs font-semibold ${isTestMode ? 'text-amber-600' : 'text-gray-400'}`}>
+                      <p className="text-sm font-black text-black">Test Mode</p>
+                      <p className="text-sm font-black text-black">
                         {isTestMode ? 'ON (Answers Hidden)' : 'OFF (Answers Visible)'}
                       </p>
                     </div>

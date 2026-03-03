@@ -538,7 +538,7 @@ export default function LandingPageHabitat({
           </div>
 
           <div className="rounded-[1.8rem] border border-white/40 bg-white/15 p-5 shadow-2xl backdrop-blur-md">
-            <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-blue-50/90">
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-black">
               Practice Container
             </p>
             <div className="grid grid-cols-2 gap-3">
@@ -553,18 +553,18 @@ export default function LandingPageHabitat({
                       : 'border-white/35 bg-white/10 hover:bg-white/20'
                   }`}
                 >
-                  <p className="text-xs font-black uppercase tracking-wide text-blue-50/90">{item.label}</p>
+                  <p className="text-xs font-black uppercase tracking-wide text-black">{item.label}</p>
                   <p className="mt-1 text-lg">{item.emoji}</p>
                 </button>
               ))}
             </div>
 
             <div className="mt-4 rounded-2xl border border-white/35 bg-gradient-to-r from-white/20 to-white/10 p-4">
-              <p className="text-sm font-black text-white">{activePractice.question}</p>
-              <p className="mt-2 text-sm font-semibold text-blue-50/90">
+              <p className="text-sm font-black text-black">{activePractice.question}</p>
+              <p className="mt-2 text-sm font-black text-black">
                 Answer: {isTestMode ? 'Hidden in Test Mode' : activePractice.answer}
               </p>
-              <p className="mt-1 text-xs font-semibold text-blue-50/80">
+              <p className="mt-1 text-sm font-black text-black">
                 Parent Test Mode is currently {isTestMode ? 'ON' : 'OFF'}.
               </p>
             </div>
