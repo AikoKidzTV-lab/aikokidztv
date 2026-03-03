@@ -14,8 +14,12 @@ const normalizeOrigin = (value) => {
 const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').trim();
 const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 const publicSiteUrl = String(import.meta.env.VITE_PUBLIC_SITE_URL || '').trim();
+const appMode = String(import.meta.env.MODE || '').trim();
+const PRODUCTION_SITE_ORIGIN = 'https://aikokidztv.com';
 const runtimeOrigin =
   typeof window !== 'undefined' ? normalizeOrigin(window.location.origin) : null;
+const runtimeHostName = typeof window !== 'undefined' ? window.location.hostname : '';
+const isProductionHost = /(^|\.)aikokidztv\.com$/i.test(runtimeHostName);
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
@@ -30,7 +34,9 @@ if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(supabaseUrl)) {
 }
 
 export const appSiteOrigin =
-  normalizeOrigin(publicSiteUrl) || runtimeOrigin || 'https://aikokidztv.com';
+  normalizeOrigin(publicSiteUrl) ||
+  (appMode === 'production' || isProductionHost ? PRODUCTION_SITE_ORIGIN : runtimeOrigin) ||
+  PRODUCTION_SITE_ORIGIN;
 
 export const getAuthRedirectUrl = (path = '/') => {
   const safePath = typeof path === 'string' && path.trim() ? path.trim() : '/';
@@ -68,4 +74,3 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 export default supabase;
-

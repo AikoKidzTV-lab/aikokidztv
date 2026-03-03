@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, Lock, Mail, Sparkles, X } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, Sparkles, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getAuthRedirectUrl, supabase } from '../supabaseClient';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
@@ -8,6 +8,8 @@ import { isAdminEmail } from '../utils/admin';
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
 
 const normalizeMode = (value) => (value === 'signup' ? 'signup' : 'login');
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+const normalizeOtpCode = (value) => String(value || '').trim().replace(/\s+/g, '');
 
 const isDuplicateKeyError = (error) => {
   const message = `${error?.message || ''} ${error?.code || ''}`.toLowerCase();
@@ -40,6 +42,7 @@ const getAuthRuntimeContext = (mode, email) => ({
   email,
   origin: typeof window !== 'undefined' ? window.location.origin : 'server',
   path: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
+  authRedirectUrl: getAuthRedirectUrl('/'),
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '(missing)',
   hasAnonKey: Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY),
 });
@@ -84,9 +87,13 @@ const getBackgroundCheckWarning = (error) => {
 const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
   const navigate = useNavigate();
   const [mode, setMode] = useState(normalizeMode(initialMode));
+  const [authStep, setAuthStep] = useState('password'); // password | otp
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [error, setError] = useState('');
@@ -124,10 +131,14 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
     modalRunIdRef.current += 1;
     setMode(normalizeMode(initialMode));
+    setAuthStep('password');
     setEmail('');
     setPassword('');
     setConfirmPassword('');
-    setLoading(false); // Keep default false so UI is never blocked.
+    setOtpCode('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setLoading(false);
     setOtpLoading(false);
     setBackgroundCheckPending(false);
     setBackgroundCheckWarning('');
@@ -189,8 +200,6 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     return undefined;
   }, [open, canApplyState]);
 
-  if (!open) return null;
-
   const ensureSignupProfile = async (userId) => {
     if (!userId) return;
 
@@ -238,10 +247,86 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     }
   };
 
+  const verifyOtpWithFallbackTypes = async ({ emailToUse, token, authMode }) => {
+    const otpTypes = authMode === 'signup' ? ['signup', 'email'] : ['email', 'magiclink'];
+    let lastError = null;
+
+    for (const otpType of otpTypes) {
+      const { data, error: verifyError } = await withAuthTimeout(
+        supabase.auth.verifyOtp({
+          email: emailToUse,
+          token,
+          type: otpType,
+        }),
+        `verifyOtp:${otpType}`
+      );
+
+      if (!verifyError) {
+        return data;
+      }
+
+      lastError = verifyError;
+    }
+
+    throw lastError || new Error('Unable to verify OTP.');
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (authStep === 'otp') {
+      const runId = modalRunIdRef.current;
+      const emailToUse = normalizeEmail(email);
+      const token = normalizeOtpCode(otpCode);
 
-    if (!email || !password) {
+      if (!emailToUse) {
+        setError('Enter your email first to verify OTP.');
+        return;
+      }
+      if (token.length < 6) {
+        setError('Enter the 6-digit verification code from your email.');
+        return;
+      }
+
+      setOtpLoading(true);
+      clearFeedback();
+      const runtimeContext = getAuthRuntimeContext(`${mode}-otp-verify`, emailToUse);
+
+      try {
+        const verifyData = await verifyOtpWithFallbackTypes({
+          emailToUse,
+          token,
+          authMode: mode,
+        });
+
+        if (mode === 'signup') {
+          await ensureSignupProfile(verifyData?.user?.id);
+        }
+
+        if (!canApplyState(runId)) return;
+
+        setInfo('OTP verified! Redirecting...');
+        handleAuthSuccess({
+          user: verifyData?.user ?? verifyData?.session?.user ?? null,
+          session: verifyData?.session ?? null,
+          source: 'otp',
+        });
+      } catch (otpVerifyError) {
+        if (!canApplyState(runId)) return;
+        const formatted = formatAuthError(otpVerifyError);
+        setError(formatted.userMessage || 'Could not verify OTP. Please try again.');
+        setErrorDetails(formatted.debug);
+        logAuthError('OTP verification failed', otpVerifyError, runtimeContext);
+      } finally {
+        if (canApplyState(runId)) {
+          setOtpLoading(false);
+        }
+      }
+      return;
+    }
+
+    const emailToUse = normalizeEmail(email);
+
+    if (!emailToUse || !password) {
       setError('Please enter both email and password.');
       return;
     }
@@ -257,20 +342,30 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     const runId = modalRunIdRef.current;
     setLoading(true);
     clearFeedback();
-    const runtimeContext = getAuthRuntimeContext(mode, email);
+    const runtimeContext = getAuthRuntimeContext(mode, emailToUse);
 
     try {
       if (mode === 'login') {
         console.info('[AuthModal] Starting signInWithPassword request', runtimeContext);
         const { data: signInData, error: signInError } = await withAuthTimeout(
           supabase.auth.signInWithPassword({
-            email,
+            email: emailToUse,
             password,
           }),
           'signInWithPassword'
         );
 
         if (signInError) {
+          if (String(signInError?.code || '').toLowerCase() === 'invalid_credentials') {
+            const guidanceError = new Error(
+              'Invalid email/password. If this account was created using email OTP, use "Login with OTP".'
+            );
+            guidanceError.code = signInError.code;
+            guidanceError.status = signInError.status;
+            logAuthError('signInWithPassword invalid credentials', signInError, runtimeContext);
+            throw guidanceError;
+          }
+
           logAuthError('signInWithPassword returned an error', signInError, runtimeContext);
           throw signInError;
         }
@@ -290,7 +385,7 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       console.info('[AuthModal] Starting signUp request', runtimeContext);
       const { data: signUpData, error: signUpError } = await withAuthTimeout(
         supabase.auth.signUp({
-          email,
+          email: emailToUse,
           password,
           options: {
             emailRedirectTo: getAuthRedirectUrl('/'),
@@ -331,8 +426,9 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     }
   };
 
-  const handleOtp = async () => {
-    if (!email) {
+  const handleOtpRequest = async () => {
+    const emailToUse = normalizeEmail(email);
+    if (!emailToUse) {
       setError('Enter your email first to receive an OTP.');
       return;
     }
@@ -340,13 +436,13 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
     const runId = modalRunIdRef.current;
     setOtpLoading(true);
     clearFeedback();
-    const runtimeContext = getAuthRuntimeContext(mode, email);
+    const runtimeContext = getAuthRuntimeContext(`${mode}-otp-request`, emailToUse);
 
     try {
       console.info('[AuthModal] Starting signInWithOtp request', runtimeContext);
       const { error: otpError } = await withAuthTimeout(
         supabase.auth.signInWithOtp({
-          email,
+          email: emailToUse,
           options: {
             shouldCreateUser: mode === 'signup',
             emailRedirectTo: getAuthRedirectUrl('/'),
@@ -361,7 +457,9 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       }
 
       if (!canApplyState(runId)) return;
-      setInfo('OTP sent! Check your email for the login link or verification code.');
+      setAuthStep('otp');
+      setOtpCode('');
+      setInfo('OTP sent! Enter the verification code from your email.');
     } catch (otpAuthError) {
       if (!canApplyState(runId)) return;
       const formatted = formatAuthError(otpAuthError);
@@ -374,6 +472,8 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
       }
     }
   };
+
+  if (!open) return null;
 
   return (
     <div
@@ -413,6 +513,8 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
             type="button"
             onClick={() => {
               setMode('login');
+              setAuthStep('password');
+              setOtpCode('');
               clearFeedback();
             }}
             className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
@@ -427,6 +529,8 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
             type="button"
             onClick={() => {
               setMode('signup');
+              setAuthStep('password');
+              setOtpCode('');
               clearFeedback();
             }}
             className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
@@ -486,59 +590,118 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
             </div>
           </label>
 
-          <label className="block text-sm">
-            <span className="mb-1.5 block font-semibold text-slate-700">Password</span>
-            <div className="relative">
-              <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          {authStep === 'otp' ? (
+            <label className="block text-sm">
+              <span className="mb-1.5 block font-semibold text-slate-700">OTP / Verification Code</span>
               <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-slate-900 outline-none transition focus:border-cyan-400"
-                placeholder="Minimum 6 characters"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                type="text"
+                value={otpCode}
+                onChange={(event) => setOtpCode(event.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 outline-none transition focus:border-cyan-400"
+                placeholder="Enter 6-digit code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 required
               />
-            </div>
-          </label>
-
-          {mode === 'signup' ? (
-            <label className="block text-sm">
-              <span className="mb-1.5 block font-semibold text-slate-700">Confirm Password</span>
-              <div className="relative">
-                <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-slate-900 outline-none transition focus:border-cyan-400"
-                  placeholder="Re-enter password"
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
             </label>
-          ) : null}
+          ) : (
+            <>
+              <label className="block text-sm">
+                <span className="mb-1.5 block font-semibold text-slate-700">Password</span>
+                <div className="relative">
+                  <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-10 text-slate-900 outline-none transition focus:border-cyan-400"
+                    placeholder="Minimum 6 characters"
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((value) => !value)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </label>
+
+              {mode === 'signup' ? (
+                <label className="block text-sm">
+                  <span className="mb-1.5 block font-semibold text-slate-700">Confirm Password</span>
+                  <div className="relative">
+                    <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-10 text-slate-900 outline-none transition focus:border-cyan-400"
+                      placeholder="Re-enter password"
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((value) => !value)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </label>
+              ) : null}
+            </>
+          )}
 
           <button
             type="submit"
             disabled={loading || otpLoading}
             className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-400 to-amber-300 px-4 py-2.5 font-black text-slate-900 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : null}
-            {mode === 'login' ? 'Login' : 'Sign Up'}
+            {loading || otpLoading ? <Loader2 size={18} className="animate-spin" /> : null}
+            {authStep === 'otp' ? 'Verify OTP' : mode === 'login' ? 'Login' : 'Sign Up'}
           </button>
         </form>
 
-        <button
-          type="button"
-          onClick={handleOtp}
-          disabled={loading || otpLoading}
-          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {otpLoading ? <Loader2 size={16} className="animate-spin" /> : null}
-          Login with OTP (Email)
-        </button>
+        {authStep === 'otp' ? (
+          <div className="mt-3 space-y-2">
+            <button
+              type="button"
+              onClick={handleOtpRequest}
+              disabled={loading || otpLoading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {otpLoading ? <Loader2 size={16} className="animate-spin" /> : null}
+              Resend OTP
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthStep('password');
+                setOtpCode('');
+                clearFeedback();
+              }}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Back to Password Login
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleOtpRequest}
+            disabled={loading || otpLoading}
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-bold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {otpLoading ? <Loader2 size={16} className="animate-spin" /> : null}
+            Login with OTP (Email)
+          </button>
+        )}
 
         <button
           type="button"
@@ -553,3 +716,4 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 };
 
 export default AuthModal;
+
