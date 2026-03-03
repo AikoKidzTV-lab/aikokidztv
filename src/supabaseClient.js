@@ -5,6 +5,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const publicSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL;
 const appMode = import.meta.env.MODE;
 const PRODUCTION_SITE_ORIGIN = 'https://aikokidztv.com';
+const AUTH_REDIRECT_ORIGIN = PRODUCTION_SITE_ORIGIN;
 
 const normalizeOrigin = (value) => {
   if (typeof value !== 'string' || !value.trim()) return null;
@@ -39,9 +40,9 @@ export const getAuthRedirectUrl = (path = '/') => {
   const normalizedPath = safePath.startsWith('/') ? safePath : `/${safePath}`;
 
   try {
-    return new URL(normalizedPath, `${appSiteOrigin}/`).toString();
+    return new URL(normalizedPath, `${AUTH_REDIRECT_ORIGIN}/`).toString();
   } catch {
-    return `${PRODUCTION_SITE_ORIGIN}${normalizedPath}`;
+    return `${AUTH_REDIRECT_ORIGIN}${normalizedPath}`;
   }
 };
 

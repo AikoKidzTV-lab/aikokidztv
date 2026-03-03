@@ -3,8 +3,10 @@ import { supabase } from '../supabaseClient';
 export const DEFAULT_MAGIC_ART_USES = 10;
 export const PREMIUM_VIDEO_UNLOCK_COST_GEMS = 10;
 export const FREE_VIDEO_REWARD_GEMS = 5;
+const MISSING_MAGIC_ART_USES_FALLBACK = 0;
 
 const ECONOMY_SELECT_COLUMNS = '*';
+const LOCAL_MAGIC_ART_USES_PREFIX = 'aiko_magic_art_uses_v1_';
 
 let supportsMagicArtUsesColumn = true;
 
@@ -27,6 +29,30 @@ const isMissingColumnError = (error, columnName) => {
 
 const markMagicArtUsesUnsupported = () => {
   supportsMagicArtUsesColumn = false;
+};
+
+const getLocalMagicUsesKey = (userId) => `${LOCAL_MAGIC_ART_USES_PREFIX}${userId || 'guest'}`;
+
+const readLocalMagicUses = (userId, fallback = MISSING_MAGIC_ART_USES_FALLBACK) => {
+  if (typeof window === 'undefined' || !userId) return fallback;
+  try {
+    const raw = window.localStorage.getItem(getLocalMagicUsesKey(userId));
+    return normalizeNumber(raw, fallback);
+  } catch {
+    return fallback;
+  }
+};
+
+const writeLocalMagicUses = (userId, uses) => {
+  if (typeof window === 'undefined' || !userId) return;
+  try {
+    window.localStorage.setItem(
+      getLocalMagicUsesKey(userId),
+      String(normalizeNumber(uses, MISSING_MAGIC_ART_USES_FALLBACK))
+    );
+  } catch {
+    // Ignore storage write failures in private mode / quota issues.
+  }
 };
 
 const normalizeNumber = (value, fallback = 0) => {
@@ -52,15 +78,31 @@ const normalizeStringArray = (value) =>
 
 export const normalizeEconomyProfile = (profile = null) => {
   if (!profile) return null;
+  const hasMagicArtUses = hasOwn(profile, 'magic_art_uses');
+  const magicArtFallback = hasMagicArtUses ? DEFAULT_MAGIC_ART_USES : MISSING_MAGIC_ART_USES_FALLBACK;
 
   return {
     ...profile,
     gems: normalizeNumber(profile.gems, 0),
-    magic_art_uses: normalizeNumber(profile.magic_art_uses, DEFAULT_MAGIC_ART_USES),
+    magic_art_uses: normalizeNumber(profile.magic_art_uses, magicArtFallback),
     unlocked_zones: normalizeStringArray(profile.unlocked_zones),
     unlocked_videos: normalizeStringArray(profile.unlocked_videos),
     unlocked_items: normalizeStringArray(profile.unlocked_items),
     claimed_rewards: normalizeStringArray(profile.claimed_rewards),
+  };
+};
+
+const applyMagicUsesFallback = (userId, profile) => {
+  if (!profile) return null;
+  if (supportsMagicArtUsesColumn) return profile;
+
+  const localUses = readLocalMagicUses(
+    userId,
+    normalizeNumber(profile.magic_art_uses, MISSING_MAGIC_ART_USES_FALLBACK)
+  );
+  return {
+    ...profile,
+    magic_art_uses: localUses,
   };
 };
 
@@ -141,12 +183,12 @@ export const ensureEconomyProfile = async (userId) => {
         return { ok: false, code: 'profile_insert_error', message: insertError.message || 'Failed to create profile.' };
       }
 
-      return { ok: true, profile: normalizeEconomyProfile(inserted) };
+      return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(inserted)) };
     }
 
     const patch = buildEconomyBackfill(existing);
     if (Object.keys(patch).length === 0) {
-      return { ok: true, profile: normalizeEconomyProfile(existing) };
+      return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(existing)) };
     }
 
     let { data: updated, error: updateError } = await supabase
@@ -162,7 +204,7 @@ export const ensureEconomyProfile = async (userId) => {
       delete retryPatch.magic_art_uses;
 
       if (Object.keys(retryPatch).length === 0) {
-        return { ok: true, profile: normalizeEconomyProfile(existing) };
+        return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(existing)) };
       }
 
       ({ data: updated, error: updateError } = await supabase
@@ -177,7 +219,7 @@ export const ensureEconomyProfile = async (userId) => {
       return { ok: false, code: 'profile_backfill_error', message: updateError.message || 'Failed to patch profile.' };
     }
 
-    return { ok: true, profile: normalizeEconomyProfile(updated) };
+    return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(updated)) };
   } catch (error) {
     return { ok: false, code: 'unexpected_error', message: error?.message || 'Unexpected profile error.' };
   }
@@ -204,19 +246,74 @@ export const readEconomyState = async (userId) => {
       return { ok: false, code: 'profile_fetch_error', message: error.message || 'Failed to read profile economy.' };
     }
 
-    return { ok: true, profile: normalizeEconomyProfile(data) };
+    return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(data)) };
   } catch (error) {
     return { ok: false, code: 'unexpected_error', message: error?.message || 'Unexpected profile read error.' };
   }
 };
 
+const persistWithoutMagicArtColumn = async (userId, patch) => {
+  const patchHasMagicUses = hasOwn(patch, 'magic_art_uses');
+  const nextMagicUses = patchHasMagicUses
+    ? normalizeNumber(patch.magic_art_uses, MISSING_MAGIC_ART_USES_FALLBACK)
+    : readLocalMagicUses(userId, MISSING_MAGIC_ART_USES_FALLBACK);
+
+  if (patchHasMagicUses) {
+    writeLocalMagicUses(userId, nextMagicUses);
+  }
+
+  const dbPatch = { ...patch };
+  delete dbPatch.magic_art_uses;
+
+  if (Object.keys(dbPatch).length === 0) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(ECONOMY_SELECT_COLUMNS)
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      return { ok: false, code: 'profile_fetch_error', message: error.message || 'Failed to read profile economy.' };
+    }
+
+    return {
+      ok: true,
+      profile: applyMagicUsesFallback(
+        userId,
+        normalizeEconomyProfile({
+          ...data,
+          magic_art_uses: nextMagicUses,
+        })
+      ),
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(dbPatch)
+    .eq('id', userId)
+    .select(ECONOMY_SELECT_COLUMNS)
+    .single();
+
+  if (error) {
+    return { ok: false, code: 'profile_update_error', message: error.message || 'Failed to update profile.' };
+  }
+
+  return {
+    ok: true,
+    profile: applyMagicUsesFallback(
+      userId,
+      normalizeEconomyProfile({
+        ...data,
+        magic_art_uses: nextMagicUses,
+      })
+    ),
+  };
+};
+
 const persistEconomyState = async (userId, patch) => {
   if (!supportsMagicArtUsesColumn && hasOwn(patch, 'magic_art_uses')) {
-    return {
-      ok: false,
-      code: 'profile_schema_mismatch',
-      message: 'Profile schema is missing magic_art_uses column.',
-    };
+    return persistWithoutMagicArtColumn(userId, patch);
   }
 
   const { data, error } = await supabase
@@ -228,18 +325,14 @@ const persistEconomyState = async (userId, patch) => {
 
   if (error && isMissingColumnError(error, 'magic_art_uses')) {
     markMagicArtUsesUnsupported();
-    return {
-      ok: false,
-      code: 'profile_schema_mismatch',
-      message: 'Profile schema is missing magic_art_uses column.',
-    };
+    return persistWithoutMagicArtColumn(userId, patch);
   }
 
   if (error) {
     return { ok: false, code: 'profile_update_error', message: error.message || 'Failed to update profile.' };
   }
 
-  return { ok: true, profile: normalizeEconomyProfile(data) };
+  return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(data)) };
 };
 
 export const buyMagicArtPack = async ({ userId, costGems, packUses }) => {
