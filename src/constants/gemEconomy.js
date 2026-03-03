@@ -5,7 +5,7 @@ export const SMALL_ITEM_COST_INCREASE_GEMS = 8;
 
 export const STORY_COST_GEMS = 18;
 
-export const MAGIC_ART_PACK_COST_GEMS = 40;
+export const MAGIC_ART_PACK_COST_GEMS = 60;
 export const MAGIC_ART_PACK_USES = 10;
 
 export const LEARNING_ZONE_ENTRY_FEE_GEMS = 25;
@@ -19,7 +19,7 @@ export const applySmallItemEconomy = (baseCost = 0) => {
 
 export const LEARNING_ZONE_PREMIUM_UNLOCKS = {
   colors: applySmallItemEconomy(20),
-  animals: applySmallItemEconomy(30),
+  animals: 49,
 };
 
 export const SUPPORT_REWARD_RATE = {

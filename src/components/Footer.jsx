@@ -175,7 +175,10 @@ const Footer = () => {
         <div className="pt-8 border-t border-white/10 text-center text-xs" style={{ color: 'var(--text-secondary)' }}>
           <p>&copy; {new Date().getFullYear()} AikoKidzTV. All rights reserved.</p>
           <p className="mt-2 text-[11px] font-semibold text-red-300">
-            Strict Policy: All payments and Gem purchases are final. Once a transaction is complete, it cannot be retreated or refunded under any circumstances.
+            Ad-Free Website. NO REFUNDS under any circumstances. If an accidental purchase occurs, email a screenshot immediately. Missing gems issues will be resolved within 5 business days. Additional charges apply for disputes.
+          </p>
+          <p className="mt-2 text-[11px] font-bold text-amber-200">
+            Kids Policy: Parents/guardians must supervise all purchases and account activity. This platform is designed for child-safe, respectful, educational use only.
           </p>
         </div>
       </div>
@@ -267,7 +270,7 @@ const Footer = () => {
           <li>New user bonus: 50 Gems on signup.</li>
           <li>Minimum spend rule: small in-app actions use a minimum of 15 Gems, with legacy small costs increased by +8 Gems.</li>
           <li>Story creation and story reading: 18 Gems per story.</li>
-          <li>Magic Art access: 40 Gems unlocks a 10-use pack.</li>
+          <li>Magic Art access: 60 Gems unlocks a 10-use pack.</li>
           <li>Learning Zone entry: one-time 25 Gem unlock for zone access; premium cards require additional permanent unlocks.</li>
         </ul>
         <p className="mt-4 text-sm text-gray-400">

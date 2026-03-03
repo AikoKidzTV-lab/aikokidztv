@@ -25,7 +25,7 @@ const numberToWords = (n) => {
 
 const NumbersModule = ({ onBack, onHome }) => {
   const numbers = useMemo(() => Array.from({ length: 100 }, (_, i) => i + 1), []);
-  const [active, setActive] = useState(null);
+  const [flippedNumber, setFlippedNumber] = useState(null);
   const speechReady = useMemo(
     () => typeof window !== 'undefined' && 'speechSynthesis' in window,
     []
@@ -41,9 +41,9 @@ const NumbersModule = ({ onBack, onHome }) => {
   };
 
   const handleClick = (num) => {
-    setActive(num);
+    setFlippedNumber(num);
     speakNumber(num);
-    setTimeout(() => setActive(null), 450);
+    setTimeout(() => setFlippedNumber(null), 1500);
   };
 
   return (
@@ -83,24 +83,38 @@ const NumbersModule = ({ onBack, onHome }) => {
         <div className="grid grid-cols-5 md:grid-cols-10 gap-3 md:gap-4">
           {numbers.map((num, index) => {
             const gradient = gradients[index % gradients.length];
-            const isActive = active === num;
+            const isFlipped = flippedNumber === num;
+            const word = numberToWords(num);
             return (
               <button
                 key={num}
                 type="button"
-                aria-label={`Number ${numberToWords(num)}`}
+                aria-label={`Number ${word}`}
                 onClick={() => handleClick(num)}
                 className={`
                   relative h-16 md:h-20 rounded-xl overflow-hidden shadow-md border border-white/50
-                  bg-gradient-to-br ${gradient}
-                  text-slate-900 font-black text-xl md:text-2xl
-                  flex items-center justify-center
+                  [perspective:1000px]
                   transition-all duration-200
-                  ${isActive ? 'scale-110 ring-4 ring-amber-200' : 'hover:scale-105'}
+                  ${isFlipped ? 'scale-110 ring-4 ring-amber-200' : 'hover:scale-105'}
                 `}
               >
-                <span className="drop-shadow-sm">{num}</span>
-                <div className="absolute inset-0 bg-white/0 hover:bg-white/10 transition-colors" />
+                <div
+                  className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d]"
+                  style={{ transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+                >
+                  <div
+                    className={`absolute inset-0 flex items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-slate-900 font-black text-xl md:text-2xl`}
+                    style={{ backfaceVisibility: 'hidden' }}
+                  >
+                    <span className="drop-shadow-sm">{num}</span>
+                  </div>
+                  <div
+                    className="absolute inset-0 flex items-center justify-center rounded-xl bg-white text-center px-2 text-xs md:text-sm font-black text-indigo-900"
+                    style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                  >
+                    {word}
+                  </div>
+                </div>
               </button>
             );
           })}

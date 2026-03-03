@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { claimRewardOnce } from '../utils/profileEconomy';
 
 const characters = [
   { 
@@ -53,6 +55,54 @@ const characters = [
 ];
 
 const CharacterGallery = () => {
+  const { user, fetchProfile } = useAuth();
+  const [rewardStatus, setRewardStatus] = React.useState('');
+  const [claimingKey, setClaimingKey] = React.useState('');
+
+  const bioCards = [
+    {
+      key: 'aiko',
+      title: 'Aiko Bio',
+      body: 'Aiko is curious, brave, and always ready to help friends discover new ideas.',
+      emoji: '🌟',
+    },
+    {
+      key: 'niko',
+      title: 'Niko Bio',
+      body: 'Niko loves calm songs, kind words, and turns every story into a cozy adventure.',
+      emoji: '🎤',
+    },
+  ];
+
+  const handleClaimBioReward = async (bioKey) => {
+    if (!user?.id) {
+      setRewardStatus('Log in first to claim this hidden reward.');
+      return;
+    }
+    if (claimingKey) return;
+
+    setClaimingKey(bioKey);
+    try {
+      const result = await claimRewardOnce({
+        userId: user.id,
+        rewardKey: `bio_easter_${bioKey}_5`,
+        gemReward: 5,
+      });
+
+      if (!result.ok) {
+        setRewardStatus(result.message || 'Could not claim reward.');
+        return;
+      }
+
+      await fetchProfile?.(user.id);
+      setRewardStatus(result.alreadyClaimed ? 'Easter reward already claimed.' : 'Easter egg found! +5 gems added.');
+    } catch (error) {
+      setRewardStatus(error?.message || 'Could not claim reward.');
+    } finally {
+      setClaimingKey('');
+    }
+  };
+
   return (
     <div className="w-full mb-16">
       <div className="text-center mb-10">
@@ -90,6 +140,31 @@ const CharacterGallery = () => {
           </motion.div>
         ))}
       </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+        {bioCards.map((bio) => (
+          <div
+            key={bio.key}
+            className="group relative rounded-2xl border border-white/15 bg-black/25 p-5 transition hover:border-white/30"
+          >
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-gray-400">{bio.title}</p>
+            <p className="mt-2 text-sm font-semibold text-gray-200">{bio.body}</p>
+            <p className="mt-2 text-2xl">{bio.emoji}</p>
+            <button
+              type="button"
+              onClick={() => void handleClaimBioReward(bio.key)}
+              disabled={claimingKey === bio.key}
+              className="absolute bottom-4 right-4 rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 opacity-0 transition group-hover:opacity-100 focus:opacity-100 disabled:cursor-not-allowed"
+            >
+              {claimingKey === bio.key ? 'Claiming...' : 'Claim 5 Free Gems'}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {rewardStatus && (
+        <p className="mt-4 text-center text-sm font-bold text-emerald-300">{rewardStatus}</p>
+      )}
     </div>
   );
 };

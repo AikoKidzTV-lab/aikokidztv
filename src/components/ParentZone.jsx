@@ -5,6 +5,8 @@ const PARENT_PIN_STORAGE_KEY = 'aiko_parent_pin';
 const EYE_TRACKER_STORAGE_KEY = 'aiko_eye_health_tracker_v1';
 const WELLBEING_USAGE_STORAGE_KEY = 'aiko_wellbeing_usage_v1';
 const WELLBEING_SYNC_EVENT = 'aiko:wellbeing-sync';
+const TEST_MODE_STORAGE_KEY = 'aiko_parent_test_mode_v1';
+const TEST_MODE_SYNC_EVENT = 'aiko:test-mode-sync';
 const DAILY_LIMIT_MINUTES = 300;
 
 const mockRecentActivities = [
@@ -73,6 +75,10 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
     leftEyeOS: '',
     updatedAt: null,
   });
+  const [isTestMode, setIsTestMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(TEST_MODE_STORAGE_KEY) === 'true';
+  });
   const [eyeSaveStatus, setEyeSaveStatus] = useState('');
   const [wellbeingUsage, setWellbeingUsage] = useState(() => readWellbeingUsage());
   const { isKidsModeOn, toggleKidsMode } = useKidsMode();
@@ -113,6 +119,12 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
       window.localStorage.removeItem(PARENT_PIN_STORAGE_KEY);
     }
   }, [savedPin]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(TEST_MODE_STORAGE_KEY, String(isTestMode));
+    window.dispatchEvent(new Event(TEST_MODE_SYNC_EVENT));
+  }, [isTestMode]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -332,33 +344,61 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
             </div>
 
             <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+              <div className="flex flex-col gap-6">
                 <div>
                   <h3 className="text-xl font-extrabold text-gray-900">Kids Mode Control</h3>
-                  <p className="text-gray-500 mt-1">Only Parent Zone can turn Kids Mode on or off across the app.</p>
+                  <p className="text-gray-500 mt-1">
+                    Only Parent Zone can change Kids Mode and Test Mode behavior across the app.
+                  </p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-gray-700">Kids Mode</p>
-                    <p className={`text-xs font-semibold ${isKidsModeOn ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      {isKidsModeOn ? 'ON' : 'OFF'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={toggleKidsMode}
-                    aria-pressed={isKidsModeOn}
-                    aria-label="Toggle Kids Mode"
-                    className={`relative h-6 w-12 rounded-full transition-all ${
-                      isKidsModeOn ? 'bg-pink-400' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                        isKidsModeOn ? 'translate-x-6' : ''
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-slate-50 p-4">
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-700">Kids Mode</p>
+                      <p className={`text-xs font-semibold ${isKidsModeOn ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        {isKidsModeOn ? 'ON' : 'OFF'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={toggleKidsMode}
+                      aria-pressed={isKidsModeOn}
+                      aria-label="Toggle Kids Mode"
+                      className={`relative h-6 w-12 rounded-full transition-all ${
+                        isKidsModeOn ? 'bg-pink-400' : 'bg-gray-300'
                       }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          isKidsModeOn ? 'translate-x-6' : ''
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-slate-50 p-4">
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-700">Test Mode</p>
+                      <p className={`text-xs font-semibold ${isTestMode ? 'text-amber-600' : 'text-gray-400'}`}>
+                        {isTestMode ? 'ON (Answers Hidden)' : 'OFF (Answers Visible)'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsTestMode((prev) => !prev)}
+                      aria-pressed={isTestMode}
+                      aria-label="Toggle Test Mode"
+                      className={`relative h-6 w-12 rounded-full transition-all ${
+                        isTestMode ? 'bg-amber-400' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          isTestMode ? 'translate-x-6' : ''
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
               </div>
             </section>

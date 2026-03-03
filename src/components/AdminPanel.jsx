@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { applySmallItemEconomy } from '../constants/gemEconomy';
 
-const STORAGE_BUCKET = 'coloring_images';
-const PREMIUM_UNLOCK_COST = applySmallItemEconomy(3);
+const STORAGE_BUCKET = 'coloring_pages';
+const PREMIUM_UNLOCK_COST = 49;
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 
 const createUploadPath = (file) => {

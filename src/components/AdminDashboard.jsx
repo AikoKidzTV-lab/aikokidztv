@@ -1,151 +1,110 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
-  LayoutDashboard,
-  PlaySquare,
-  Users,
   ImagePlus,
-  Crown,
-  Video,
-  BookOpen,
-  Pencil,
-  Trash2,
+  LayoutDashboard,
   Loader2,
-  UploadCloud,
-  CheckCircle2,
-  AlertCircle,
+  Pencil,
+  RefreshCw,
+  Save,
+  Trash2,
+  Users,
+  Video,
+  XCircle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
-import { applySmallItemEconomy } from '../constants/gemEconomy';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  BarChart,
-  Bar,
-  Legend,
-} from 'recharts';
 
 const ADMIN_EMAIL = 'advdeepakkumar26@gmail.com';
-const COLORING_STORAGE_BUCKET = 'coloring_images';
+
 const VIDEO_STORAGE_BUCKET = 'videos';
-const COLORING_PREMIUM_COST = applySmallItemEconomy(3);
-const COLORING_ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+const THUMBNAIL_STORAGE_BUCKET = 'thumbnails';
+const COLORING_STORAGE_BUCKET = 'coloring_pages';
+const POEM_STORAGE_BUCKET = 'poems';
+
+const IMAGE_ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+const IMAGE_ACCEPTED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
 const VIDEO_ACCEPTED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'];
 const VIDEO_ACCEPTED_EXTENSIONS = ['mp4', 'webm', 'mov', 'm4v'];
-const VIDEO_CATEGORIES = ['Learning', 'Stories', 'Songs'];
+const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
+const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024;
+const VIDEO_CATEGORIES = ['Learning', 'Stories', 'Songs', 'Movies'];
 
-const createColoringUploadPath = (file) => {
-  const rawName = file?.name || 'coloring-page';
-  const ext = rawName.includes('.') ? rawName.slice(rawName.lastIndexOf('.')).toLowerCase() : '.jpg';
-  const safeExt = ['.png', '.jpg', '.jpeg', '.webp'].includes(ext) ? ext : '.jpg';
-  const base = rawName
-    .replace(/\.[^/.]+$/, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9-_]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'coloring-page';
-
-  const unique =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-  return `uploads/${Date.now()}-${unique}-${base}${safeExt}`;
-};
-
-const createVideoUploadPath = (file) => {
-  const rawName = file?.name || 'video-file';
-  const ext = rawName.includes('.') ? rawName.slice(rawName.lastIndexOf('.')).toLowerCase() : '.mp4';
-  const safeExt = ['.mp4', '.webm', '.mov', '.m4v'].includes(ext) ? ext : '.mp4';
-  const base = rawName
-    .replace(/\.[^/.]+$/, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9-_]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'video-file';
-
-  const unique =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-  return `uploads/${Date.now()}-${unique}-${base}${safeExt}`;
-};
-
-const navItems = [
-  { key: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { key: 'Manage Videos', label: 'Manage Videos', icon: PlaySquare },
-  { key: 'Manage Coloring Pages', label: 'Manage Coloring Pages', icon: ImagePlus },
-  { key: 'Manage Users', label: 'Manage Users', icon: Users },
+const NAV_ITEMS = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'users', label: 'Manage Users', icon: Users },
+  { key: 'videos', label: 'Manage Videos', icon: Video },
+  { key: 'coloring_pages', label: 'Manage Coloring Pages', icon: ImagePlus },
+  { key: 'poems', label: 'Manage Poems', icon: Pencil },
 ];
 
-const emptyVideoForm = {
-  title: '',
-  youtubeUrl: '',
-  category: 'Learning',
-  isPromoHomepage: false,
-  source: 'youtube',
-  isPremium: false,
+const makeRandomId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
-const extractYouTubeId = (input = '') => {
-  const raw = String(input).trim();
-  if (!raw) return '';
+const sanitizeBaseName = (fileName = '') =>
+  String(fileName || '')
+    .replace(/\.[^/.]+$/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 70) || 'file';
 
-  const idOnlyPattern = /^[a-zA-Z0-9_-]{11}$/;
-  if (idOnlyPattern.test(raw)) return raw;
+const getFileExtension = (fileName = '') => {
+  const clean = String(fileName || '').trim();
+  if (!clean.includes('.')) return '';
+  return clean.slice(clean.lastIndexOf('.') + 1).toLowerCase();
+};
 
-  try {
-    const normalized = raw.startsWith('http') ? raw : `https://${raw}`;
-    const url = new URL(normalized);
-    const host = url.hostname.replace(/^www\./, '');
+const buildUploadPath = (file, folder, acceptedExtensions, fallbackExtension) => {
+  const extension = getFileExtension(file?.name);
+  const safeExtension = acceptedExtensions.includes(extension) ? extension : fallbackExtension;
+  const baseName = sanitizeBaseName(file?.name || folder);
+  return `${folder}/${Date.now()}-${makeRandomId()}-${baseName}.${safeExtension}`;
+};
 
-    if (host === 'youtu.be') {
-      const id = url.pathname.split('/').filter(Boolean)[0] || '';
-      return idOnlyPattern.test(id) ? id : '';
-    }
-
-    if (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) {
-      const watchId = url.searchParams.get('v') || '';
-      if (idOnlyPattern.test(watchId)) return watchId;
-
-      const pathParts = url.pathname.split('/').filter(Boolean);
-      const embeddedId =
-        (pathParts[0] === 'embed' || pathParts[0] === 'shorts' || pathParts[0] === 'live')
-          ? pathParts[1]
-          : '';
-      return idOnlyPattern.test(embeddedId || '') ? embeddedId : '';
-    }
-  } catch {
-    return '';
+const validateFile = ({
+  file,
+  label,
+  acceptedTypes,
+  acceptedExtensions,
+  maxSizeBytes,
+  sizeMessage,
+  typeMessage,
+}) => {
+  if (!file) return `${label} is required.`;
+  if (Number.isFinite(file.size) && file.size > maxSizeBytes) {
+    return sizeMessage;
   }
 
-  return '';
+  if (file.type && acceptedTypes.includes(file.type)) return '';
+
+  const extension = getFileExtension(file.name);
+  if (acceptedExtensions.includes(extension)) return '';
+
+  return typeMessage;
 };
 
-const extractVideoStoragePath = (videoUrl = '') => {
-  const raw = typeof videoUrl === 'string' ? videoUrl.trim() : '';
-  if (!raw) return '';
+const getStoragePathFromUrl = (fileUrl = '', bucketName = '') => {
+  const raw = typeof fileUrl === 'string' ? fileUrl.trim() : '';
+  if (!raw || !bucketName) return '';
 
   try {
     const parsed = new URL(raw);
     const pathname = decodeURIComponent(parsed.pathname || '');
     const markers = [
-      `/storage/v1/object/public/${VIDEO_STORAGE_BUCKET}/`,
-      `/storage/v1/object/sign/${VIDEO_STORAGE_BUCKET}/`,
-      `/storage/v1/object/${VIDEO_STORAGE_BUCKET}/`,
+      `/storage/v1/object/public/${bucketName}/`,
+      `/storage/v1/object/sign/${bucketName}/`,
+      `/storage/v1/object/${bucketName}/`,
     ];
 
     for (const marker of markers) {
-      const markerIndex = pathname.indexOf(marker);
-      if (markerIndex >= 0) {
-        return pathname.slice(markerIndex + marker.length).replace(/^\/+/, '');
+      const index = pathname.indexOf(marker);
+      if (index >= 0) {
+        return pathname.slice(index + marker.length).replace(/^\/+/, '');
       }
     }
 
@@ -153,39 +112,1401 @@ const extractVideoStoragePath = (videoUrl = '') => {
   } catch {
     if (/^https?:\/\//i.test(raw)) return '';
     const normalized = raw.replace(/^\/+/, '');
-    if (normalized.startsWith(`${VIDEO_STORAGE_BUCKET}/`)) {
-      return normalized.slice(VIDEO_STORAGE_BUCKET.length + 1);
+    if (normalized.startsWith(`${bucketName}/`)) {
+      return normalized.slice(bucketName.length + 1);
     }
     return normalized;
   }
 };
 
+const isStorageMissingFileError = (message = '') =>
+  /not found|does not exist|no such file|404/i.test(String(message || ''));
+
+const removeStoragePath = async (bucketName, storagePath) => {
+  if (!storagePath) return;
+  const { error } = await supabase.storage.from(bucketName).remove([storagePath]);
+  if (error && !isStorageMissingFileError(error.message)) {
+    throw new Error(error.message);
+  }
+};
+
+const removeFileByUrl = async (bucketName, fileUrl) => {
+  const path = getStoragePathFromUrl(fileUrl, bucketName);
+  if (!path) return;
+  await removeStoragePath(bucketName, path);
+};
+
+const uploadPublicFile = async ({
+  file,
+  bucketName,
+  folder,
+  acceptedExtensions,
+  fallbackExtension,
+}) => {
+  const uploadPath = buildUploadPath(file, folder, acceptedExtensions, fallbackExtension);
+  const { error } = await supabase.storage.from(bucketName).upload(uploadPath, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: file.type || undefined,
+  });
+
+  if (error) {
+    throw new Error(`Storage upload failed: ${error.message}`);
+  }
+
+  const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(uploadPath);
+  const publicUrl = publicData?.publicUrl;
+
+  if (!publicUrl) {
+    await removeStoragePath(bucketName, uploadPath).catch(() => {});
+    throw new Error('Could not generate a public URL for uploaded file.');
+  }
+
+  return { uploadPath, publicUrl };
+};
+
+const fetchRowsWithFallbackOrder = async (tableName) => {
+  const ordered = await supabase.from(tableName).select('*').order('created_at', { ascending: false });
+  if (!ordered.error) return ordered.data || [];
+
+  if (!/created_at/i.test(ordered.error.message || '')) {
+    throw new Error(ordered.error.message);
+  }
+
+  const fallback = await supabase.from(tableName).select('*');
+  if (fallback.error) throw new Error(fallback.error.message);
+  return fallback.data || [];
+};
+
+const fetchTableCount = async (tableName) => {
+  const { count, error } = await supabase
+    .from(tableName)
+    .select('*', { count: 'exact', head: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return Number.isFinite(count) ? count : 0;
+};
+
+const formatDate = (value) => {
+  if (!value) return 'N/A';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'N/A';
+  return parsed.toLocaleString();
+};
+
+const readFirstString = (row, keys = [], fallback = '') => {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return fallback;
+};
+
+const readFirstBoolean = (row, keys = [], fallback = false) => {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (typeof value === 'boolean') return value;
+  }
+  return fallback;
+};
+
+const getMissingColumnName = (message = '') => {
+  const patterns = [
+    /column ["']?([a-zA-Z0-9_]+)["']? does not exist/i,
+    /Could not find the ['"]([a-zA-Z0-9_]+)['"] column/i,
+    /Could not find column ['"]([a-zA-Z0-9_]+)['"]/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = String(message || '').match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  return '';
+};
+
+const runMutationWithMissingColumnFallback = async ({ payload, requiredColumns = [], mutate }) => {
+  const requiredSet = new Set(requiredColumns.filter(Boolean));
+  let nextPayload = { ...payload };
+
+  for (let i = 0; i < 8; i += 1) {
+    const result = await mutate(nextPayload);
+    if (!result.error) {
+      return { data: result.data, usedPayload: nextPayload };
+    }
+
+    const message = result.error?.message || 'Database mutation failed.';
+    const missingColumn = getMissingColumnName(message);
+    if (!missingColumn || requiredSet.has(missingColumn) || !(missingColumn in nextPayload)) {
+      throw new Error(message);
+    }
+
+    delete nextPayload[missingColumn];
+  }
+
+  throw new Error('Database mutation failed due to repeated schema mismatch.');
+};
+
+const Feedback = ({ error, success }) => (
+  <>
+    {error && (
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        {error}
+      </div>
+    )}
+    {success && (
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+        {success}
+      </div>
+    )}
+  </>
+);
+
+function VideosSection({ isActive }) {
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [listError, setListError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
+  const [editingVideo, setEditingVideo] = useState(null);
+  const [deletingId, setDeletingId] = useState('');
+  const [form, setForm] = useState({
+    title: '',
+    category: VIDEO_CATEGORIES[0],
+    isPremium: false,
+    isPromoHomepage: false,
+    existingVideoUrl: '',
+    existingThumbnailUrl: '',
+  });
+  const [videoFile, setVideoFile] = useState(null);
+  const [thumbnailFile, setThumbnailFile] = useState(null);
+
+  const videoInputRef = useRef(null);
+  const thumbnailInputRef = useRef(null);
+
+  const resetMessages = () => {
+    setSubmitError('');
+    setSubmitSuccess('');
+  };
+
+  const clearLocalFiles = () => {
+    setVideoFile(null);
+    setThumbnailFile(null);
+    if (videoInputRef.current) videoInputRef.current.value = '';
+    if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
+  };
+
+  const resetForm = () => {
+    setEditingVideo(null);
+    setForm({
+      title: '',
+      category: VIDEO_CATEGORIES[0],
+      isPremium: false,
+      isPromoHomepage: false,
+      existingVideoUrl: '',
+      existingThumbnailUrl: '',
+    });
+    clearLocalFiles();
+    resetMessages();
+  };
+
+  const loadRows = useCallback(async () => {
+    setIsLoading(true);
+    setListError('');
+    try {
+      const data = await fetchRowsWithFallbackOrder('videos');
+      setRows(data);
+    } catch (error) {
+      setListError(error?.message || 'Failed to load videos.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isActive) return;
+    void loadRows();
+  }, [isActive, loadRows]);
+
+  const startEdit = (row) => {
+    resetMessages();
+    clearLocalFiles();
+    setEditingVideo(row);
+    setForm({
+      title: readFirstString(row, ['title'], ''),
+      category: readFirstString(row, ['category'], VIDEO_CATEGORIES[0]),
+      isPremium: readFirstBoolean(row, ['is_premium'], false),
+      isPromoHomepage: readFirstBoolean(row, ['is_promo_homepage'], false),
+      existingVideoUrl: readFirstString(row, ['video_url'], ''),
+      existingThumbnailUrl: readFirstString(row, ['thumbnail_url'], ''),
+    });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    resetMessages();
+
+    const title = form.title.trim();
+    if (!title) {
+      setSubmitError('Video title is required.');
+      return;
+    }
+
+    if (videoFile) {
+      const videoValidation = validateFile({
+        file: videoFile,
+        label: 'Video file',
+        acceptedTypes: VIDEO_ACCEPTED_TYPES,
+        acceptedExtensions: VIDEO_ACCEPTED_EXTENSIONS,
+        maxSizeBytes: MAX_VIDEO_SIZE_BYTES,
+        sizeMessage: 'Video file is too large. Maximum allowed size is 200 MB.',
+        typeMessage: 'Please upload an MP4, WEBM, MOV, or M4V video file.',
+      });
+      if (videoValidation) {
+        setSubmitError(videoValidation);
+        return;
+      }
+    }
+
+    if (thumbnailFile) {
+      const thumbnailValidation = validateFile({
+        file: thumbnailFile,
+        label: 'Thumbnail image',
+        acceptedTypes: IMAGE_ACCEPTED_TYPES,
+        acceptedExtensions: IMAGE_ACCEPTED_EXTENSIONS,
+        maxSizeBytes: MAX_IMAGE_SIZE_BYTES,
+        sizeMessage: 'Thumbnail image is too large. Maximum allowed size is 8 MB.',
+        typeMessage: 'Please upload a PNG, JPG/JPEG, or WEBP thumbnail image.',
+      });
+      if (thumbnailValidation) {
+        setSubmitError(thumbnailValidation);
+        return;
+      }
+    }
+
+    const isEditing = Boolean(editingVideo?.id);
+    if (!isEditing && !videoFile) {
+      setSubmitError('Please upload a video file when creating a video.');
+      return;
+    }
+    if (!isEditing && !thumbnailFile) {
+      setSubmitError('Please upload a Thumbnail Image when creating a video.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    let uploadedVideo = null;
+    let uploadedThumbnail = null;
+    const previousVideoUrl = readFirstString(editingVideo, ['video_url'], '');
+    const previousThumbnailUrl = readFirstString(editingVideo, ['thumbnail_url'], '');
+    let nextVideoUrl = form.existingVideoUrl.trim();
+    let nextThumbnailUrl = form.existingThumbnailUrl.trim();
+
+    try {
+      if (videoFile) {
+        uploadedVideo = await uploadPublicFile({
+          file: videoFile,
+          bucketName: VIDEO_STORAGE_BUCKET,
+          folder: 'videos',
+          acceptedExtensions: VIDEO_ACCEPTED_EXTENSIONS,
+          fallbackExtension: 'mp4',
+        });
+        nextVideoUrl = uploadedVideo.publicUrl;
+      }
+
+      if (thumbnailFile) {
+        uploadedThumbnail = await uploadPublicFile({
+          file: thumbnailFile,
+          bucketName: THUMBNAIL_STORAGE_BUCKET,
+          folder: 'thumbnails',
+          acceptedExtensions: IMAGE_ACCEPTED_EXTENSIONS,
+          fallbackExtension: 'jpg',
+        });
+        nextThumbnailUrl = uploadedThumbnail.publicUrl;
+      }
+
+      if (!nextVideoUrl) {
+        throw new Error('Missing video URL. Upload a video file to continue.');
+      }
+      if (!nextThumbnailUrl) {
+        throw new Error('Missing thumbnail URL. Upload a Thumbnail Image to continue.');
+      }
+
+      const payload = {
+        title,
+        video_url: nextVideoUrl,
+        thumbnail_url: nextThumbnailUrl,
+        category: form.category?.trim() || null,
+        is_premium: Boolean(form.isPremium),
+        is_promo_homepage: Boolean(form.isPromoHomepage),
+      };
+
+      if (isEditing && editingVideo?.youtube_id && videoFile) {
+        payload.youtube_id = null;
+      }
+
+      const mutation = await runMutationWithMissingColumnFallback({
+        payload,
+        requiredColumns: ['title', 'video_url', 'thumbnail_url'],
+        mutate: (nextPayload) =>
+          isEditing
+            ? supabase.from('videos').update(nextPayload).eq('id', editingVideo.id).select('*').single()
+            : supabase.from('videos').insert(nextPayload).select('*').single(),
+      });
+
+      const savedRow = mutation.data;
+      if (isEditing) {
+        setRows((prev) => prev.map((item) => (item.id === savedRow.id ? savedRow : item)));
+      } else {
+        setRows((prev) => [savedRow, ...prev]);
+      }
+
+      if (isEditing && uploadedVideo && previousVideoUrl && previousVideoUrl !== nextVideoUrl) {
+        await removeFileByUrl(VIDEO_STORAGE_BUCKET, previousVideoUrl).catch(() => {});
+      }
+      if (
+        isEditing &&
+        uploadedThumbnail &&
+        previousThumbnailUrl &&
+        previousThumbnailUrl !== nextThumbnailUrl
+      ) {
+        await removeFileByUrl(THUMBNAIL_STORAGE_BUCKET, previousThumbnailUrl).catch(() => {});
+      }
+
+      resetForm();
+      setSubmitSuccess(isEditing ? 'Video updated successfully.' : 'Video created successfully.');
+    } catch (error) {
+      if (uploadedVideo?.uploadPath) {
+        await removeStoragePath(VIDEO_STORAGE_BUCKET, uploadedVideo.uploadPath).catch(() => {});
+      }
+      if (uploadedThumbnail?.uploadPath) {
+        await removeStoragePath(THUMBNAIL_STORAGE_BUCKET, uploadedThumbnail.uploadPath).catch(
+          () => {}
+        );
+      }
+      setSubmitError(error?.message || 'Failed to save video.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (row) => {
+    if (!row?.id || deletingId) return;
+    const confirmed = window.confirm(
+      `Delete "${readFirstString(row, ['title'], 'this video')}"? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    resetMessages();
+    setDeletingId(row.id);
+
+    try {
+      const { error } = await supabase.from('videos').delete().eq('id', row.id);
+      if (error) throw new Error(error.message);
+
+      setRows((prev) => prev.filter((item) => item.id !== row.id));
+      if (editingVideo?.id === row.id) {
+        resetForm();
+      }
+
+      await Promise.allSettled([
+        removeFileByUrl(VIDEO_STORAGE_BUCKET, readFirstString(row, ['video_url'], '')),
+        removeFileByUrl(THUMBNAIL_STORAGE_BUCKET, readFirstString(row, ['thumbnail_url'], '')),
+      ]);
+
+      setSubmitSuccess('Video deleted successfully.');
+    } catch (error) {
+      setSubmitError(error?.message || 'Failed to delete video.');
+    } finally {
+      setDeletingId('');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Videos</h2>
+            <p className="text-sm text-slate-600">
+              Full CRUD for videos with separate thumbnail upload to the `thumbnails` bucket.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadRows()}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            Refresh
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Video Title</label>
+              <input
+                type="text"
+                value={form.title}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, title: e.target.value }));
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                placeholder="Enter video title"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Category</label>
+              <select
+                value={form.category}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, category: e.target.value }));
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              >
+                {VIDEO_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Video File {editingVideo ? '(optional to replace)' : '(required)'}
+              </label>
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept=".mp4,.webm,.mov,.m4v,video/mp4,video/webm,video/quicktime,video/x-m4v"
+                onChange={(e) => {
+                  setVideoFile(e.target.files?.[0] || null);
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              {form.existingVideoUrl && (
+                <a
+                  href={form.existingVideoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-block break-all text-xs text-indigo-600 hover:text-indigo-800"
+                >
+                  Current video URL
+                </a>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Thumbnail Image {editingVideo ? '(optional to replace)' : '(required)'}
+              </label>
+              <input
+                ref={thumbnailInputRef}
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                onChange={(e) => {
+                  setThumbnailFile(e.target.files?.[0] || null);
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              {form.existingThumbnailUrl && (
+                <img
+                  src={form.existingThumbnailUrl}
+                  alt="Current video thumbnail"
+                  className="mt-2 h-24 w-40 rounded-lg border border-slate-200 object-cover"
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.isPremium}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, isPremium: e.target.checked }));
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+              />
+              Mark as Premium
+            </label>
+
+            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.isPromoHomepage}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, isPromoHomepage: e.target.checked }));
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+              />
+              Show on Homepage Promo
+            </label>
+          </div>
+
+          <Feedback error={submitError} success={submitSuccess} />
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold ${
+                isSubmitting
+                  ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400'
+                  : 'border border-indigo-300 bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+            >
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {editingVideo ? 'Update Video' : 'Create Video'}
+            </button>
+
+            {editingVideo && (
+              <button
+                type="button"
+                onClick={resetForm}
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                <XCircle size={16} />
+                Cancel Edit
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-600">
+            Video Library
+          </h3>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+            {rows.length} items
+          </span>
+        </div>
+
+        {listError && (
+          <div className="px-6 py-4">
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {listError}
+            </div>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="grid min-h-[180px] place-items-center px-6 py-8 text-sm text-slate-600">
+            <span className="inline-flex items-center gap-2">
+              <Loader2 size={16} className="animate-spin" /> Loading videos...
+            </span>
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="grid min-h-[180px] place-items-center px-6 py-8 text-sm text-slate-600">
+            No videos found.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th className="px-4 py-3 text-left">Thumbnail</th>
+                  <th className="px-4 py-3 text-left">Title</th>
+                  <th className="px-4 py-3 text-left">Video URL</th>
+                  <th className="px-4 py-3 text-left">Category</th>
+                  <th className="px-4 py-3 text-left">Premium</th>
+                  <th className="px-4 py-3 text-left">Promo</th>
+                  <th className="px-4 py-3 text-left">Created</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((row) => {
+                  const thumb = readFirstString(row, ['thumbnail_url'], '');
+                  const rowId = String(row.id);
+                  return (
+                    <tr key={rowId} className="bg-white">
+                      <td className="px-4 py-3">
+                        {thumb ? (
+                          <img
+                            src={thumb}
+                            alt={readFirstString(row, ['title'], 'video thumbnail')}
+                            className="h-14 w-24 rounded-md border border-slate-200 object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-400">N/A</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-800">
+                        {readFirstString(row, ['title'], 'Untitled')}
+                      </td>
+                      <td className="px-4 py-3">
+                        {readFirstString(row, ['video_url'], '') ? (
+                          <a
+                            href={readFirstString(row, ['video_url'], '')}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="max-w-[220px] truncate text-indigo-600 hover:text-indigo-800"
+                          >
+                            Open
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400">N/A</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">{readFirstString(row, ['category'], 'N/A')}</td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {readFirstBoolean(row, ['is_premium'], false) ? 'Yes' : 'No'}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {readFirstBoolean(row, ['is_promo_homepage'], false) ? 'Yes' : 'No'}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{formatDate(row.created_at)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(row)}
+                            disabled={isSubmitting || Boolean(deletingId)}
+                            className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-slate-600 hover:border-indigo-200 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Edit"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(row)}
+                            disabled={isSubmitting || Boolean(deletingId)}
+                            className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-slate-600 hover:border-red-200 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Delete"
+                          >
+                            {deletingId === row.id ? (
+                              <Loader2 size={15} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={15} />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CrudMediaSection({
+  isActive,
+  sectionTitle,
+  sectionDescription,
+  tableName,
+  bucketName,
+  titleColumn = 'title',
+  mediaColumn = 'image_url',
+  mediaLabel = 'Image',
+  mediaRequiredOnCreate = true,
+  contentColumn = '',
+  contentLabel = 'Content',
+  premiumColumn = '',
+  premiumLabel = 'Premium',
+  premiumHeading = 'Premium',
+}) {
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [listError, setListError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingId, setDeletingId] = useState('');
+  const [form, setForm] = useState({
+    title: '',
+    content: '',
+    isPremium: false,
+    existingMediaUrl: '',
+  });
+  const [mediaFile, setMediaFile] = useState(null);
+  const mediaInputRef = useRef(null);
+
+  const resetMessages = () => {
+    setSubmitError('');
+    setSubmitSuccess('');
+  };
+
+  const clearFileInput = () => {
+    setMediaFile(null);
+    if (mediaInputRef.current) mediaInputRef.current.value = '';
+  };
+
+  const resetForm = () => {
+    setEditingRow(null);
+    setForm({
+      title: '',
+      content: '',
+      isPremium: false,
+      existingMediaUrl: '',
+    });
+    clearFileInput();
+    resetMessages();
+  };
+
+  const readRowMediaUrl = useCallback(
+    (row) =>
+      readFirstString(
+        row,
+        [mediaColumn, 'image_url', 'thumbnail_url', 'media_url', 'file_url', 'cover_url'],
+        ''
+      ),
+    [mediaColumn]
+  );
+
+  const loadRows = useCallback(async () => {
+    setIsLoading(true);
+    setListError('');
+    try {
+      const data = await fetchRowsWithFallbackOrder(tableName);
+      setRows(data);
+    } catch (error) {
+      setListError(error?.message || `Failed to load ${sectionTitle.toLowerCase()}.`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sectionTitle, tableName]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    void loadRows();
+  }, [isActive, loadRows]);
+
+  const startEdit = (row) => {
+    resetMessages();
+    clearFileInput();
+    setEditingRow(row);
+    setForm({
+      title: readFirstString(row, [titleColumn, 'title', 'name'], ''),
+      content: contentColumn
+        ? readFirstString(row, [contentColumn, 'content', 'description', 'body', 'text'], '')
+        : '',
+      isPremium: premiumColumn
+        ? readFirstBoolean(row, [premiumColumn, 'is_premium'], false)
+        : false,
+      existingMediaUrl: readRowMediaUrl(row),
+    });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    resetMessages();
+
+    const title = form.title.trim();
+    if (!title) {
+      setSubmitError('Title is required.');
+      return;
+    }
+
+    if (mediaFile) {
+      const validation = validateFile({
+        file: mediaFile,
+        label: mediaLabel,
+        acceptedTypes: IMAGE_ACCEPTED_TYPES,
+        acceptedExtensions: IMAGE_ACCEPTED_EXTENSIONS,
+        maxSizeBytes: MAX_IMAGE_SIZE_BYTES,
+        sizeMessage: `${mediaLabel} is too large. Maximum allowed size is 8 MB.`,
+        typeMessage: `Please upload a PNG, JPG/JPEG, or WEBP ${mediaLabel.toLowerCase()}.`,
+      });
+      if (validation) {
+        setSubmitError(validation);
+        return;
+      }
+    }
+
+    const isEditing = Boolean(editingRow?.id);
+    if (!isEditing && mediaRequiredOnCreate && !mediaFile) {
+      setSubmitError(`${mediaLabel} is required when creating a new ${sectionTitle.slice(0, -1)}.`);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    let uploadedMedia = null;
+    const previousMediaUrl = readRowMediaUrl(editingRow);
+    let nextMediaUrl = form.existingMediaUrl.trim();
+
+    try {
+      if (mediaFile) {
+        uploadedMedia = await uploadPublicFile({
+          file: mediaFile,
+          bucketName,
+          folder: tableName,
+          acceptedExtensions: IMAGE_ACCEPTED_EXTENSIONS,
+          fallbackExtension: 'jpg',
+        });
+        nextMediaUrl = uploadedMedia.publicUrl;
+      }
+
+      if (mediaRequiredOnCreate && !nextMediaUrl) {
+        throw new Error(`${mediaLabel} URL is missing. Please upload a file.`);
+      }
+
+      const payload = {
+        [titleColumn]: title,
+      };
+
+      if (contentColumn) {
+        payload[contentColumn] = form.content.trim();
+      }
+      if (premiumColumn) {
+        payload[premiumColumn] = Boolean(form.isPremium);
+      }
+      if (nextMediaUrl) {
+        payload[mediaColumn] = nextMediaUrl;
+      }
+
+      const requiredColumns = [titleColumn];
+      if (!isEditing && mediaRequiredOnCreate) {
+        requiredColumns.push(mediaColumn);
+      }
+
+      const mutation = await runMutationWithMissingColumnFallback({
+        payload,
+        requiredColumns,
+        mutate: (nextPayload) =>
+          isEditing
+            ? supabase.from(tableName).update(nextPayload).eq('id', editingRow.id).select('*').single()
+            : supabase.from(tableName).insert(nextPayload).select('*').single(),
+      });
+
+      const savedRow = mutation.data;
+      if (isEditing) {
+        setRows((prev) => prev.map((row) => (row.id === savedRow.id ? savedRow : row)));
+      } else {
+        setRows((prev) => [savedRow, ...prev]);
+      }
+
+      if (isEditing && uploadedMedia && previousMediaUrl && previousMediaUrl !== nextMediaUrl) {
+        await removeFileByUrl(bucketName, previousMediaUrl).catch(() => {});
+      }
+
+      resetForm();
+      setSubmitSuccess(isEditing ? `${sectionTitle.slice(0, -1)} updated.` : `${sectionTitle.slice(0, -1)} created.`);
+    } catch (error) {
+      if (uploadedMedia?.uploadPath) {
+        await removeStoragePath(bucketName, uploadedMedia.uploadPath).catch(() => {});
+      }
+      setSubmitError(error?.message || `Failed to save ${sectionTitle.toLowerCase()}.`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (row) => {
+    if (!row?.id || deletingId) return;
+    const itemTitle = readFirstString(row, [titleColumn, 'title', 'name'], 'this item');
+    const confirmed = window.confirm(`Delete "${itemTitle}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    resetMessages();
+    setDeletingId(row.id);
+
+    try {
+      const { error } = await supabase.from(tableName).delete().eq('id', row.id);
+      if (error) throw new Error(error.message);
+
+      setRows((prev) => prev.filter((item) => item.id !== row.id));
+      if (editingRow?.id === row.id) {
+        resetForm();
+      }
+
+      await removeFileByUrl(bucketName, readRowMediaUrl(row)).catch(() => {});
+      setSubmitSuccess(`${sectionTitle.slice(0, -1)} deleted.`);
+    } catch (error) {
+      setSubmitError(error?.message || `Failed to delete ${sectionTitle.toLowerCase()}.`);
+    } finally {
+      setDeletingId('');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">{sectionTitle}</h2>
+            <p className="text-sm text-slate-600">{sectionDescription}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadRows()}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            Refresh
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Title</label>
+              <input
+                type="text"
+                value={form.title}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, title: e.target.value }));
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                placeholder={`Enter ${sectionTitle.slice(0, -1).toLowerCase()} title`}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                {mediaLabel} {editingRow ? '(optional to replace)' : mediaRequiredOnCreate ? '(required)' : '(optional)'}
+              </label>
+              <input
+                ref={mediaInputRef}
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                onChange={(e) => {
+                  setMediaFile(e.target.files?.[0] || null);
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              {form.existingMediaUrl && (
+                <img
+                  src={form.existingMediaUrl}
+                  alt={`${sectionTitle} preview`}
+                  className="mt-2 h-24 w-40 rounded-lg border border-slate-200 object-cover"
+                />
+              )}
+            </div>
+          </div>
+
+          {contentColumn && (
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">{contentLabel}</label>
+              <textarea
+                value={form.content}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, content: e.target.value }));
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                rows={5}
+                placeholder={`Enter ${sectionTitle.toLowerCase()} ${contentLabel.toLowerCase()}`}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              />
+            </div>
+          )}
+
+          {premiumColumn && (
+            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.isPremium}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, isPremium: e.target.checked }));
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+              />
+              {premiumLabel}
+            </label>
+          )}
+
+          <Feedback error={submitError} success={submitSuccess} />
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold ${
+                isSubmitting
+                  ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400'
+                  : 'border border-indigo-300 bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+            >
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {editingRow ? 'Update' : 'Create'}
+            </button>
+
+            {editingRow && (
+              <button
+                type="button"
+                onClick={resetForm}
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                <XCircle size={16} />
+                Cancel Edit
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-600">
+            {sectionTitle} Library
+          </h3>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+            {rows.length} items
+          </span>
+        </div>
+
+        {listError && (
+          <div className="px-6 py-4">
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {listError}
+            </div>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="grid min-h-[180px] place-items-center px-6 py-8 text-sm text-slate-600">
+            <span className="inline-flex items-center gap-2">
+              <Loader2 size={16} className="animate-spin" /> Loading...
+            </span>
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="grid min-h-[180px] place-items-center px-6 py-8 text-sm text-slate-600">
+            No items found.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th className="px-4 py-3 text-left">{mediaLabel}</th>
+                  <th className="px-4 py-3 text-left">Title</th>
+                  {contentColumn && <th className="px-4 py-3 text-left">{contentLabel}</th>}
+                  {premiumColumn && <th className="px-4 py-3 text-left">{premiumHeading}</th>}
+                  <th className="px-4 py-3 text-left">Created</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((row) => {
+                  const rowId = String(row.id);
+                  const rowMediaUrl = readRowMediaUrl(row);
+                  return (
+                    <tr key={rowId} className="bg-white">
+                      <td className="px-4 py-3">
+                        {rowMediaUrl ? (
+                          <img
+                            src={rowMediaUrl}
+                            alt={readFirstString(row, [titleColumn, 'title', 'name'], 'media')}
+                            className="h-14 w-24 rounded-md border border-slate-200 object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-400">N/A</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-800">
+                        {readFirstString(row, [titleColumn, 'title', 'name'], 'Untitled')}
+                      </td>
+                      {contentColumn && (
+                        <td className="max-w-[360px] px-4 py-3 text-slate-700">
+                          <p className="line-clamp-2">
+                            {readFirstString(
+                              row,
+                              [contentColumn, 'content', 'description', 'body', 'text'],
+                              '-'
+                            )}
+                          </p>
+                        </td>
+                      )}
+                      {premiumColumn && (
+                        <td className="px-4 py-3 text-slate-700">
+                          {readFirstBoolean(row, [premiumColumn, 'is_premium'], false) ? 'Yes' : 'No'}
+                        </td>
+                      )}
+                      <td className="px-4 py-3 text-slate-600">{formatDate(row.created_at)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(row)}
+                            disabled={isSubmitting || Boolean(deletingId)}
+                            className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-slate-600 hover:border-indigo-200 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Edit"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(row)}
+                            disabled={isSubmitting || Boolean(deletingId)}
+                            className="rounded-md border border-slate-200 bg-white px-2 py-1.5 text-slate-600 hover:border-red-200 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Delete"
+                          >
+                            {deletingId === row.id ? (
+                              <Loader2 size={15} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={15} />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DashboardOverviewSection({ summary, isLoading, loadError, onRefresh }) {
+  const cards = [
+    { label: 'Total Users', value: summary.users },
+    { label: 'Total Videos', value: summary.videos },
+    { label: 'Coloring Pages', value: summary.coloringPages },
+    { label: 'Poems', value: summary.poems },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Admin Overview</h2>
+            <p className="text-sm text-slate-600">
+              Quick summary from Supabase to monitor content and user growth.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void onRefresh()}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            Refresh Summary
+          </button>
+        </div>
+
+        {loadError && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {loadError}
+          </div>
+        )}
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {cards.map((card) => (
+            <div
+              key={card.label}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                {card.label}
+              </p>
+              <p className="mt-2 text-3xl font-bold text-slate-900">
+                {isLoading ? '...' : card.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UsersSection({ isActive }) {
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const loadUsers = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError('');
+    try {
+      const rowsData = await fetchRowsWithFallbackOrder('profiles');
+      setRows(rowsData);
+    } catch (error) {
+      setLoadError(error?.message || 'Failed to load users from Supabase.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isActive) return;
+    void loadUsers();
+  }, [isActive, loadUsers]);
+
+  const filteredRows = rows.filter((row) => {
+    const haystack = [
+      readFirstString(row, ['email'], ''),
+      readFirstString(row, ['full_name', 'name'], ''),
+      String(row?.id || ''),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return haystack.includes(searchTerm.trim().toLowerCase());
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Manage Users</h2>
+            <p className="text-sm text-slate-600">
+              Live user records fetched directly from Supabase `profiles`.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadUsers()}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            Refresh Users
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search by email, name, or user id"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+          />
+        </div>
+
+        {loadError && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {loadError}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="grid min-h-[120px] place-items-center text-sm text-slate-600">
+            <span className="inline-flex items-center gap-2">
+              <Loader2 size={16} className="animate-spin" /> Loading users...
+            </span>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th className="px-4 py-3 text-left">User ID</th>
+                  <th className="px-4 py-3 text-left">Email</th>
+                  <th className="px-4 py-3 text-left">Name</th>
+                  <th className="px-4 py-3 text-left">Gems</th>
+                  <th className="px-4 py-3 text-left">Created</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredRows.map((row) => (
+                  <tr key={String(row.id)} className="bg-white">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-700">{String(row.id)}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {readFirstString(row, ['email'], 'N/A')}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {readFirstString(row, ['full_name', 'name'], 'N/A')}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{Number(row?.gems || 0)}</td>
+                    <td className="px-4 py-3 text-slate-600">{formatDate(row?.created_at)}</td>
+                  </tr>
+                ))}
+                {!filteredRows.length && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-center text-sm text-slate-500">
+                      No users found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const AdminDashboard = ({ onBackToSite }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('Dashboard');
-  const [videos, setVideos] = useState([]);
-  const [form, setForm] = useState(emptyVideoForm);
-  const [isVideosLoading, setIsVideosLoading] = useState(false);
-  const [isVideoSubmitting, setIsVideoSubmitting] = useState(false);
-  const [videoFormError, setVideoFormError] = useState('');
-  const [videoFormSuccess, setVideoFormSuccess] = useState('');
-  const [videoListError, setVideoListError] = useState('');
-  const [editingVideo, setEditingVideo] = useState(null);
-  const [deletingVideoId, setDeletingVideoId] = useState('');
-  const videoFileInputRef = useRef(null);
-  const [videoFile, setVideoFile] = useState(null);
-  const [isVideoDragActive, setIsVideoDragActive] = useState(false);
-  const coloringFileInputRef = useRef(null);
-  const [coloringFile, setColoringFile] = useState(null);
-  const [coloringIsPremium, setColoringIsPremium] = useState(false);
-  const [isColoringUploading, setIsColoringUploading] = useState(false);
-  const [coloringUploadError, setColoringUploadError] = useState('');
-  const [coloringUploadSuccess, setColoringUploadSuccess] = useState('');
-  const [lastColoringUpload, setLastColoringUpload] = useState(null);
-  const [isDragActive, setIsDragActive] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [summary, setSummary] = useState({
+    users: 0,
+    videos: 0,
+    coloringPages: 0,
+    poems: 0,
+  });
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState('');
 
   const isAuthorized = user?.email === ADMIN_EMAIL;
-  const isEditingVideo = Boolean(editingVideo?.id);
+
+  const loadSummary = useCallback(async () => {
+    setSummaryLoading(true);
+    setSummaryError('');
+
+    try {
+      const [users, videos, coloringPages, poems] = await Promise.all([
+        fetchTableCount('profiles'),
+        fetchTableCount('videos'),
+        fetchTableCount('coloring_pages'),
+        fetchTableCount('poems'),
+      ]);
+
+      setSummary({ users, videos, coloringPages, poems });
+    } catch (error) {
+      setSummaryError(error?.message || 'Failed to load dashboard summary.');
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthorized) return;
+    void loadSummary();
+  }, [isAuthorized, loadSummary]);
 
   const handleBackToSite = () => {
     if (onBackToSite) {
@@ -196,1203 +1517,40 @@ const AdminDashboard = ({ onBackToSite }) => {
     window.location.assign('/');
   };
 
-  const handleFormChange = (key, value) => {
-    setVideoFormError('');
-    setVideoFormSuccess('');
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const loadVideos = async () => {
-    setIsVideosLoading(true);
-    setVideoListError('');
-
-    try {
-      const { data, error } = await supabase
-        .from('videos')
-        .select('id, title, youtube_id, video_url, category, is_promo_homepage, is_premium, created_at')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setVideos(data || []);
-    } catch (err) {
-      setVideoListError(err?.message || 'Failed to load videos.');
-    } finally {
-      setIsVideosLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab !== 'Manage Videos') return;
-    loadVideos();
-  }, [activeTab]);
-
-  const resetVideoMessages = () => {
-    setVideoFormError('');
-    setVideoFormSuccess('');
-  };
-
-  const clearSelectedVideoFile = () => {
-    setVideoFile(null);
-    setIsVideoDragActive(false);
-    if (videoFileInputRef.current) {
-      videoFileInputRef.current.value = '';
-    }
-  };
-
-  const validateVideoFile = (file) => {
-    if (!file) return 'Please choose a video file to upload.';
-    if (file.type && VIDEO_ACCEPTED_TYPES.includes(file.type)) return '';
-
-    const ext = file.name?.split('.').pop()?.toLowerCase() || '';
-    if (VIDEO_ACCEPTED_EXTENSIONS.includes(ext)) return '';
-
-    return 'Please upload an MP4, WEBM, MOV, or M4V file.';
-  };
-
-  const setSelectedVideoFile = (file) => {
-    resetVideoMessages();
-    const validationMessage = validateVideoFile(file);
-    if (validationMessage) {
-      setVideoFile(null);
-      setVideoFormError(validationMessage);
-      return;
-    }
-    setVideoFile(file);
-  };
-
-  const handleVideoFileChange = (event) => {
-    const nextFile = event.target.files?.[0] ?? null;
-    if (!nextFile) {
-      setVideoFile(null);
-      return;
-    }
-    setSelectedVideoFile(nextFile);
-  };
-
-  const handleVideoDragOver = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (isVideoSubmitting || form.source !== 'upload') return;
-    setIsVideoDragActive(true);
-  };
-
-  const handleVideoDragLeave = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsVideoDragActive(false);
-  };
-
-  const handleVideoDrop = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsVideoDragActive(false);
-
-    if (isVideoSubmitting || form.source !== 'upload') return;
-    const nextFile = event.dataTransfer?.files?.[0] ?? null;
-    if (!nextFile) return;
-    setSelectedVideoFile(nextFile);
-  };
-
-  const handleVideoSourceChange = (source) => {
-    if (isEditingVideo) return;
-    handleFormChange('source', source);
-    if (source === 'youtube') {
-      clearSelectedVideoFile();
-    }
-  };
-
-  const startEditingVideo = (video) => {
-    if (!video?.id) return;
-
-    resetVideoMessages();
-    clearSelectedVideoFile();
-
-    const isYoutubeVideo = Boolean(video.youtube_id);
-    setEditingVideo(video);
-    setForm({
-      title: video.title || '',
-      youtubeUrl: isYoutubeVideo ? `https://www.youtube.com/watch?v=${video.youtube_id}` : '',
-      category: video.category || VIDEO_CATEGORIES[0],
-      isPromoHomepage: Boolean(video.is_promo_homepage),
-      source: isYoutubeVideo ? 'youtube' : 'upload',
-      isPremium: Boolean(video.is_premium),
-    });
-  };
-
-  const cancelEditingVideo = () => {
-    setEditingVideo(null);
-    setForm(emptyVideoForm);
-    clearSelectedVideoFile();
-    resetVideoMessages();
-  };
-
-  const handleDeleteVideo = async (video) => {
-    if (!video?.id || deletingVideoId) return;
-
-    const confirmed = window.confirm(
-      `Delete "${video.title || 'this video'}"? This action cannot be undone.`
-    );
-    if (!confirmed) return;
-
-    resetVideoMessages();
-    setVideoListError('');
-    setDeletingVideoId(video.id);
-
-    try {
-      const isLocalUpload = !video.youtube_id && Boolean(video.video_url);
-
-      if (isLocalUpload) {
-        const storagePath = extractVideoStoragePath(video.video_url);
-        if (!storagePath) {
-          throw new Error('Could not determine the storage file path for this uploaded video.');
-        }
-
-        const { error: storageDeleteError } = await supabase.storage
-          .from(VIDEO_STORAGE_BUCKET)
-          .remove([storagePath]);
-
-        const storageDeleteMessage = storageDeleteError?.message || '';
-        const isMissingFile =
-          /not found|does not exist|no such file|404/i.test(storageDeleteMessage);
-
-        if (storageDeleteError && !isMissingFile) {
-          throw new Error(`Storage delete failed: ${storageDeleteMessage}`);
-        }
-      }
-
-      const { error: deleteError } = await supabase
-        .from('videos')
-        .delete()
-        .eq('id', video.id);
-
-      if (deleteError) {
-        throw new Error(deleteError.message);
-      }
-
-      setVideos((prev) => prev.filter((row) => row.id !== video.id));
-      if (editingVideo?.id === video.id) {
-        cancelEditingVideo();
-      }
-      setVideoFormSuccess('Video deleted successfully.');
-    } catch (err) {
-      setVideoFormError(err?.message || 'Failed to delete video.');
-    } finally {
-      setDeletingVideoId('');
-    }
-  };
-
-  const handleAddVideo = async (e) => {
-    e?.preventDefault();
-    resetVideoMessages();
-
-    const title = form.title.trim();
-    const youtubeUrl = form.youtubeUrl.trim();
-    const isUploadMode = form.source === 'upload' && !isEditingVideo;
-    const isPremium = Boolean(form.isPremium);
-
-    if (!title) {
-      setVideoFormError('Please enter a video title.');
-      return;
-    }
-
-    if (isEditingVideo) {
-      setIsVideoSubmitting(true);
-
-      try {
-        const { data: updatedRow, error } = await supabase
-          .from('videos')
-          .update({
-            title,
-            category: form.category,
-            is_promo_homepage: form.isPromoHomepage,
-            is_premium: isPremium,
-          })
-          .eq('id', editingVideo.id)
-          .select('id, title, youtube_id, video_url, category, is_promo_homepage, is_premium, created_at')
-          .single();
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        setVideos((prev) => prev.map((row) => (row.id === updatedRow.id ? updatedRow : row)));
-        cancelEditingVideo();
-        setVideoFormSuccess('Video updated successfully.');
-      } catch (err) {
-        setVideoFormError(err?.message || 'Failed to update video.');
-      } finally {
-        setIsVideoSubmitting(false);
-      }
-
-      return;
-    }
-
-    let youtubeId = null;
-    let uploadedVideoPublicUrl = null;
-
-    if (isUploadMode) {
-      const fileValidationMessage = validateVideoFile(videoFile);
-      if (fileValidationMessage) {
-        setVideoFormError(fileValidationMessage);
-        return;
-      }
-    } else {
-      if (!youtubeUrl) {
-        setVideoFormError('Please enter a video title and a YouTube URL.');
-        return;
-      }
-
-      youtubeId = extractYouTubeId(youtubeUrl);
-      if (!youtubeId) {
-        setVideoFormError('Invalid YouTube URL. Please paste a standard YouTube video link.');
-        return;
-      }
-    }
-
-    setIsVideoSubmitting(true);
-
-    try {
-      if (isUploadMode) {
-        const uploadPath = createVideoUploadPath(videoFile);
-
-        const { error: uploadError } = await supabase.storage
-          .from(VIDEO_STORAGE_BUCKET)
-          .upload(uploadPath, videoFile, {
-            cacheControl: '3600',
-            upsert: false,
-            contentType: videoFile.type || undefined,
-          });
-
-        if (uploadError) {
-          throw new Error(`Storage upload failed: ${uploadError.message}`);
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from(VIDEO_STORAGE_BUCKET)
-          .getPublicUrl(uploadPath);
-
-        uploadedVideoPublicUrl = publicUrlData?.publicUrl || null;
-        if (!uploadedVideoPublicUrl) {
-          throw new Error('Could not generate a public URL for the uploaded video.');
-        }
-      }
-
-      const { data: insertedRow, error } = await supabase
-        .from('videos')
-        .insert({
-          title,
-          youtube_id: isUploadMode ? null : youtubeId,
-          video_url: isUploadMode ? uploadedVideoPublicUrl : `https://www.youtube.com/watch?v=${youtubeId}`,
-          category: form.category,
-          is_promo_homepage: form.isPromoHomepage,
-          is_premium: isPremium,
-        })
-        .select('id, title, youtube_id, video_url, category, is_promo_homepage, is_premium, created_at')
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setVideos((prev) => [insertedRow, ...prev]);
-      setForm(emptyVideoForm);
-      clearSelectedVideoFile();
-      setVideoFormSuccess(
-        isUploadMode
-          ? `Video uploaded and saved successfully${isPremium ? ' as Premium' : ' as Free'}.`
-          : `Video added successfully (${youtubeId})${isPremium ? ' as Premium' : ' as Free'}.`
-      );
-    } catch (err) {
-      setVideoFormError(err?.message || 'Failed to add video.');
-    } finally {
-      setIsVideoSubmitting(false);
-    }
-  };
-
   if (!isAuthorized) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-900 text-white text-2xl">
+      <div className="flex h-screen items-center justify-center bg-slate-900 text-2xl text-white">
         Access Denied - Admin Only
       </div>
     );
   }
 
-  const resetColoringMessages = () => {
-    setColoringUploadError('');
-    setColoringUploadSuccess('');
-  };
-
-  const validateColoringFile = (file) => {
-    if (!file) return 'Please choose an image file.';
-    if (file.type && COLORING_ACCEPTED_TYPES.includes(file.type)) return '';
-
-    const ext = file.name?.split('.').pop()?.toLowerCase() || '';
-    if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) return '';
-
-    return 'Please select a PNG, JPG/JPEG, or WEBP image.';
-  };
-
-  const setSelectedColoringFile = (file) => {
-    resetColoringMessages();
-    const validationMessage = validateColoringFile(file);
-    if (validationMessage) {
-      setColoringFile(null);
-      setColoringUploadError(validationMessage);
-      return;
-    }
-    setColoringFile(file);
-  };
-
-  const handleColoringFileChange = (event) => {
-    const nextFile = event.target.files?.[0] ?? null;
-    if (!nextFile) {
-      setColoringFile(null);
-      return;
-    }
-    setSelectedColoringFile(nextFile);
-  };
-
-  const handleColoringDragOver = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (isColoringUploading) return;
-    setIsDragActive(true);
-  };
-
-  const handleColoringDragLeave = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragActive(false);
-  };
-
-  const handleColoringDrop = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragActive(false);
-    if (isColoringUploading) return;
-
-    const nextFile = event.dataTransfer?.files?.[0] ?? null;
-    if (!nextFile) return;
-    setSelectedColoringFile(nextFile);
-  };
-
-  const handleColoringUpload = async (event) => {
-    event?.preventDefault?.();
-    resetColoringMessages();
-
-    const validationMessage = validateColoringFile(coloringFile);
-    if (validationMessage) {
-      setColoringUploadError(validationMessage);
-      return;
-    }
-
-    setIsColoringUploading(true);
-
-    try {
-      const uploadPath = createColoringUploadPath(coloringFile);
-
-      const { error: uploadError } = await supabase.storage
-        .from(COLORING_STORAGE_BUCKET)
-        .upload(uploadPath, coloringFile, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: coloringFile.type || undefined,
-        });
-
-      if (uploadError) {
-        throw new Error(`Storage upload failed: ${uploadError.message}`);
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from(COLORING_STORAGE_BUCKET)
-        .getPublicUrl(uploadPath);
-
-      const publicUrl = publicUrlData?.publicUrl;
-      if (!publicUrl) {
-        throw new Error('Could not generate a public URL for the uploaded image.');
-      }
-
-      const { data: insertedRow, error: insertError } = await supabase
-        .from('coloring_pages')
-        .insert({
-          image_url: publicUrl,
-          is_premium: coloringIsPremium,
-        })
-        .select('*')
-        .single();
-
-      if (insertError) {
-        throw new Error(`Database insert failed: ${insertError.message}`);
-      }
-
-      setLastColoringUpload(insertedRow);
-      setColoringUploadSuccess(
-        `Coloring page uploaded successfully${coloringIsPremium ? ' (Premium)' : ''}.`
-      );
-      setColoringFile(null);
-      setColoringIsPremium(false);
-      if (coloringFileInputRef.current) {
-        coloringFileInputRef.current.value = '';
-      }
-    } catch (err) {
-      setColoringUploadError(err?.message || 'Upload failed. Please try again.');
-    } finally {
-      setIsColoringUploading(false);
-    }
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'Manage Videos':
-        return (
-          <div className="space-y-8">
-            <form
-              onSubmit={handleAddVideo}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-            >
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Content</p>
-                  <h2 className="text-xl font-semibold text-slate-900">
-                    {isEditingVideo ? 'Edit Video' : 'Add New Video'}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {isEditingVideo
-                      ? 'Update this video metadata. Source URLs stay unchanged in edit mode.'
-                      : 'Add videos for Cinema Magic and optionally surface them in the Homepage Free Gems section.'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isEditingVideo && (
-                    <button
-                      type="button"
-                      onClick={cancelEditingVideo}
-                      disabled={isVideoSubmitting}
-                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={isVideoSubmitting}
-                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow transition ${
-                      isVideoSubmitting
-                        ? 'cursor-not-allowed bg-slate-200 text-slate-500'
-                        : 'bg-gradient-to-r from-pink-500 to-indigo-500 text-white hover:from-pink-400 hover:to-indigo-400'
-                    }`}
-                  >
-                    {isVideoSubmitting ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Saving...
-                      </>
-                    ) : isEditingVideo ? (
-                      'Save Changes'
-                    ) : (
-                      'Add Video'
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Video Title</label>
-                  <input
-                    value={form.title}
-                    onChange={(e) => handleFormChange('title', e.target.value)}
-                    type="text"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                    placeholder="Enter title"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Category</label>
-                  <select
-                    value={form.category}
-                    onChange={(e) => handleFormChange('category', e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                  >
-                    {VIDEO_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium text-slate-700">Video Source</label>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => handleVideoSourceChange('youtube')}
-                      disabled={isEditingVideo}
-                      className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
-                        form.source === 'youtube'
-                          ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
-                      } ${isEditingVideo ? 'cursor-not-allowed opacity-70' : ''}`}
-                    >
-                      <span className="block font-semibold">YouTube URL</span>
-                      <span className="block text-xs text-slate-500">Paste a YouTube link</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleVideoSourceChange('upload')}
-                      disabled={isEditingVideo}
-                      className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
-                        form.source === 'upload'
-                          ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200'
-                      } ${isEditingVideo ? 'cursor-not-allowed opacity-70' : ''}`}
-                    >
-                      <span className="block font-semibold">Local File Upload</span>
-                      <span className="block text-xs text-slate-500">Drag & drop MP4/WEBM/MOV/M4V</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">YouTube Video URL</label>
-                  <input
-                    value={form.youtubeUrl}
-                    onChange={(e) => handleFormChange('youtubeUrl', e.target.value)}
-                    type="text"
-                    disabled={form.source !== 'youtube' || isEditingVideo}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none ${
-                      form.source === 'youtube' && !isEditingVideo
-                        ? 'border-slate-200 bg-white'
-                        : 'border-slate-200 bg-slate-100 text-slate-500'
-                    }`}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                  />
-                  <p className="text-xs text-slate-500">
-                    We automatically extract and save the standard YouTube video ID.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Extracted YouTube ID (Preview)</label>
-                  <input
-                    value={extractYouTubeId(form.youtubeUrl) || ''}
-                    type="text"
-                    readOnly
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 focus:outline-none"
-                    placeholder="Auto-detected after pasting URL"
-                  />
-                </div>
-              </div>
-
-              {form.source === 'upload' && !isEditingVideo && (
-                <div className="mt-4 space-y-3">
-                  <input
-                    ref={videoFileInputRef}
-                    type="file"
-                    accept=".mp4,.webm,.mov,.m4v,video/mp4,video/webm,video/quicktime,video/x-m4v"
-                    onChange={handleVideoFileChange}
-                    className="hidden"
-                    disabled={isVideoSubmitting}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => !isVideoSubmitting && videoFileInputRef.current?.click()}
-                    onDragEnter={handleVideoDragOver}
-                    onDragOver={handleVideoDragOver}
-                    onDragLeave={handleVideoDragLeave}
-                    onDrop={handleVideoDrop}
-                    className={`w-full rounded-2xl border-2 border-dashed p-6 text-left transition ${
-                      isVideoDragActive
-                        ? 'border-indigo-400 bg-indigo-50 shadow-inner'
-                        : 'border-slate-300 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/40'
-                    } ${isVideoSubmitting ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
-                  >
-                    <div className="flex flex-col items-center justify-center text-center">
-                      <div
-                        className={`grid h-14 w-14 place-items-center rounded-2xl border ${
-                          isVideoDragActive
-                            ? 'border-indigo-300 bg-white text-indigo-600'
-                            : 'border-slate-200 bg-white text-slate-500'
-                        }`}
-                      >
-                        <UploadCloud size={24} />
-                      </div>
-                      <p className="mt-3 text-sm font-semibold text-slate-900">
-                        {videoFile ? videoFile.name : 'Drag and drop a video file here'}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-600">
-                        {videoFile
-                          ? `${(videoFile.size / (1024 * 1024)).toFixed(2)} MB - ${videoFile.type || 'video file'}`
-                          : 'or click to browse MP4, WEBM, MOV, M4V files'}
-                      </p>
-                    </div>
-                  </button>
-
-                  {videoFile && !isVideoSubmitting && (
-                    <button
-                      type="button"
-                      onClick={clearSelectedVideoFile}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Clear Selected File
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/60 p-4">
-                <label className="flex items-start gap-3 text-sm font-medium text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={form.isPromoHomepage}
-                    onChange={(e) => handleFormChange('isPromoHomepage', e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span>
-                    <span className="block font-semibold text-slate-900">
-                      Show on Homepage for Free Gems (`is_promo_homepage`)
-                    </span>
-                    <span className="block text-xs text-slate-600">
-                      If checked, this video can be used in the Homepage Watch &amp; Earn section.
-                    </span>
-                  </span>
-                </label>
-              </div>
-
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                <p className="mb-3 text-sm font-semibold text-amber-900">Video Type</p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => handleFormChange('isPremium', false)}
-                    className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
-                      !form.isPremium
-                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200'
-                    }`}
-                  >
-                    <span className="block font-semibold">Free</span>
-                    <span className="block text-xs text-slate-500">Accessible to everyone</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleFormChange('isPremium', true)}
-                    className={`rounded-lg border px-4 py-2 text-left text-sm transition ${
-                      form.isPremium
-                        ? 'border-amber-300 bg-amber-100 text-amber-800'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-amber-200'
-                    }`}
-                  >
-                    <span className="block font-semibold">Premium</span>
-                    <span className="block text-xs text-slate-500">Locked for premium users</span>
-                  </button>
-                </div>
-              </div>
-
-              {videoFormError && (
-                <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                  <span className="font-medium">{videoFormError}</span>
-                </div>
-              )}
-
-              {videoFormSuccess && (
-                <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-                  <span className="font-medium">{videoFormSuccess}</span>
-                </div>
-              )}
-            </form>
-
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Library</p>
-                  <h3 className="text-lg font-semibold text-slate-900">Video Inventory</h3>
-                </div>
-                <div className="flex items-center gap-3">
-                  <p className="text-sm text-slate-500">{videos.length} videos</p>
-                  <button
-                    type="button"
-                    onClick={loadVideos}
-                    disabled={isVideosLoading}
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                      isVideosLoading
-                        ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-200 hover:text-indigo-600'
-                    }`}
-                  >
-                    {isVideosLoading ? 'Refreshing...' : 'Refresh'}
-                  </button>
-                </div>
-              </div>
-
-              {videoListError && (
-                <div className="border-b border-red-100 bg-red-50 px-6 py-3 text-sm font-medium text-red-700">
-                  Failed to load videos: {videoListError}
-                </div>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-500 uppercase text-xs tracking-wide">
-                    <tr>
-                      <th className="px-6 py-3 font-semibold">Thumbnail</th>
-                      <th className="px-6 py-3 font-semibold">Title</th>
-                      <th className="px-6 py-3 font-semibold">Category</th>
-                      <th className="px-6 py-3 font-semibold">Source</th>
-                      <th className="px-6 py-3 font-semibold">Video Type</th>
-                      <th className="px-6 py-3 font-semibold">Homepage Promo</th>
-                      <th className="px-6 py-3 font-semibold">YouTube ID</th>
-                      <th className="px-6 py-3 font-semibold text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isVideosLoading && videos.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
-                          Loading videos...
-                        </td>
-                      </tr>
-                    ) : videos.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
-                          No videos in the database yet. Add your first video above.
-                        </td>
-                      </tr>
-                    ) : videos.map((video, idx) => (
-                      <tr
-                        key={video.id}
-                        className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}
-                      >
-                        <td className="px-6 py-3">
-                          <div className="h-12 w-20 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                            {video.youtube_id ? (
-                              <img
-                                src={`https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg`}
-                                alt={video.title}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                                <Video size={14} />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-3">
-                          <div className="font-semibold text-slate-900">{video.title}</div>
-                          <div className="text-xs text-slate-500 truncate max-w-xs">
-                            {video.youtube_id
-                              ? `https://youtu.be/${video.youtube_id}`
-                              : video.video_url || 'Uploaded file URL'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-3 text-slate-700">{video.category}</td>
-                        <td className="px-6 py-3">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                              video.youtube_id
-                                ? 'bg-rose-100 text-rose-700'
-                                : 'bg-cyan-100 text-cyan-700'
-                            }`}
-                          >
-                            {video.youtube_id ? 'YouTube' : 'Upload'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                              video.is_premium
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-emerald-100 text-emerald-700'
-                            }`}
-                          >
-                            {video.is_premium ? 'Premium' : 'Free'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                              video.is_promo_homepage
-                                ? 'bg-indigo-100 text-indigo-700'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}
-                          >
-                            {video.is_promo_homepage ? 'Yes' : 'No'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-3">
-                          <code className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700">
-                            {video.youtube_id || 'N/A'}
-                          </code>
-                        </td>
-                        <td className="px-6 py-3 text-right">
-                          <div className="inline-flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => startEditingVideo(video)}
-                              disabled={isVideoSubmitting || Boolean(deletingVideoId)}
-                              className={`rounded-lg border px-2.5 py-1.5 transition ${
-                                isVideoSubmitting || Boolean(deletingVideoId)
-                                  ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600'
-                              }`}
-                              title="Edit"
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteVideo(video)}
-                              disabled={Boolean(deletingVideoId) || isVideoSubmitting}
-                              className={`rounded-lg border px-2.5 py-1.5 transition ${
-                                deletingVideoId === video.id
-                                  ? 'cursor-not-allowed border-red-200 bg-red-50 text-red-600'
-                                  : Boolean(deletingVideoId) || isVideoSubmitting
-                                    ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                                    : 'border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:text-red-600'
-                              }`}
-                              title="Delete"
-                            >
-                              {deletingVideoId === video.id ? (
-                                <Loader2 size={16} className="animate-spin" />
-                              ) : (
-                                <Trash2 size={16} />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        );
-      case 'Manage Coloring Pages':
-        return (
-          <div className="space-y-8">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Coloring CMS</p>
-                  <h2 className="text-xl font-semibold text-slate-900">Manage Coloring Pages</h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Upload page images to Supabase Storage and publish them in the coloring gallery.
-                  </p>
-                </div>
-                <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-                  Premium unlock cost: {COLORING_PREMIUM_COST} Gems
-                </span>
-              </div>
-
-              <form onSubmit={handleColoringUpload} className="space-y-5">
-                <input
-                  ref={coloringFileInputRef}
-                  type="file"
-                  accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
-                  onChange={handleColoringFileChange}
-                  className="hidden"
-                  disabled={isColoringUploading}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => !isColoringUploading && coloringFileInputRef.current?.click()}
-                  onDragEnter={handleColoringDragOver}
-                  onDragOver={handleColoringDragOver}
-                  onDragLeave={handleColoringDragLeave}
-                  onDrop={handleColoringDrop}
-                  className={`w-full rounded-2xl border-2 border-dashed p-8 text-left transition ${
-                    isDragActive
-                      ? 'border-emerald-400 bg-emerald-50 shadow-inner'
-                      : 'border-slate-300 bg-slate-50 hover:border-emerald-300 hover:bg-emerald-50/40'
-                  } ${isColoringUploading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
-                >
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <div
-                      className={`grid h-16 w-16 place-items-center rounded-2xl border ${
-                        isDragActive
-                          ? 'border-emerald-300 bg-white text-emerald-600'
-                          : 'border-slate-200 bg-white text-slate-500'
-                      }`}
-                    >
-                      <UploadCloud size={28} />
-                    </div>
-                    <p className="mt-4 text-base font-semibold text-slate-900">
-                      {coloringFile ? coloringFile.name : 'Drag & drop a coloring page image here'}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {coloringFile
-                        ? `${(coloringFile.size / 1024).toFixed(1)} KB - ${coloringFile.type || 'image file'}`
-                        : 'or click to browse PNG, JPG/JPEG, WEBP files'}
-                    </p>
-                  </div>
-                </button>
-
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                  <label className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={coloringIsPremium}
-                      onChange={(e) => setColoringIsPremium(e.target.checked)}
-                      disabled={isColoringUploading}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
-                    />
-                    <span>
-                      <span className="block text-sm font-semibold text-amber-900">
-                        Mark as Premium (Costs {COLORING_PREMIUM_COST} Gems)
-                      </span>
-                      <span className="block text-xs text-amber-800/80">
-                        Premium pages will show a gem lock overlay in the Coloring Book.
-                      </span>
-                    </span>
-                  </label>
-                </div>
-
-                {coloringUploadError && (
-                  <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                    <span className="font-medium">{coloringUploadError}</span>
-                  </div>
-                )}
-
-                {coloringUploadSuccess && (
-                  <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                    <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-                    <span className="font-medium">{coloringUploadSuccess}</span>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="submit"
-                    disabled={isColoringUploading || !coloringFile}
-                    className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition ${
-                      isColoringUploading || !coloringFile
-                        ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400'
-                        : 'border border-emerald-300 bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow hover:brightness-95'
-                    }`}
-                  >
-                    {isColoringUploading ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <UploadCloud size={16} />
-                        Upload Coloring Page
-                      </>
-                    )}
-                  </button>
-
-                  {coloringFile && !isColoringUploading && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setColoringFile(null);
-                        resetColoringMessages();
-                        if (coloringFileInputRef.current) coloringFileInputRef.current.value = '';
-                      }}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Clear Selection
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-
-            {lastColoringUpload && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Latest Upload</p>
-                    <h3 className="text-lg font-semibold text-slate-900">Published Coloring Page</h3>
-                  </div>
-                  <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                      lastColoringUpload.is_premium
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-emerald-100 text-emerald-800'
-                    }`}
-                  >
-                    {lastColoringUpload.is_premium ? 'Premium' : 'Free'}
-                  </span>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
-                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                    <img
-                      src={lastColoringUpload.image_url}
-                      alt="Latest coloring page upload"
-                      className="aspect-[3/4] h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-700">ID: {lastColoringUpload.id}</p>
-                    <p className="break-all text-sm text-slate-600">
-                      URL: {lastColoringUpload.image_url}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Created: {new Date(lastColoringUpload.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      case 'Manage Users':
-        return (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900">User Management View</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Placeholder content to verify tab switching. User tools will live here.
-            </p>
-          </div>
-        );
-      case 'Dashboard':
-      default:
-        const kpiStats = [
-          { label: 'Total Users', value: '0', icon: Users, accent: 'bg-emerald-500' },
-          { label: 'Active Premium Users', value: '0', icon: Crown, accent: 'bg-amber-500' },
-          { label: 'Total Videos', value: '0', icon: Video, accent: 'bg-sky-500' },
-          { label: 'Total AI Stories Generated', value: '0', icon: BookOpen, accent: 'bg-fuchsia-500' },
-        ];
-
-        const userGrowthData = [
-          { day: 'Mon', users: 0 },
-          { day: 'Tue', users: 0 },
-          { day: 'Wed', users: 0 },
-          { day: 'Thu', users: 0 },
-          { day: 'Fri', users: 0 },
-          { day: 'Sat', users: 0 },
-          { day: 'Sun', users: 0 },
-        ];
-
-        const categoryData = [
-          { name: 'Rhymes', value: 0 },
-          { name: 'Stories', value: 0 },
-          { name: 'Learning', value: 0 },
-          { name: 'Movies', value: 0 },
-        ];
-
-        return (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {kpiStats.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={item.label}
-                    className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                  >
-                    <span className={`absolute inset-x-0 top-0 h-1 ${item.accent}`} />
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.16em] text-slate-500">{item.label}</p>
-                        <p className="mt-2 text-2xl font-bold text-slate-900">{item.value}</p>
-                      </div>
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-800">
-                        <Icon size={22} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Engagement</p>
-                    <h3 className="text-lg font-semibold text-slate-900">User Growth (Last 7 Days)</h3>
-                  </div>
-                </div>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={userGrowthData} margin={{ top: 5, right: 16, left: -10, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="day" tick={{ fill: '#64748b', fontSize: 12 }} />
-                      <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Content</p>
-                    <h3 className="text-lg font-semibold text-slate-900">Popular Categories</h3>
-                  </div>
-                </div>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={categoryData} margin={{ top: 5, right: 16, left: -10, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} />
-                      <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="value" name="Views" fill="#22c55e" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-    }
-  };
-
   return (
-    <div className="h-screen w-full flex bg-slate-100 text-slate-900">
-      <aside className="flex w-64 flex-col border-r border-slate-800 bg-slate-900 text-white">
-        <div className="flex items-center gap-3 border-b border-slate-800 px-6 py-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 text-lg font-semibold text-white">
-            AK
-          </div>
-          <div className="leading-tight">
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Control</p>
-            <p className="text-lg font-semibold">AikoKidz Admin</p>
-          </div>
+    <div className="flex h-screen w-full bg-slate-100 text-slate-900">
+      <aside className="flex w-72 flex-col border-r border-slate-800 bg-slate-900 text-white">
+        <div className="border-b border-slate-800 px-6 py-6">
+          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Mission Control</p>
+          <h1 className="mt-2 text-xl font-semibold">Admin Dashboard</h1>
+          <p className="mt-1 text-xs text-slate-400">Manage videos and content libraries.</p>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {navItems.map((item) => {
+          {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.key;
             return (
               <button
                 key={item.key}
+                type="button"
                 onClick={() => setActiveTab(item.key)}
-                className={`group flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-sm font-medium transition ${
+                className={`flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-sm font-medium transition ${
                   isActive
-                    ? 'border-slate-700 bg-slate-800 text-white shadow-inner'
+                    ? 'border-slate-700 bg-slate-800 text-white'
                     : 'border-transparent text-slate-200 hover:border-slate-700 hover:bg-slate-800/60'
                 }`}
               >
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    isActive ? 'bg-emerald-400' : 'bg-slate-600 group-hover:bg-slate-400'
-                  }`}
-                />
-                <Icon size={18} className="opacity-90" />
-                <span className="flex-1 text-left">{item.label}</span>
+                <Icon size={17} />
+                <span className="text-left">{item.label}</span>
               </button>
             );
           })}
@@ -1400,22 +1558,66 @@ const AdminDashboard = ({ onBackToSite }) => {
 
         <div className="border-t border-slate-800 px-4 py-5">
           <button
+            type="button"
             onClick={handleBackToSite}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-white"
           >
-            <ArrowLeft size={16} /> Back to Site
+            <ArrowLeft size={16} />
+            Back to Site
           </button>
         </div>
       </aside>
 
       <main className="flex-1 overflow-y-auto bg-slate-50">
-        <div className="mx-auto max-w-6xl px-8 py-10">
-          <header className="mb-8">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Mission Control</p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">Admin Dashboard</h1>
-            <p className="text-sm text-slate-600">Secure access restricted to the primary admin email.</p>
-          </header>
-          {renderContent()}
+        <div className="mx-auto max-w-7xl px-8 py-8">
+          {activeTab === 'dashboard' && (
+            <DashboardOverviewSection
+              summary={summary}
+              isLoading={summaryLoading}
+              loadError={summaryError}
+              onRefresh={loadSummary}
+            />
+          )}
+
+          {activeTab === 'users' && <UsersSection isActive />}
+
+          {activeTab === 'videos' && <VideosSection isActive />}
+
+          {activeTab === 'coloring_pages' && (
+            <CrudMediaSection
+              isActive
+              sectionTitle="Coloring Pages"
+              sectionDescription="Upload, edit, and delete coloring pages. Files are stored in the `coloring_pages` bucket."
+              tableName="coloring_pages"
+              bucketName={COLORING_STORAGE_BUCKET}
+              titleColumn="title"
+              mediaColumn="image_url"
+              mediaLabel="Coloring Image"
+              mediaRequiredOnCreate
+              premiumColumn="is_premium"
+              premiumLabel="Mark as Premium"
+              premiumHeading="Premium"
+            />
+          )}
+
+          {activeTab === 'poems' && (
+            <CrudMediaSection
+              isActive
+              sectionTitle="Manage Poems"
+              sectionDescription="Full poems CRUD with title/content/image and a `Free` boolean toggle."
+              tableName="poems"
+              bucketName={POEM_STORAGE_BUCKET}
+              titleColumn="title"
+              mediaColumn="image_url"
+              mediaLabel="Poem Cover Image"
+              mediaRequiredOnCreate
+              contentColumn="content"
+              contentLabel="Poem Content"
+              premiumColumn="is_free"
+              premiumLabel="Mark as Free"
+              premiumHeading="Free"
+            />
+          )}
         </div>
       </main>
     </div>

@@ -164,6 +164,7 @@ export default function HeaderNavbar({
   isAdmin,
   onGoToAdmin,
   onGoToVideos,
+  onGoToPoems,
   isForcedOffline,
   onToggleForcedOffline,
   displayMode = 'light',
@@ -220,6 +221,7 @@ export default function HeaderNavbar({
   const navItems = [
     { label: 'Story Studio', target: 'story-studio' },
     { label: 'Magic Art', target: 'magic-art' },
+    { label: 'Poems', target: 'poems' },
     { label: 'Learning Zone', target: 'learning-zone' },
   ];
   if (isAdmin) navItems.push({ label: 'Admin', target: 'admin' });
@@ -287,6 +289,10 @@ export default function HeaderNavbar({
                 onClick={() => {
                   if (item.target === 'videos') {
                     onGoToVideos?.();
+                    return;
+                  }
+                  if (item.target === 'poems') {
+                    onGoToPoems?.();
                     return;
                   }
                   if (item.target === 'admin') {

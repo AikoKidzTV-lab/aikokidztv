@@ -19,6 +19,7 @@ import Settings from './components/Settings';
 import ErrorBoundary from './components/ErrorBoundary';
 import Projects from './components/Projects';
 import BlenderCredit from './components/pages/BlenderCredit';
+import PoemsPage from './components/PoemsPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { KidsModeProvider, useKidsMode } from './context/KidsModeContext';
 import { Gem, ChevronDown, Sparkles, LogOut, Bell } from 'lucide-react';
@@ -405,7 +406,7 @@ const Navbar = ({
   );
 };
 
-const MainContent = ({ onGoToAdmin, onGoToVideos }) => {
+const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const { user, profile, signOut } = useAuth();
   const [authMode, setAuthMode] = useState(null); // 'login' | 'signup' | null
   const [displayMode, setDisplayMode] = useState(() => {
@@ -770,6 +771,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos }) => {
         isAdmin={isAdmin}
         onGoToAdmin={onGoToAdmin}
         onGoToVideos={onGoToVideos}
+        onGoToPoems={onGoToPoems}
         isForcedOffline={isForcedOffline}
         onToggleForcedOffline={() => setIsForcedOffline((v) => !v)}
         displayMode={displayMode}
@@ -874,6 +876,7 @@ function HomeRoutePage() {
     <MainContent
       onGoToAdmin={() => navigate('/admin')}
       onGoToVideos={() => navigate('/videos')}
+      onGoToPoems={() => navigate('/poems')}
     />
   );
 }
@@ -893,6 +896,7 @@ function App() {
             <Route path="/" element={<HomeRoutePage />} />
             <Route path="/admin" element={<AdminRoutePage />} />
             <Route path="/videos" element={<VideoZone />} />
+            <Route path="/poems" element={<PoemsPage />} />
             <Route path="/story" element={<StoryReader />} />
             <Route path="/coloring" element={<ColoringBook />} />
             <Route path="/projects" element={<Projects />} />

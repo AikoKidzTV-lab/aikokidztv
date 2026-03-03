@@ -101,6 +101,34 @@ const YOUTUBE_SUBSCRIBE_REWARD_GEMS = 50;
 const TASK_QUEST_REWARD_KEY = 'homepage_task_quest_2';
 const TASK_QUEST_REWARD_GEMS = 2;
 const TASK_QUEST_ANIMALS = ['🐶', '🐱', '🦊', '🐼', '🦁'];
+const YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY = 'aiko_subscribe_click_v1';
+const TEST_MODE_STORAGE_KEY = 'aiko_parent_test_mode_v1';
+const TEST_MODE_SYNC_EVENT = 'aiko:test-mode-sync';
+
+const TEST_ACTIVITY_ITEMS = [
+  { id: 'tables', label: 'Tables', question: '7 x 8 = ?', answer: '56', emoji: '🧮' },
+  {
+    id: 'numeric_alphabetic',
+    label: 'Numeric/Alphabetic',
+    question: 'What comes after Z?',
+    answer: 'AA',
+    emoji: '🔠',
+  },
+  {
+    id: 'junior_law',
+    label: 'Junior Law/Rights',
+    question: 'Kids have a right to what?',
+    answer: 'Safety and Education',
+    emoji: '⚖️',
+  },
+  {
+    id: 'junior_science',
+    label: 'Junior Science & Calc',
+    question: 'Water formula is?',
+    answer: 'H2O',
+    emoji: '🔬',
+  },
+];
 
 const WaveDivider = ({ fill = '#dcfce7', flip = false }) => (
   <div className={`absolute inset-x-0 ${flip ? 'bottom-0 rotate-180' : 'top-0 -translate-y-full'} pointer-events-none`}>
@@ -129,6 +157,15 @@ export default function LandingPageHabitat({
   const [showTaskQuest, setShowTaskQuest] = React.useState(false);
   const [isClaimingYoutubeReward, setIsClaimingYoutubeReward] = React.useState(false);
   const [isClaimingTaskQuestReward, setIsClaimingTaskQuestReward] = React.useState(false);
+  const [hasClickedSubscribe, setHasClickedSubscribe] = React.useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY) === 'true';
+  });
+  const [isTestMode, setIsTestMode] = React.useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(TEST_MODE_STORAGE_KEY) === 'true';
+  });
+  const [activePracticeId, setActivePracticeId] = React.useState(TEST_ACTIVITY_ITEMS[0].id);
   const paymentToastTimerRef = React.useRef(null);
 
   const claimedRewards = React.useMemo(
@@ -138,6 +175,9 @@ export default function LandingPageHabitat({
   const freeGemsClaimed = claimedRewards.includes(YOUTUBE_SUBSCRIBE_REWARD_KEY);
   const taskQuestClaimed = claimedRewards.includes(TASK_QUEST_REWARD_KEY);
   const gemsBalance = Number(profile?.gems || 0);
+  const canClaimYoutubeReward = hasClickedSubscribe && !freeGemsClaimed && !isClaimingYoutubeReward;
+  const activePractice =
+    TEST_ACTIVITY_ITEMS.find((item) => item.id === activePracticeId) || TEST_ACTIVITY_ITEMS[0];
 
   const pushBellNotification = React.useCallback((message) => {
     if (typeof window === 'undefined') return;
@@ -184,6 +224,21 @@ export default function LandingPageHabitat({
   }, []);
 
   React.useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const syncTestMode = () => {
+      setIsTestMode(window.localStorage.getItem(TEST_MODE_STORAGE_KEY) === 'true');
+    };
+
+    window.addEventListener(TEST_MODE_SYNC_EVENT, syncTestMode);
+    window.addEventListener('storage', syncTestMode);
+    return () => {
+      window.removeEventListener(TEST_MODE_SYNC_EVENT, syncTestMode);
+      window.removeEventListener('storage', syncTestMode);
+    };
+  }, []);
+
+  React.useEffect(() => {
     const intervalId = window.setInterval(() => {
       setHeroSlideIndex((current) => (current + 1) % HERO_BANNERS.length);
     }, 4000);
@@ -220,6 +275,10 @@ export default function LandingPageHabitat({
 
   const handleClaimFreeGems = async () => {
     if (freeGemsClaimed || isClaimingYoutubeReward) return;
+    if (!hasClickedSubscribe) {
+      setWatchEarnMessage('Please click "Subscribe to our channel" first.');
+      return;
+    }
     if (!user?.id) {
       onOpenLogin?.();
       return;
@@ -249,6 +308,13 @@ export default function LandingPageHabitat({
       setWatchEarnMessage('Could not claim your reward right now.');
     } finally {
       setIsClaimingYoutubeReward(false);
+    }
+  };
+
+  const handleSubscribeClick = () => {
+    setHasClickedSubscribe(true);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY, 'true');
     }
   };
 
@@ -407,7 +473,7 @@ export default function LandingPageHabitat({
               Gems power every adventure
             </div>
 
-            <h2 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl !text-white">
+            <h2 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl text-purple-900 drop-shadow-lg [text-shadow:0_2px_0_rgba(255,255,255,0.85),0_8px_24px_rgba(76,29,149,0.45)]">
               AikoKidzTV
               <span className="mt-2 block text-balance text-3xl sm:text-4xl lg:text-5xl !text-cyan-100">
                 Fun &amp; Games in a Sky-to-Ocean World
@@ -444,6 +510,12 @@ export default function LandingPageHabitat({
               >
                 🎨 Play Magic Art / Coloring Book
               </Link>
+              <Link
+                to="/poems"
+                className="rounded-2xl border border-violet-300/80 bg-gradient-to-r from-violet-500 to-indigo-600 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-violet-300/50 transition hover:-translate-y-1 hover:from-violet-600 hover:to-indigo-700"
+              >
+                🐦 Cute Poems
+              </Link>
               <button
                 onClick={() => go('learning-zone')}
                 className="rounded-2xl border border-cyan-200/80 bg-cyan-50/95 px-5 py-3 text-sm font-black !text-cyan-900 shadow-lg shadow-cyan-900/10 transition hover:-translate-y-1 hover:bg-cyan-100"
@@ -466,22 +538,35 @@ export default function LandingPageHabitat({
           </div>
 
           <div className="rounded-[1.8rem] border border-white/40 bg-white/15 p-5 shadow-2xl backdrop-blur-md">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-white/40 bg-white/15 p-4">
-                <p className="text-xs font-black uppercase tracking-wide !text-blue-50/80">Daily Splash</p>
-                <p className="mt-2 text-2xl font-black !text-white">+25 💎</p>
-                <p className="mt-1 text-sm !text-blue-50/85">Login bonus bubbles are ready.</p>
-              </div>
-              <div className="rounded-2xl border border-white/40 bg-white/15 p-4">
-                <p className="text-xs font-black uppercase tracking-wide !text-blue-50/80">Reef Pass</p>
-                <p className="mt-2 text-2xl font-black !text-white">VIP 👑</p>
-                <p className="mt-1 text-sm !text-blue-50/85">Pair with Jungle King pack.</p>
-              </div>
-              <div className="col-span-2 rounded-2xl border border-white/40 bg-gradient-to-r from-white/20 to-white/10 p-4">
-                <p className="text-sm font-bold !text-white">
-                  🫧 Smooth automated checkout • Instant Gem credit • No manual unlock delays
-                </p>
-              </div>
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-blue-50/90">
+              Practice Container
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {TEST_ACTIVITY_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActivePracticeId(item.id)}
+                  className={`rounded-xl border px-3 py-3 text-left transition ${
+                    activePracticeId === item.id
+                      ? 'border-white/80 bg-white/30'
+                      : 'border-white/35 bg-white/10 hover:bg-white/20'
+                  }`}
+                >
+                  <p className="text-xs font-black uppercase tracking-wide text-blue-50/90">{item.label}</p>
+                  <p className="mt-1 text-lg">{item.emoji}</p>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/35 bg-gradient-to-r from-white/20 to-white/10 p-4">
+              <p className="text-sm font-black text-white">{activePractice.question}</p>
+              <p className="mt-2 text-sm font-semibold text-blue-50/90">
+                Answer: {isTestMode ? 'Hidden in Test Mode' : activePractice.answer}
+              </p>
+              <p className="mt-1 text-xs font-semibold text-blue-50/80">
+                Parent Test Mode is currently {isTestMode ? 'ON' : 'OFF'}.
+              </p>
             </div>
           </div>
         </div>
@@ -801,6 +886,7 @@ export default function LandingPageHabitat({
                   href="http://www.youtube.com/@AikoKidzTV"
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={handleSubscribeClick}
                   className="mt-5 inline-flex items-center rounded-2xl border border-red-200/80 bg-red-500 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-red-400/30 transition hover:-translate-y-0.5 hover:bg-red-600"
                 >
                   ▶ Subscribe to our Channel
@@ -822,9 +908,9 @@ export default function LandingPageHabitat({
             <button
               type="button"
               onClick={handleClaimFreeGems}
-              disabled={freeGemsClaimed || isClaimingYoutubeReward}
+              disabled={!canClaimYoutubeReward}
               className={`rounded-2xl px-6 py-3 text-base font-black shadow-xl transition ${
-                freeGemsClaimed || isClaimingYoutubeReward
+                !canClaimYoutubeReward
                   ? 'cursor-not-allowed border border-white/40 bg-white/20 !text-blue-50/90'
                   : 'border border-white/80 bg-white/95 !text-blue-700 hover:-translate-y-1 hover:bg-cyan-50'
               }`}
@@ -833,6 +919,8 @@ export default function LandingPageHabitat({
                 ? '✅ Already Claimed'
                 : isClaimingYoutubeReward
                   ? 'Claiming...'
+                  : !hasClickedSubscribe
+                    ? 'Subscribe First'
                   : '🎁 Claim 50 Free Gems'}
             </button>
 
@@ -842,7 +930,7 @@ export default function LandingPageHabitat({
               </p>
             ) : (
               <p className="text-xs font-semibold !text-blue-50/85">
-                One-time claim only. Already-claimed rewards stay locked after refresh.
+                Click "Subscribe to our channel" first, then claim your one-time 50 gems reward.
               </p>
             )}
           </div>

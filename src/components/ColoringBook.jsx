@@ -1,10 +1,9 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { applySmallItemEconomy } from '../constants/gemEconomy';
 import { useAuth } from '../context/AuthContext';
 import { unlockItemWithGems } from '../utils/profileEconomy';
 
-const PREMIUM_UNLOCK_COST = applySmallItemEconomy(3);
+const PREMIUM_UNLOCK_COST = 49;
 const COLORING_PAGE_UNLOCK_PREFIX = 'coloring:';
 
 const PRESET_COLORS = [
@@ -562,7 +561,7 @@ export default function ColoringBook({ onBack }) {
 
                 {imageLoadError && (
                   <div className="absolute inset-x-4 bottom-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 shadow">
-                    Could not load this Supabase image URL. Check the `image_url` value and confirm the `coloring_images` bucket file is public.
+                    Could not load this Supabase image URL. Check the `image_url` value and confirm the `coloring_pages` bucket file is public.
                   </div>
                 )}
               </div>
