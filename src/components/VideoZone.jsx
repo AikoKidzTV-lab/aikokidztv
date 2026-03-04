@@ -11,6 +11,21 @@ const UNKNOWN_CATEGORY = 'Uncategorized';
 const MOVIES_UNLOCK_COST_GEMS = 500;
 const MOVIES_FEATURE_KEY = 'movies';
 
+const isMissingColumnError = (error, columnName) => {
+  if (!columnName) return false;
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  const normalizedColumn = String(columnName).toLowerCase();
+  return (
+    text.includes(normalizedColumn) &&
+    (
+      text.includes('column') ||
+      text.includes('schema cache') ||
+      error?.code === '42703' ||
+      error?.code === 'PGRST204'
+    )
+  );
+};
+
 const normalizeUnlockedFeatures = (value) => (
   Array.isArray(value)
     ? value
@@ -64,6 +79,41 @@ export default function VideoZone() {
     window.setTimeout(() => setStatusMessage(''), 3000);
   };
 
+  const readProfileFeatures = async (userId, { includeGems = false } = {}) => {
+    const featureColumns = includeGems ? 'gems, unlocked_features' : 'unlocked_features';
+    const fallbackColumns = includeGems ? 'gems' : 'id';
+
+    let query = supabase.from('profiles').select(featureColumns).eq('id', userId);
+    query = includeGems ? query.single() : query.maybeSingle();
+    let { data, error } = await query;
+
+    if (error && isMissingColumnError(error, 'unlocked_features')) {
+      let fallbackQuery = supabase.from('profiles').select(fallbackColumns).eq('id', userId);
+      fallbackQuery = includeGems ? fallbackQuery.single() : fallbackQuery.maybeSingle();
+      const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+
+      if (fallbackError) {
+        throw new Error(fallbackError.message || 'Failed to read profile.');
+      }
+
+      return {
+        unlockedFeatures: [],
+        gems: Number(fallbackData?.gems || 0),
+        hasUnlockedFeaturesColumn: false,
+      };
+    }
+
+    if (error) {
+      throw new Error(error.message || 'Failed to read profile.');
+    }
+
+    return {
+      unlockedFeatures: normalizeUnlockedFeatures(data?.unlocked_features),
+      gems: Number(data?.gems || 0),
+      hasUnlockedFeaturesColumn: true,
+    };
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -79,18 +129,8 @@ export default function VideoZone() {
       setIsCheckingUnlockState(true);
 
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('unlocked_features')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
+        const { unlockedFeatures } = await readProfileFeatures(user.id, { includeGems: false });
         if (!mounted) return;
-        const unlockedFeatures = normalizeUnlockedFeatures(data?.unlocked_features);
         setIsMoviesUnlocked(unlockedFeatures.includes(MOVIES_FEATURE_KEY));
       } catch (error) {
         if (!mounted) return;
@@ -188,26 +228,25 @@ export default function VideoZone() {
     setIsUnlockingMovies(true);
 
     try {
-      const { data: profileRow, error: profileError } = await supabase
-        .from('profiles')
-        .select('gems, unlocked_features')
-        .eq('id', user.id)
-        .single();
+      const {
+        unlockedFeatures,
+        gems: availableGems,
+        hasUnlockedFeaturesColumn,
+      } = await readProfileFeatures(user.id, { includeGems: true });
 
-      if (profileError) {
-        throw new Error(profileError.message);
-      }
-
-      const unlockedFeatures = normalizeUnlockedFeatures(profileRow?.unlocked_features);
       if (unlockedFeatures.includes(MOVIES_FEATURE_KEY)) {
         setIsMoviesUnlocked(true);
         showStatus('Movies are already unlocked. Enjoy!');
         return;
       }
 
-      const availableGems = Number(profileRow?.gems || 0);
       if (availableGems < MOVIES_UNLOCK_COST_GEMS) {
         showStatus(`You need ${MOVIES_UNLOCK_COST_GEMS} Gems but only have ${availableGems}.`);
+        return;
+      }
+
+      if (!hasUnlockedFeaturesColumn) {
+        showStatus('Profile features are still syncing. Please try again in a minute.');
         return;
       }
 
@@ -220,6 +259,10 @@ export default function VideoZone() {
         .eq('id', user.id);
 
       if (updateError) {
+        if (isMissingColumnError(updateError, 'unlocked_features')) {
+          showStatus('Profile features are still syncing. Please try again in a minute.');
+          return;
+        }
         throw new Error(updateError.message);
       }
 
