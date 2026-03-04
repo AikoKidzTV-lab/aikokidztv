@@ -101,10 +101,10 @@
         <div id="console-output" class="result"></div>
     </div>
 
-    <script>
-        // Simulate environment variables (in real app, these come from .env)
+    <script type="module">
+        // Read environment variables from Vite build/runtime
         const env = {
-            VITE_GEMINI_API_KEY: 'AIzaSyBXw61MXlMoNzj2UrblUxFrLqXzrTfLo1Q'
+            VITE_GEMINI_API_KEY: String(import.meta.env?.VITE_GEMINI_API_KEY || '').trim()
         };
 
         function log(message) {
@@ -243,6 +243,10 @@
                 btn.textContent = 'Test Pollinations API';
             }
         }
+
+        // Expose handlers for inline button onclick attributes.
+        window.testGemini = testGemini;
+        window.testPollinations = testPollinations;
 
         // Initialize
         window.onload = () => {

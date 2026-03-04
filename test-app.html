@@ -176,10 +176,10 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
         // Environment configuration
         const env = {
-            VITE_GEMINI_API_KEY: 'AIzaSyDcwKFGqe7R2P9ewix0P__5MVlrv25QJeg'
+            VITE_GEMINI_API_KEY: String(import.meta.env?.VITE_GEMINI_API_KEY || '').trim()
         };
 
         let testResults = {
@@ -497,6 +497,14 @@ Detailed Results:
             URL.revokeObjectURL(url);
             log('Logs downloaded successfully', 'success');
         }
+
+        // Expose handlers for inline button onclick attributes.
+        window.testGeminiPro = testGeminiPro;
+        window.testPollinationsLocalhost = testPollinationsLocalhost;
+        window.testErrorScenarios = testErrorScenarios;
+        window.testCorsCompatibility = testCorsCompatibility;
+        window.clearLogs = clearLogs;
+        window.downloadLogs = downloadLogs;
 
         // Initialize
         window.onload = () => {
