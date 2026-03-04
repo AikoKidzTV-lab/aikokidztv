@@ -14,8 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
-
-const ADMIN_EMAIL = 'advdeepakkumar26@gmail.com';
+import { isAdminEmail } from '../utils/admin';
 
 const VIDEO_STORAGE_BUCKET = 'videos';
 const THUMBNAIL_STORAGE_BUCKET = 'thumbnails';
@@ -1481,7 +1480,7 @@ const AdminDashboard = ({ onBackToSite }) => {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState('');
 
-  const isAuthorized = user?.email === ADMIN_EMAIL;
+  const isAuthorized = isAdminEmail(user?.email);
 
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);

@@ -103,9 +103,7 @@
 
     <script type="module">
         // Read environment variables from Vite build/runtime
-        const env = {
-            VITE_GEMINI_API_KEY: String(import.meta.env?.VITE_GEMINI_API_KEY || '').trim()
-        };
+        const GEMINI_API_KEY = String(import.meta.env?.VITE_GEMINI_API_KEY || '').trim();
 
         function log(message) {
             const consoleOutput = document.getElementById('console-output');
@@ -118,7 +116,7 @@
             const geminiKeyStatus = document.getElementById('gemini-key-status');
             const pollinationsStatus = document.getElementById('pollinations-status');
 
-            if (env.VITE_GEMINI_API_KEY) {
+            if (GEMINI_API_KEY) {
                 geminiKeyStatus.innerHTML = '✅ API Key found';
                 geminiKeyStatus.style.color = '#22c55e';
             } else {
@@ -144,10 +142,10 @@
 
             try {
                 log('🧪 Testing Gemini API...');
-                log('API Key:', env.VITE_GEMINI_API_KEY ? 'Present' : 'Missing');
+                log('API Key:', GEMINI_API_KEY ? 'Present' : 'Missing');
 
                 // Use Gemini Pro model (free version) instead of Flash
-                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.VITE_GEMINI_API_KEY}`;
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
                 
                 log('Request URL:', API_URL);
                 log('Request Method: POST');

@@ -178,9 +178,7 @@
 
     <script type="module">
         // Environment configuration
-        const env = {
-            VITE_GEMINI_API_KEY: String(import.meta.env?.VITE_GEMINI_API_KEY || '').trim()
-        };
+        const GEMINI_API_KEY = String(import.meta.env?.VITE_GEMINI_API_KEY || '').trim();
 
         let testResults = {
             geminiPro: false,
@@ -226,7 +224,7 @@ Detailed Results:
             const geminiKeyStatus = document.getElementById('gemini-key-status');
             const pollinationsStatus = document.getElementById('pollinations-status');
 
-            if (env.VITE_GEMINI_API_KEY) {
+            if (GEMINI_API_KEY) {
                 geminiKeyStatus.innerHTML = '✅ API Key found (Gemini Pro)';
                 geminiKeyStatus.style.color = '#22c55e';
             } else {
@@ -254,10 +252,10 @@ Detailed Results:
 
             try {
                 log('🧪 Testing Gemini Pro API (Free Version)...', 'info');
-                log(`API Key: ${env.VITE_GEMINI_API_KEY ? 'Present' : 'Missing'}`, 'info');
+                log(`API Key: ${GEMINI_API_KEY ? 'Present' : 'Missing'}`, 'info');
 
                 // Use Gemini Pro model (free version)
-                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.VITE_GEMINI_API_KEY}`;
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
                 
                 log(`Request URL: ${API_URL}`, 'info');
                 log('Request Method: POST', 'info');

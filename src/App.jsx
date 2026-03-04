@@ -380,7 +380,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const [learningModule, setLearningModule] = useState(null); // 'alphabets' | 'numbers' | 'colors' | 'safari' | null
   const [magicArt, setMagicArt] = useState(false);
   const [wellbeingUsage, setWellbeingUsage] = useState(() => readWellbeingUsage());
-  const isAdmin = isAdminEmail(user?.email) || String(profile?.role || '').toLowerCase() === 'admin';
+  const isAdmin = isAdminEmail(user?.email);
   const { isKidsModeOn } = useKidsMode();
   const usageAccumulatorMsRef = React.useRef(0);
   const forceScrollTop = React.useCallback(() => {
@@ -781,9 +781,8 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
 };
 
 function AdminRouteGuard({ onBackToSite }) {
-  const { user, profile } = useAuth();
-  const hasAdminRole = String(profile?.role || '').toLowerCase() === 'admin';
-  const isAllowedAdmin = hasAdminRole || (isAdminEmail(user?.email) && user?.email === ADMIN_EMAIL);
+  const { user } = useAuth();
+  const isAllowedAdmin = isAdminEmail(user?.email) && user?.email === ADMIN_EMAIL;
 
   if (!isAllowedAdmin) {
     return (
