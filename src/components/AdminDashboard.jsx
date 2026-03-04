@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   ImagePlus,
@@ -15,11 +15,14 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { isAdminEmail } from '../utils/admin';
+import ANIMALS_DATA from './modules/animalsData';
 
 const VIDEO_STORAGE_BUCKET = 'videos';
 const THUMBNAIL_STORAGE_BUCKET = 'thumbnails';
 const COLORING_STORAGE_BUCKET = 'coloring_pages';
 const POEM_STORAGE_BUCKET = 'poems';
+const ANIMAL_POEM_TABLE = 'animal_poems';
+const ANIMAL_POEM_IMAGE_FOLDER = 'animal-poems';
 
 const IMAGE_ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 const IMAGE_ACCEPTED_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
@@ -34,6 +37,7 @@ const NAV_ITEMS = [
   { key: 'users', label: 'Manage Users', icon: Users },
   { key: 'videos', label: 'Manage Videos', icon: Video },
   { key: 'coloring_pages', label: 'Manage Coloring Pages', icon: ImagePlus },
+  { key: 'animal_safari_poems', label: 'Animal Safari Poems', icon: Pencil },
   { key: 'poems', label: 'Manage Poems', icon: Pencil },
 ];
 
@@ -211,6 +215,40 @@ const readFirstBoolean = (row, keys = [], fallback = false) => {
   }
   return fallback;
 };
+
+const ANIMAL_NAME_TO_ID_MAP = ANIMALS_DATA.reduce((map, animal) => {
+  const normalizedName = String(animal?.name || '').trim().toLowerCase();
+  const animalId = String(animal?.id || '').trim();
+  if (normalizedName && animalId) {
+    map.set(normalizedName, animalId);
+  }
+  return map;
+}, new Map());
+
+const getAnimalPoemRowAnimalId = (row) => {
+  const directId = readFirstString(row, ['animal_id', 'animalId', 'animal_slug', 'animal_key'], '');
+  if (directId) return directId;
+
+  const animalName = readFirstString(row, ['animal_name', 'name', 'title'], '').toLowerCase();
+  return ANIMAL_NAME_TO_ID_MAP.get(animalName) || '';
+};
+
+const readAnimalPoemText = (row) =>
+  readFirstString(row, ['poem', 'poem_text', 'content', 'description', 'body'], '');
+
+const readAnimalPoemCoverImageUrl = (row) =>
+  readFirstString(
+    row,
+    ['poem_cover_image_url', 'cover_image_url', 'cover_url', 'image_url', 'thumbnail_url'],
+    ''
+  );
+
+const readAnimalPoemShowCoverImage = (row) =>
+  readFirstBoolean(
+    row,
+    ['show_cover_image_for_poem', 'show_poem_cover_image', 'show_cover_image', 'is_cover_image_visible'],
+    false
+  );
 
 const getMissingColumnName = (message = '') => {
   const patterns = [
@@ -1468,6 +1506,493 @@ function UsersSection({ isActive }) {
   );
 }
 
+function AnimalSafariPoemsSection({ isActive }) {
+  const animals = useMemo(
+    () =>
+      ANIMALS_DATA.map((animal) => ({
+        id: String(animal?.id || ''),
+        name: String(animal?.name || ''),
+        category: String(animal?.category || ''),
+      })).filter((animal) => animal.id && animal.name),
+    []
+  );
+
+  const [rows, setRows] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [listError, setListError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
+  const [selectedAnimalId, setSelectedAnimalId] = useState('');
+  const [deletingId, setDeletingId] = useState('');
+  const [form, setForm] = useState({
+    poem: '',
+    existingCoverImageUrl: '',
+    showCoverImageForPoem: false,
+  });
+  const [coverImageFile, setCoverImageFile] = useState(null);
+  const coverImageInputRef = useRef(null);
+
+  const rowsByAnimalId = useMemo(() => {
+    const map = new Map();
+    for (const row of rows) {
+      const animalId = getAnimalPoemRowAnimalId(row);
+      if (!animalId || map.has(animalId)) continue;
+      map.set(animalId, row);
+    }
+    return map;
+  }, [rows]);
+
+  const configuredRows = useMemo(
+    () =>
+      animals
+        .map((animal) => {
+          const row = rowsByAnimalId.get(animal.id);
+          if (!row) return null;
+          return { animal, row };
+        })
+        .filter(Boolean),
+    [animals, rowsByAnimalId]
+  );
+
+  const selectedAnimal = useMemo(
+    () => animals.find((animal) => animal.id === selectedAnimalId) || null,
+    [animals, selectedAnimalId]
+  );
+
+  const selectedRow = selectedAnimal ? rowsByAnimalId.get(selectedAnimal.id) || null : null;
+
+  const resetMessages = () => {
+    setSubmitError('');
+    setSubmitSuccess('');
+  };
+
+  const clearCoverImageInput = () => {
+    setCoverImageFile(null);
+    if (coverImageInputRef.current) {
+      coverImageInputRef.current.value = '';
+    }
+  };
+
+  const setFormFromRow = useCallback((row) => {
+    setForm({
+      poem: readAnimalPoemText(row),
+      existingCoverImageUrl: readAnimalPoemCoverImageUrl(row),
+      showCoverImageForPoem: readAnimalPoemShowCoverImage(row),
+    });
+    clearCoverImageInput();
+  }, []);
+
+  const loadRows = useCallback(async () => {
+    setIsLoading(true);
+    setListError('');
+    try {
+      const data = await fetchRowsWithFallbackOrder(ANIMAL_POEM_TABLE);
+      setRows(data);
+    } catch (error) {
+      setListError(error?.message || 'Failed to load Animal Safari poem settings.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isActive) return;
+    void loadRows();
+  }, [isActive, loadRows]);
+
+  useEffect(() => {
+    if (!isActive || selectedAnimalId || animals.length === 0) return;
+    setSelectedAnimalId(animals[0].id);
+  }, [animals, isActive, selectedAnimalId]);
+
+  useEffect(() => {
+    if (!isActive || !selectedAnimalId) return;
+    setFormFromRow(rowsByAnimalId.get(selectedAnimalId) || null);
+  }, [isActive, rowsByAnimalId, selectedAnimalId, setFormFromRow]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    resetMessages();
+
+    if (!selectedAnimal) {
+      setSubmitError('Select an animal before saving poem settings.');
+      return;
+    }
+
+    if (coverImageFile) {
+      const validation = validateFile({
+        file: coverImageFile,
+        label: 'Poem cover image',
+        acceptedTypes: IMAGE_ACCEPTED_TYPES,
+        acceptedExtensions: IMAGE_ACCEPTED_EXTENSIONS,
+        maxSizeBytes: MAX_IMAGE_SIZE_BYTES,
+        sizeMessage: 'Poem cover image is too large. Maximum allowed size is 8 MB.',
+        typeMessage: 'Please upload a PNG, JPG/JPEG, or WEBP cover image.',
+      });
+
+      if (validation) {
+        setSubmitError(validation);
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    const poemValue = form.poem.trim();
+    const showCoverImageForPoem = Boolean(form.showCoverImageForPoem);
+    const previousCoverImageUrl = readAnimalPoemCoverImageUrl(selectedRow);
+    let nextCoverImageUrl = form.existingCoverImageUrl.trim();
+    let uploadedCoverImage = null;
+
+    try {
+      if (coverImageFile) {
+        uploadedCoverImage = await uploadPublicFile({
+          file: coverImageFile,
+          bucketName: POEM_STORAGE_BUCKET,
+          folder: ANIMAL_POEM_IMAGE_FOLDER,
+          acceptedExtensions: IMAGE_ACCEPTED_EXTENSIONS,
+          fallbackExtension: 'jpg',
+        });
+        nextCoverImageUrl = uploadedCoverImage.publicUrl;
+      }
+
+      const payload = {
+        animal_id: selectedAnimal.id,
+        animal_name: selectedAnimal.name,
+        poem: poemValue,
+        poem_cover_image_url: nextCoverImageUrl || null,
+        cover_image_url: nextCoverImageUrl || null,
+        show_cover_image_for_poem: showCoverImageForPoem,
+        show_cover_image: showCoverImageForPoem,
+      };
+
+      const mutation = await runMutationWithMissingColumnFallback({
+        payload,
+        requiredColumns: ['animal_id'],
+        mutate: async (nextPayload) => {
+          if (selectedRow?.id) {
+            return supabase
+              .from(ANIMAL_POEM_TABLE)
+              .update(nextPayload)
+              .eq('id', selectedRow.id)
+              .select('*')
+              .single();
+          }
+
+          const upsertResult = await supabase
+            .from(ANIMAL_POEM_TABLE)
+            .upsert(nextPayload, { onConflict: 'animal_id' })
+            .select('*')
+            .single();
+
+          if (!upsertResult.error) return upsertResult;
+          if (/on conflict|constraint|unique/i.test(upsertResult.error?.message || '')) {
+            return supabase.from(ANIMAL_POEM_TABLE).insert(nextPayload).select('*').single();
+          }
+          return upsertResult;
+        },
+      });
+
+      const savedRow = mutation.data;
+      const savedAnimalId = getAnimalPoemRowAnimalId(savedRow) || selectedAnimal.id;
+
+      setRows((prev) => {
+        const nextRows = [...prev];
+        const indexById = nextRows.findIndex(
+          (row) => String(row?.id || '') === String(savedRow?.id || '')
+        );
+        if (indexById >= 0) {
+          nextRows[indexById] = savedRow;
+          return nextRows;
+        }
+
+        const indexByAnimalId = nextRows.findIndex(
+          (row) => getAnimalPoemRowAnimalId(row) === savedAnimalId
+        );
+        if (indexByAnimalId >= 0) {
+          nextRows[indexByAnimalId] = savedRow;
+          return nextRows;
+        }
+
+        return [savedRow, ...nextRows];
+      });
+
+      if (uploadedCoverImage && previousCoverImageUrl && previousCoverImageUrl !== nextCoverImageUrl) {
+        await removeFileByUrl(POEM_STORAGE_BUCKET, previousCoverImageUrl).catch(() => {});
+      }
+
+      clearCoverImageInput();
+      setForm({
+        poem: readAnimalPoemText(savedRow),
+        existingCoverImageUrl: readAnimalPoemCoverImageUrl(savedRow),
+        showCoverImageForPoem: readAnimalPoemShowCoverImage(savedRow),
+      });
+      setSubmitSuccess(`Poem settings saved for ${selectedAnimal.name}.`);
+    } catch (error) {
+      if (uploadedCoverImage?.uploadPath) {
+        await removeStoragePath(POEM_STORAGE_BUCKET, uploadedCoverImage.uploadPath).catch(() => {});
+      }
+      setSubmitError(error?.message || 'Failed to save Animal Safari poem settings.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedAnimal || !selectedRow || deletingId) return;
+
+    const confirmed = window.confirm(
+      `Delete poem settings for "${selectedAnimal.name}"? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    resetMessages();
+    setDeletingId(selectedAnimal.id);
+    const coverImageUrl = readAnimalPoemCoverImageUrl(selectedRow);
+
+    try {
+      const query = selectedRow?.id
+        ? supabase.from(ANIMAL_POEM_TABLE).delete().eq('id', selectedRow.id)
+        : supabase.from(ANIMAL_POEM_TABLE).delete().eq('animal_id', selectedAnimal.id);
+
+      const { error } = await query;
+      if (error) throw new Error(error.message);
+
+      setRows((prev) =>
+        prev.filter((row) => {
+          if (selectedRow?.id) {
+            return String(row?.id || '') !== String(selectedRow.id);
+          }
+          return getAnimalPoemRowAnimalId(row) !== selectedAnimal.id;
+        })
+      );
+
+      await removeFileByUrl(POEM_STORAGE_BUCKET, coverImageUrl).catch(() => {});
+      setFormFromRow(null);
+      setSubmitSuccess(`Poem settings deleted for ${selectedAnimal.name}.`);
+    } catch (error) {
+      setSubmitError(error?.message || 'Failed to delete Animal Safari poem settings.');
+    } finally {
+      setDeletingId('');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">Animal Safari Poem Settings</h2>
+            <p className="text-sm text-slate-600">
+              Add per-animal poem text and optional poem cover image controls.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadRows()}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            Refresh
+          </button>
+        </div>
+
+        {listError && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {listError}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Animal</label>
+              <select
+                value={selectedAnimalId}
+                onChange={(event) => {
+                  setSelectedAnimalId(event.target.value);
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+              >
+                {animals.map((animal) => (
+                  <option key={animal.id} value={animal.id}>
+                    {animal.name} ({animal.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">
+                Poem Cover Image (optional)
+              </label>
+              <input
+                ref={coverImageInputRef}
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                onChange={(event) => {
+                  setCoverImageFile(event.target.files?.[0] || null);
+                  resetMessages();
+                }}
+                disabled={isSubmitting}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              {form.existingCoverImageUrl && (
+                <img
+                  src={form.existingCoverImageUrl}
+                  alt={`${selectedAnimal?.name || 'Animal'} poem cover`}
+                  className="mt-2 h-24 w-40 rounded-lg border border-slate-200 object-cover"
+                />
+              )}
+              <label className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={form.showCoverImageForPoem}
+                  onChange={(event) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      showCoverImageForPoem: event.target.checked,
+                    }));
+                    resetMessages();
+                  }}
+                  disabled={isSubmitting}
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                />
+                Show Cover Image for Poem?
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Poem</label>
+            <textarea
+              value={form.poem}
+              onChange={(event) => {
+                setForm((prev) => ({ ...prev, poem: event.target.value }));
+                resetMessages();
+              }}
+              disabled={isSubmitting}
+              rows={6}
+              placeholder="Write the animal poem here"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none ring-indigo-500 focus:ring-2"
+            />
+          </div>
+
+          <p className="text-xs font-medium text-slate-500">
+            The poem cover image appears in Animal Safari only when this checkbox is enabled.
+          </p>
+
+          <Feedback error={submitError} success={submitSuccess} />
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={isSubmitting || !selectedAnimal}
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold ${
+                isSubmitting
+                  ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400'
+                  : 'border border-indigo-300 bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+            >
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              Save Poem Settings
+            </button>
+
+            {selectedRow && (
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                disabled={isSubmitting || deletingId === selectedAnimal?.id}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deletingId === selectedAnimal?.id ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Trash2 size={16} />
+                )}
+                Delete Poem Settings
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-600">
+            Configured Animals
+          </h3>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+            {configuredRows.length} configured
+          </span>
+        </div>
+
+        {isLoading ? (
+          <div className="grid min-h-[140px] place-items-center px-6 py-8 text-sm text-slate-600">
+            <span className="inline-flex items-center gap-2">
+              <Loader2 size={16} className="animate-spin" /> Loading poem settings...
+            </span>
+          </div>
+        ) : configuredRows.length === 0 ? (
+          <div className="grid min-h-[140px] place-items-center px-6 py-8 text-sm text-slate-600">
+            No animal poem settings found yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th className="px-4 py-3 text-left">Animal</th>
+                  <th className="px-4 py-3 text-left">Poem</th>
+                  <th className="px-4 py-3 text-left">Cover</th>
+                  <th className="px-4 py-3 text-left">Show Cover?</th>
+                  <th className="px-4 py-3 text-left">Updated</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {configuredRows.map(({ animal, row }) => {
+                  const coverImageUrl = readAnimalPoemCoverImageUrl(row);
+                  return (
+                    <tr key={animal.id} className="bg-white">
+                      <td className="px-4 py-3 font-medium text-slate-800">
+                        {animal.name}
+                        <span className="ml-2 text-xs font-semibold text-slate-500">({animal.category})</span>
+                      </td>
+                      <td className="max-w-[360px] px-4 py-3 text-slate-700">
+                        <p className="line-clamp-2">{readAnimalPoemText(row) || '-'}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        {coverImageUrl ? (
+                          <img
+                            src={coverImageUrl}
+                            alt={`${animal.name} poem cover`}
+                            className="h-14 w-24 rounded-md border border-slate-200 object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-400">N/A</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {readAnimalPoemShowCoverImage(row) ? 'Yes' : 'No'}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {formatDate(readFirstString(row, ['updated_at', 'created_at'], ''))}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const AdminDashboard = ({ onBackToSite }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -1598,6 +2123,8 @@ const AdminDashboard = ({ onBackToSite }) => {
               premiumHeading="Premium"
             />
           )}
+
+          {activeTab === 'animal_safari_poems' && <AnimalSafariPoemsSection isActive />}
 
           {activeTab === 'poems' && (
             <CrudMediaSection

@@ -8,6 +8,60 @@ import { useAuth } from '../../context/AuthContext';
 import { useAuthModal } from '../../context/AuthModalContext';
 import { useParentControls } from '../../context/ParentControlsContext';
 import { addUserGems } from '../../utils/gemWallet';
+import { supabase } from '../../supabaseClient';
+
+const ANIMAL_POEM_TABLE = 'animal_poems';
+
+const ANIMAL_NAME_TO_ID_MAP = ANIMALS_DATA.reduce((map, animal) => {
+  const normalizedName = String(animal?.name || '').trim().toLowerCase();
+  const animalId = String(animal?.id || '').trim();
+  if (normalizedName && animalId) {
+    map.set(normalizedName, animalId);
+  }
+  return map;
+}, new Map());
+
+const readFirstString = (row, keys = [], fallback = '') => {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return fallback;
+};
+
+const readFirstBoolean = (row, keys = [], fallback = false) => {
+  for (const key of keys) {
+    if (typeof row?.[key] === 'boolean') {
+      return row[key];
+    }
+  }
+  return fallback;
+};
+
+const getAnimalPoemRowAnimalId = (row) => {
+  const directId = readFirstString(row, ['animal_id', 'animalId', 'animal_slug', 'animal_key'], '');
+  if (directId) return directId;
+
+  const animalName = readFirstString(row, ['animal_name', 'name', 'title'], '').toLowerCase();
+  return ANIMAL_NAME_TO_ID_MAP.get(animalName) || '';
+};
+
+const readAnimalPoemText = (row) =>
+  readFirstString(row, ['poem', 'poem_text', 'content', 'description', 'body'], '');
+
+const readAnimalPoemCoverImageUrl = (row) =>
+  readFirstString(
+    row,
+    ['poem_cover_image_url', 'cover_image_url', 'cover_url', 'image_url', 'thumbnail_url'],
+    ''
+  );
+
+const readAnimalPoemShowCoverImage = (row) =>
+  readFirstBoolean(
+    row,
+    ['show_cover_image_for_poem', 'show_poem_cover_image', 'show_cover_image', 'is_cover_image_visible'],
+    false
+  );
 
 const CATEGORY_NAV = [
   { id: 'All', label: '\uD83C\uDF0D All' },
@@ -83,6 +137,7 @@ const SafariModule = ({ onBack, onHome }) => {
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [flippedCards, setFlippedCards] = useState({});
+  const [animalPoemConfigs, setAnimalPoemConfigs] = useState({});
 
   const [quizIndex, setQuizIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
@@ -123,6 +178,49 @@ const SafariModule = ({ onBack, onHome }) => {
         }),
     []
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAnimalPoemConfigs = async () => {
+      let response = await supabase
+        .from(ANIMAL_POEM_TABLE)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (response.error && /created_at/i.test(response.error.message || '')) {
+        response = await supabase.from(ANIMAL_POEM_TABLE).select('*');
+      }
+
+      if (response.error) {
+        console.warn('[SafariModule] Unable to load animal poem configs:', response.error.message);
+        return;
+      }
+
+      const rows = Array.isArray(response.data) ? response.data : [];
+      const nextConfigs = {};
+
+      for (const row of rows) {
+        const animalId = getAnimalPoemRowAnimalId(row);
+        if (!animalId || nextConfigs[animalId]) continue;
+        nextConfigs[animalId] = {
+          poem: readAnimalPoemText(row),
+          coverImageUrl: readAnimalPoemCoverImageUrl(row),
+          showCoverImageForPoem: readAnimalPoemShowCoverImage(row),
+        };
+      }
+
+      if (isMounted) {
+        setAnimalPoemConfigs(nextConfigs);
+      }
+    };
+
+    void loadAnimalPoemConfigs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredAnimals =
     activeCategory === 'All'
@@ -450,6 +548,11 @@ const SafariModule = ({ onBack, onHome }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8">
           {filteredAnimals.map((animal) => {
             const isFlipped = !!flippedCards[animal.id];
+            const poemConfig = animalPoemConfigs[animal.id] || null;
+            const poemText = String(poemConfig?.poem || '').trim();
+            const poemCoverImageUrl = String(poemConfig?.coverImageUrl || '').trim();
+            const shouldShowPoemCoverImage =
+              Boolean(poemConfig?.showCoverImageForPoem) && Boolean(poemCoverImageUrl);
             return (
               <div
                 key={animal.id}
@@ -484,7 +587,7 @@ const SafariModule = ({ onBack, onHome }) => {
                     style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                   >
                     <div className="text-center w-full h-full flex flex-col justify-between">
-                      <div>
+                      <div className="overflow-y-auto pr-1">
                         <h3 className={`text-2xl font-extrabold ${animal.text} mb-1 flex items-center justify-center gap-2`}>
                           {animal.name}
                         </h3>
@@ -494,6 +597,22 @@ const SafariModule = ({ onBack, onHome }) => {
                         <p className="text-sm font-medium text-gray-700 leading-relaxed text-left bg-gray-50 p-4 rounded-2xl border border-gray-100">
                           "{animal.bio}"
                         </p>
+
+                        {poemText ? (
+                          <div className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-3 text-left">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-indigo-600">Poem</p>
+                            <p className="mt-1 whitespace-pre-line text-sm font-medium text-slate-700">
+                              {poemText}
+                            </p>
+                            {shouldShowPoemCoverImage ? (
+                              <img
+                                src={poemCoverImageUrl}
+                                alt={`${animal.name} poem cover`}
+                                className="mt-3 h-24 w-full rounded-xl border border-indigo-100 object-cover"
+                              />
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
 
                       <button

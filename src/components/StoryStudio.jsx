@@ -49,6 +49,7 @@ const StoryStudio = () => {
 
   const chatEndRef = useRef(null);
   const hasMountedChatRef = useRef(false);
+  const profileFetchUserRef = useRef('');
 
   // Check API connectivity on mount
   useEffect(() => {
@@ -56,10 +57,16 @@ const StoryStudio = () => {
   }, []);
 
   useEffect(() => {
-    if (!user?.id || !fetchProfile) return;
-    if (profile?.id === user.id && Number.isFinite(Number(profile?.gems))) return;
-    void fetchProfile(user.id, { retryCount: 2, preferDirect: true });
-  }, [user?.id, profile?.id, profile?.gems, fetchProfile]);
+    const userId = String(user?.id || '').trim();
+    if (!userId || !fetchProfile) {
+      profileFetchUserRef.current = '';
+      return;
+    }
+
+    if (profileFetchUserRef.current === userId) return;
+    profileFetchUserRef.current = userId;
+    void fetchProfile(userId, { retryCount: 2, preferDirect: true });
+  }, [user?.id, fetchProfile]);
 
   useEffect(() => {
     if (authLoading) return;
