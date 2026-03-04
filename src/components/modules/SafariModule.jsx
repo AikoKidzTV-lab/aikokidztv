@@ -1,5 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ANIMALS_DATA, { SAFARI_MASTER_QUIZ_QUESTIONS } from './animalsData';
+import ANIMALS_DATA, {
+  SAFARI_MASTER_QUIZ_QUESTIONS,
+  sanitizeAnimalRecordForRender,
+  validateAnimalRecordForRender,
+} from './animalsData';
 import { useAuth } from '../../context/AuthContext';
 import { useAuthModal } from '../../context/AuthModalContext';
 import { useParentControls } from '../../context/ParentControlsContext';
@@ -106,10 +110,24 @@ const SafariModule = ({ onBack, onHome }) => {
   const finalRewardClaimedRef = useRef(false);
   const finalRewardAttemptedRef = useRef(false);
 
+  const renderReadyAnimals = useMemo(
+    () =>
+      ANIMALS_DATA
+        .map((animal) => sanitizeAnimalRecordForRender(animal))
+        .filter((animal) => {
+          const isValid = validateAnimalRecordForRender(animal);
+          if (!isValid) {
+            console.error('[SafariModule] Animal asset mismatch detected. Card skipped.', animal);
+          }
+          return isValid;
+        }),
+    []
+  );
+
   const filteredAnimals =
     activeCategory === 'All'
-      ? ANIMALS_DATA
-      : ANIMALS_DATA.filter((animal) => animal.category === activeCategory);
+      ? renderReadyAnimals
+      : renderReadyAnimals.filter((animal) => animal.category === activeCategory);
 
   const quizQuestion = SAFARI_MASTER_QUIZ_QUESTIONS[quizIndex] || null;
   const quizTotalQuestions = SAFARI_MASTER_QUIZ_QUESTIONS.length;
@@ -407,7 +425,7 @@ const SafariModule = ({ onBack, onHome }) => {
             Tap an animal to flip the card, then tap {'\u{1F50A}'} to hear it!
           </p>
           <div className="mt-2 text-sm text-gray-500">
-            Showing {filteredAnimals.length} of {ANIMALS_DATA.length} animals
+            Showing {filteredAnimals.length} of {renderReadyAnimals.length} animals
           </div>
         </div>
 

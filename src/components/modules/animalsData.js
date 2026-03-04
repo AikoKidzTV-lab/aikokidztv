@@ -37,102 +37,138 @@ const CATEGORY_STYLES = {
   ],
 };
 
-const CATEGORY_EMOJIS = {
+const CATEGORY_DEFAULT_EMOJI = {
+  Wild: '\uD83D\uDC3E',
+  Farm: '\uD83D\uDC2E',
+  Pet: '\uD83D\uDC36',
+  Bird: '\uD83D\uDC26',
+  Ocean: '\uD83D\uDC20',
+  Bug: '\uD83D\uDC1B',
+};
+
+const CATEGORY_NAME_EMOJI_RULES = {
   Wild: [
-    '\uD83E\uDD81',
-    '\uD83D\uDC2F',
-    '\uD83D\uDC06',
-    '\uD83D\uDC3A',
-    '\uD83D\uDC3B',
-    '\uD83D\uDC3C',
-    '\uD83D\uDC18',
-    '\uD83E\uDD8F',
-    '\uD83E\uDD92',
-    '\uD83D\uDC17',
-    '\uD83E\uDD8C',
-    '\uD83D\uDC12',
-    '\uD83E\uDD8D',
-    '\uD83D\uDC2A',
-    '\uD83D\uDC03',
-    '\uD83E\uDD98',
-    '\uD83E\uDDA5',
-    '\uD83E\uDDA8',
-    '\uD83E\uDD94',
+    { emoji: '\uD83E\uDD81', keywords: ['lion'] },
+    { emoji: '\uD83D\uDC2F', keywords: ['tiger'] },
+    { emoji: '\uD83D\uDC06', keywords: ['leopard', 'jaguar', 'panther', 'lynx', 'cougar'] },
+    { emoji: '\uD83D\uDC06', keywords: ['snow leopard'] },
+    { emoji: '\uD83D\uDC3A', keywords: ['wolf', 'jackal', 'hyena'] },
+    { emoji: '\uD83E\uDD8A', keywords: ['fox'] },
+    { emoji: '\uD83D\uDC3B', keywords: ['brown bear'] },
+    { emoji: '\uD83D\uDC3B\u200D\u2744\uFE0F', keywords: ['polar bear'] },
+    { emoji: '\uD83D\uDC3C', keywords: ['panda'] },
+    { emoji: '\uD83D\uDC28', keywords: ['koala'] },
+    { emoji: '\uD83E\uDD8D', keywords: ['gorilla'] },
+    { emoji: '\uD83D\uDC12', keywords: ['chimpanzee', 'orangutan', 'baboon', 'mandrill'] },
+    { emoji: '\uD83E\uDD93', keywords: ['zebra'] },
+    { emoji: '\uD83E\uDD92', keywords: ['giraffe'] },
+    { emoji: '\uD83D\uDC18', keywords: ['elephant'] },
+    { emoji: '\uD83E\uDD8F', keywords: ['rhinoceros'] },
+    { emoji: '\uD83E\uDD9B', keywords: ['hippopotamus'] },
+    { emoji: '\uD83E\uDDAC', keywords: ['bison'] },
+    { emoji: '\uD83D\uDC03', keywords: ['buffalo'] },
+    { emoji: '\uD83E\uDD8C', keywords: ['antelope', 'gazelle', 'wildebeest', 'deer', 'moose', 'elk'] },
+    { emoji: '\uD83D\uDC2A', keywords: ['camel'] },
+    { emoji: '\uD83E\uDD99', keywords: ['llama', 'alpaca'] },
+    { emoji: '\uD83D\uDC17', keywords: ['boar'] },
+    { emoji: '\uD83E\uDD98', keywords: ['kangaroo', 'wallaby'] },
+    { emoji: '\uD83E\uDDA5', keywords: ['sloth'] },
+    { emoji: '\uD83E\uDDA6', keywords: ['otter'] },
+    { emoji: '\uD83E\uDD9D', keywords: ['raccoon'] },
+    { emoji: '\uD83E\uDDA8', keywords: ['skunk'] },
+    { emoji: '\uD83E\uDD94', keywords: ['hedgehog', 'porcupine'] },
   ],
   Farm: [
-    '\uD83D\uDC04',
-    '\uD83D\uDC02',
-    '\uD83D\uDC10',
-    '\uD83D\uDC11',
-    '\uD83D\uDC34',
-    '\uD83D\uDC16',
-    '\uD83D\uDC37',
-    '\uD83D\uDC14',
-    '\uD83D\uDC13',
-    '\uD83E\uDD83',
-    '\uD83E\uDD86',
-    '\uD83D\uDC07',
-    '\uD83D\uDC08',
-    '\uD83D\uDC15',
-    '\uD83D\uDC2B',
-    '\uD83E\uDD99',
-    '\uD83C\uDF3E',
+    { emoji: '\uD83D\uDC04', keywords: ['cow', 'bull', 'calf', 'ox', 'zebu'] },
+    { emoji: '\uD83D\uDC03', keywords: ['buffalo', 'yak'] },
+    { emoji: '\uD83D\uDC10', keywords: ['goat'] },
+    { emoji: '\uD83D\uDC11', keywords: ['sheep', 'ram', 'lamb'] },
+    { emoji: '\uD83D\uDC34', keywords: ['horse', 'pony', 'clydesdale'] },
+    { emoji: '\uD83D\uDC34', keywords: ['donkey', 'mule'] },
+    { emoji: '\uD83D\uDC16', keywords: ['pig', 'sow', 'piglet'] },
+    { emoji: '\uD83D\uDC17', keywords: ['boar', 'berkshire'] },
+    { emoji: '\uD83D\uDC14', keywords: ['chicken', 'hen', 'chick', 'silkie'] },
+    { emoji: '\uD83D\uDC13', keywords: ['rooster'] },
+    { emoji: '\uD83E\uDD83', keywords: ['turkey'] },
+    { emoji: '\uD83E\uDD86', keywords: ['duck'] },
+    { emoji: '\uD83E\uDD86', keywords: ['goose', 'gander'] },
+    { emoji: '\uD83D\uDC26', keywords: ['quail', 'guinea fowl', 'pigeon'] },
+    { emoji: '\uD83D\uDC07', keywords: ['rabbit'] },
+    { emoji: '\uD83D\uDC08', keywords: ['cat'] },
+    { emoji: '\uD83D\uDC15', keywords: ['dog'] },
+    { emoji: '\uD83D\uDC2A', keywords: ['camel'] },
+    { emoji: '\uD83E\uDD99', keywords: ['alpaca', 'llama'] },
+    { emoji: '\uD83E\uDD8C', keywords: ['reindeer'] },
+    { emoji: '\uD83D\uDC26', keywords: ['emu', 'ostrich'] },
   ],
   Pet: [
-    '\uD83D\uDC36',
-    '\uD83D\uDC31',
-    '\uD83D\uDC30',
-    '\uD83D\uDC39',
-    '\uD83D\uDC2D',
-    '\uD83E\uDD9C',
-    '\uD83D\uDC20',
-    '\uD83D\uDC1F',
-    '\uD83D\uDC22',
-    '\uD83D\uDC38',
-    '\uD83E\uDD8E',
-    '\uD83D\uDC0D',
-    '\uD83E\uDD94',
+    { emoji: '\uD83D\uDC36', keywords: ['dog', 'pug', 'labrador', 'beagle', 'pomeranian'] },
+    { emoji: '\uD83D\uDC31', keywords: ['cat', 'persian', 'siamese', 'maine coon', 'ragdoll'] },
+    { emoji: '\uD83D\uDC30', keywords: ['rabbit', 'bunny'] },
+    { emoji: '\uD83D\uDC39', keywords: ['hamster', 'guinea pig', 'gerbil', 'chinchilla'] },
+    { emoji: '\uD83D\uDC2D', keywords: ['mouse'] },
+    { emoji: '\uD83D\uDC00', keywords: ['rat'] },
+    { emoji: '\uD83E\uDD94', keywords: ['hedgehog'] },
+    { emoji: '\uD83E\uDD9C', keywords: ['parrot', 'budgie', 'cockatiel', 'cockatoo', 'macaw', 'lovebird', 'parakeet'] },
+    { emoji: '\uD83D\uDC26', keywords: ['canary', 'finch'] },
+    { emoji: '\uD83D\uDC22', keywords: ['turtle', 'tortoise'] },
+    { emoji: '\uD83D\uDC20', keywords: ['fish', 'koi'] },
+    { emoji: '\uD83D\uDC38', keywords: ['frog'] },
+    { emoji: '\uD83E\uDD8E', keywords: ['gecko', 'bearded dragon', 'axolotl'] },
+    { emoji: '\uD83D\uDC0D', keywords: ['snake', 'python'] },
+    { emoji: '\uD83E\uDD80', keywords: ['crab'] },
+    { emoji: '\uD83D\uDD77\uFE0F', keywords: ['tarantula'] },
+    { emoji: '\uD83D\uDC1B', keywords: ['stick insect'] },
+    { emoji: '\uD83D\uDC16', keywords: ['mini pig'] },
   ],
   Bird: [
-    '\uD83D\uDC26',
-    '\uD83D\uDD4A',
-    '\uD83E\uDD85',
-    '\uD83E\uDD89',
-    '\uD83E\uDD86',
-    '\uD83D\uDC14',
-    '\uD83D\uDC27',
-    '\uD83E\uDD9A',
-    '\uD83E\uDD83',
-    '\uD83E\uDDA9',
-    '\uD83E\uDDA2',
+    { emoji: '\uD83E\uDD9A', keywords: ['peacock'] },
+    { emoji: '\uD83E\uDDA9', keywords: ['flamingo'] },
+    { emoji: '\uD83E\uDD9C', keywords: ['cockatoo', 'parrot', 'macaw', 'budgie', 'budgerigar', 'cockatiel', 'lovebird'] },
+    { emoji: '\uD83D\uDC26\u200D\u2B1B', keywords: ['crow', 'raven'] },
+    { emoji: '\uD83E\uDD85', keywords: ['hawk', 'falcon', 'eagle', 'vulture', 'condor', 'kite bird'] },
+    { emoji: '\uD83E\uDD89', keywords: ['owl'] },
+    { emoji: '\uD83D\uDC27', keywords: ['penguin', 'puffin'] },
+    { emoji: '\uD83E\uDD86', keywords: ['duck', 'goose', 'gander', 'swan'] },
+    { emoji: '\uD83D\uDC26', keywords: ['pigeon', 'dove', 'sparrow'] },
+    { emoji: '\uD83D\uDC26', keywords: ['pelican', 'stork', 'heron', 'crane', 'albatross', 'seagull', 'tern'] },
+    { emoji: '\uD83D\uDC26', keywords: ['kingfisher', 'woodpecker', 'hummingbird', 'robin', 'blue jay', 'cardinal'] },
+    { emoji: '\uD83D\uDC26', keywords: ['canary', 'finch', 'nightjar', 'quail', 'partridge', 'pheasant', 'cuckoo', 'nightingale'] },
+    { emoji: '\uD83D\uDC26', keywords: ['toucan', 'hornbill', 'kiwi', 'ostrich', 'emu'] },
   ],
   Ocean: [
-    '\uD83D\uDC1F',
-    '\uD83D\uDC2C',
-    '\uD83D\uDC33',
-    '\uD83E\uDD88',
-    '\uD83D\uDC19',
-    '\uD83E\uDD91',
-    '\uD83D\uDC1A',
-    '\uD83D\uDC22',
-    '\uD83E\uDD80',
-    '\uD83E\uDD9E',
-    '\uD83E\uDD90',
-    '\uD83E\uDDAD',
-    '\uD83C\uDF0A',
+    { emoji: '\uD83D\uDC2C', keywords: ['dolphin'] },
+    { emoji: '\uD83E\uDD88', keywords: ['shark'] },
+    { emoji: '\uD83D\uDC0B', keywords: ['whale', 'orca', 'narwhal'] },
+    { emoji: '\uD83D\uDC19', keywords: ['octopus'] },
+    { emoji: '\uD83E\uDD91', keywords: ['squid', 'cuttlefish'] },
+    { emoji: '\uD83E\uDEBC', keywords: ['jellyfish'] },
+    { emoji: '\uD83D\uDC22', keywords: ['sea turtle'] },
+    { emoji: '\uD83E\uDDAD', keywords: ['seal', 'sea lion', 'walrus', 'manatee', 'dugong'] },
+    { emoji: '\uD83E\uDD80', keywords: ['crab'] },
+    { emoji: '\uD83E\uDD9E', keywords: ['lobster'] },
+    { emoji: '\uD83E\uDD90', keywords: ['shrimp', 'prawn'] },
+    { emoji: '\u2B50', keywords: ['starfish'] },
+    { emoji: '\uD83D\uDC1A', keywords: ['clam', 'oyster', 'mussel', 'scallop'] },
+    { emoji: '\uD83E\uDEB8', keywords: ['coral'] },
+    { emoji: '\uD83D\uDC1F', keywords: ['eel', 'ray', 'fish', 'tuna', 'salmon', 'marlin', 'sardine', 'anchovy', 'barracuda'] },
+    { emoji: '\uD83D\uDC21', keywords: ['pufferfish'] },
   ],
   Bug: [
-    '\uD83E\uDD8B',
-    '\uD83D\uDC1D',
-    '\uD83D\uDC1E',
-    '\uD83D\uDC1C',
-    '\uD83D\uDC1B',
-    '\uD83E\uDD9F',
-    '\uD83E\uDD97',
-    '\uD83D\uDD77',
-    '\uD83D\uDC0C',
-    '\uD83C\uDF3F',
-    '\uD83D\uDC1B',
+    { emoji: '\uD83E\uDD8B', keywords: ['butterfly', 'moth'] },
+    { emoji: '\uD83D\uDC1D', keywords: ['bee', 'wasp', 'hornet', 'bumblebee'] },
+    { emoji: '\uD83D\uDC1E', keywords: ['ladybug'] },
+    { emoji: '\uD83D\uDC1C', keywords: ['ant', 'termite'] },
+    { emoji: '\uD83E\uDEB2', keywords: ['beetle', 'weevil', 'scarab', 'goliath', 'stag', 'hercules', 'dung'] },
+    { emoji: '\uD83E\uDD97', keywords: ['grasshopper', 'cricket', 'locust', 'cicada'] },
+    { emoji: '\uD83E\uDD9F', keywords: ['mosquito'] },
+    { emoji: '\uD83E\uDEB0', keywords: ['fly', 'housefly', 'mayfly', 'stonefly', 'caddisfly'] },
+    { emoji: '\uD83D\uDC1B', keywords: ['caterpillar', 'centipede', 'millipede', 'stick insect', 'leaf insect'] },
+    { emoji: '\uD83E\uDD97', keywords: ['praying mantis'] },
+    { emoji: '\uD83E\uDEB3', keywords: ['cockroach'] },
+    { emoji: '\uD83D\uDC1E', keywords: ['flea', 'tick', 'louse', 'aphid', 'lacewing', 'assassin bug', 'water strider'] },
+    { emoji: '\uD83D\uDD77\uFE0F', keywords: ['spider', 'widow', 'tarantula'] },
+    { emoji: '\u2728', keywords: ['firefly', 'glowworm'] },
   ],
 };
 
@@ -530,17 +566,84 @@ const toSlug = (value) =>
 
 const getCycleValue = (values, index) => values[index % values.length];
 
+const normalizeNameForMatching = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const matchesAnyKeyword = (normalizedName, keywords = []) =>
+  keywords.some((keyword) => normalizedName.includes(String(keyword || '').toLowerCase()));
+
+export const getExpectedAnimalId = (category, name) =>
+  `${String(category || '').toLowerCase()}-${toSlug(name)}`;
+
+export const resolveAnimalEmoji = (name, category) => {
+  const normalizedName = normalizeNameForMatching(name);
+  const rules = CATEGORY_NAME_EMOJI_RULES[String(category || '').trim()] || [];
+  const matchingRule = rules.find((rule) => matchesAnyKeyword(normalizedName, rule.keywords));
+  return matchingRule?.emoji || CATEGORY_DEFAULT_EMOJI[String(category || '').trim()] || '\uD83D\uDC3E';
+};
+
+const ensureBioContainsName = (name, quizClue, bio) => {
+  const safeName = String(name || '').trim();
+  const safeQuizClue = String(quizClue || '').trim() || 'I am a special animal friend.';
+  const safeBio = String(bio || '').trim();
+
+  if (safeName && safeBio.toLowerCase().includes(safeName.toLowerCase())) {
+    return safeBio;
+  }
+
+  return `Who am I? I am ${safeName}. ${safeQuizClue}`;
+};
+
+export const sanitizeAnimalRecordForRender = (animal) => {
+  const name = String(animal?.name || '').trim();
+  const category = String(animal?.category || '').trim();
+  if (!name || !category) return null;
+
+  const expectedId = getExpectedAnimalId(category, name);
+  const expectedEmoji = resolveAnimalEmoji(name, category);
+  const quizClue = String(animal?.quizClue || '').trim();
+  const bio = ensureBioContainsName(name, quizClue, animal?.bio);
+
+  return {
+    ...animal,
+    id: expectedId,
+    emoji: expectedEmoji,
+    bio,
+  };
+};
+
+export const validateAnimalRecordForRender = (animal) => {
+  if (!animal) return false;
+
+  const name = String(animal.name || '').trim();
+  const category = String(animal.category || '').trim();
+  const expectedId = getExpectedAnimalId(category, name);
+  const expectedEmoji = resolveAnimalEmoji(name, category);
+  const bio = String(animal.bio || '').trim().toLowerCase();
+
+  if (!name || !category) return false;
+  if (String(animal.id || '').trim() !== expectedId) return false;
+  if (String(animal.emoji || '').trim() !== expectedEmoji) return false;
+  if (!bio.includes(name.toLowerCase())) return false;
+
+  return true;
+};
+
 const buildAnimalRecord = (category, name, index) => {
   const style = getCycleValue(CATEGORY_STYLES[category], index);
   const habitat = getCycleValue(CATEGORY_HABITATS[category], index);
   const sound = getCycleValue(CATEGORY_SOUNDS[category], index);
   const fact = getCycleValue(CATEGORY_FACTS[category], index);
-  const emoji = getCycleValue(CATEGORY_EMOJIS[category], index);
-  const id = `${category.toLowerCase()}-${toSlug(name)}`;
+  const emoji = resolveAnimalEmoji(name, category);
+  const id = getExpectedAnimalId(category, name);
 
   const quizClue = `${fact} I am usually found in the ${habitat}.`;
 
-  return {
+  const record = {
     id,
     name,
     category,
@@ -553,6 +656,13 @@ const buildAnimalRecord = (category, name, index) => {
     text: style.text,
     bio: `Who am I? I am ${name}. ${quizClue}`,
   };
+
+  const sanitized = sanitizeAnimalRecordForRender(record);
+  if (!validateAnimalRecordForRender(sanitized)) {
+    throw new Error(`[animalsData] Invalid record mapping for ${category} -> ${name}`);
+  }
+
+  return sanitized;
 };
 
 export const ANIMALS_DATA = Object.entries(CATEGORY_NAMES).flatMap(([category, names]) =>
