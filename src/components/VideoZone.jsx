@@ -348,14 +348,14 @@ export default function VideoZone() {
       </div>
 
       <div className="relative mx-auto max-w-7xl">
-        <div className="clay-container mb-6 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
+        <div className="mb-6 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-100">Video Zone</p>
-              <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-4xl">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Video Zone</p>
+              <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-4xl">
                 Aiko&apos;s Cinema Magic
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-100 sm:text-base">
+              <p className="mt-2 max-w-2xl text-sm text-slate-700 sm:text-base">
                 Unlock the Movies section once for {MOVIES_UNLOCK_COST_GEMS} Gems, then watch and earn +{FREE_VIDEO_REWARD_GEMS} Gems on each first watch.
               </p>
             </div>
@@ -369,7 +369,7 @@ export default function VideoZone() {
             </div>
           </div>
 
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200/20 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-100">
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-900">
             Current Gems: {currentGems}
           </div>
 

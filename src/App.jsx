@@ -118,25 +118,25 @@ const TimeUpOverlay = ({ usedMinutes = 0, onOpenParentZone }) => (
   <div className="min-h-screen w-full flex items-center justify-center px-4 py-10">
     <div className="w-full max-w-3xl rounded-[2rem] border border-white/70 bg-white/90 p-6 sm:p-10 text-center shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur">
       <div className="mx-auto mb-5 grid h-24 w-24 place-items-center rounded-3xl bg-gradient-to-b from-sky-100 to-cyan-100 text-6xl shadow-inner">
-        🦉
+        {'\u{1F989}'}
       </div>
-      <div className="mb-4 text-5xl sm:text-6xl">🌙✨📚</div>
+      <div className="mb-4 text-5xl sm:text-6xl">{'\u{1F319}\u2728\u{1F4DA}'}</div>
       <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4">AikoKidzTV Sleep Mode</h1>
       <p className="text-base sm:text-lg leading-relaxed text-slate-700">
         Time&apos;s up for today, little explorer! 5 hours of screen time is more than enough. We care about your eyes! Please do your homework or go play outside. AikoKidzTV will wake up tomorrow!
       </p>
       <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-900">
-        ⏳ Today&apos;s screen time: {formatMinutes(usedMinutes)} / {formatMinutes(DAILY_LIMIT_MINUTES)}
+        {'\u23F3'} Today&apos;s screen time: {formatMinutes(usedMinutes)} / {formatMinutes(DAILY_LIMIT_MINUTES)}
       </div>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <button
           onClick={onOpenParentZone}
           className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white shadow-lg hover:bg-slate-800 transition"
         >
-          🛡️ Parent Zone
+          {'\u{1F6E1}\uFE0F'} Parent Zone
         </button>
         <div className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600">
-          See you tomorrow, explorer 💎
+          See you tomorrow, explorer {'\u{1F48E}'}
         </div>
       </div>
     </div>
@@ -168,16 +168,16 @@ const Navbar = ({
   const navItems = [
     { label: 'Story Studio', target: 'story-studio' },
     { label: 'Magic Art', target: 'magic-art' },
-    { label: '🧠 Learning Zone', target: 'learning-zone' },
+    { label: `${'\u{1F9E0}'} Learning Zone`, target: 'learning-zone' },
   ];
   if (isAdmin) navItems.push({ label: 'Admin', target: 'admin' });
 
   const toggleDropdown = () => setOpen((v) => !v);
   const networkLabel = isForcedOffline ? 'Offline' : 'Online';
   const modeOptions = [
-    { key: 'light', label: 'Light', icon: '☀️' },
-    { key: 'dark', label: 'Dark', icon: '🌙' },
-    { key: 'colorblind', label: 'Colorblind', icon: '◧' },
+    { key: 'light', label: 'Light', icon: '\u2600\uFE0F' },
+    { key: 'dark', label: 'Dark', icon: '\u{1F319}' },
+    { key: 'colorblind', label: 'Colorblind', icon: '\u25E7' },
   ];
 
   return (
@@ -580,7 +580,10 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     // Defer scroll until after any state-driven view change
     setTimeout(() => {
       if (id === 'top') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (typeof window !== 'undefined' && window.location.hash) {
+          window.history.replaceState(window.history.state, '', '/');
+        }
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
         return;
       }
       const element = document.getElementById(id);
@@ -747,10 +750,9 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   if (learningModule) {
     const backToLearningZone = () => {
       setLearningModule(null);
-      // Scroll after the main view re-renders
+      // "Back" actions should always reset viewport to top.
       setTimeout(() => {
-        const el = document.getElementById('learning-zone');
-        if (el) el.scrollIntoView({ behavior: 'smooth' });
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       }, 0);
     };
     const backToHome = () => {
@@ -765,15 +767,11 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
             <button
               onClick={backToLearningZone}
               className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow hover:shadow-md transition"
-            >
-              ★ Back to Learning Zone
-            </button>
+            >{'\u2605'} Back to Learning Zone</button>
             <button
               onClick={backToHome}
               className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 shadow hover:shadow-md hover:bg-amber-200 transition"
-            >
-              🏠 Back to Home
-            </button>
+            >{'\u{1F3E0}'} Back to Home</button>
           </div>
         </div>
       </div>
@@ -784,10 +782,10 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
       colors: <ColorsModule onBack={backToLearningZone} onHome={backToHome} />,
       safari: <SafariModule onBack={backToLearningZone} onHome={backToHome} />,
       animals: <SafariModule onBack={backToLearningZone} onHome={backToHome} />, // alias for new menu
-      junior_law: <ComingSoon title="Junior Law" emoji="⚖️" />,
-      science: <ComingSoon title="Science Lab" emoji="🔬" />,
-      math: <ComingSoon title="Math Magic" emoji="🧮" />,
-      language: <ComingSoon title="Language Explorer" emoji="🌍" />,
+      junior_law: <ComingSoon title="Junior Law" emoji={'\u2696\uFE0F'} />,
+      science: <ComingSoon title="Science Lab" emoji={'\u{1F52C}'} />,
+      math: <ComingSoon title="Math Magic" emoji={'\u{1F9EE}'} />,
+      language: <ComingSoon title="Language Explorer" emoji={'\u{1F30D}'} />,
     };
     return map[learningModule] || null;
   }
@@ -885,7 +883,7 @@ function AdminRouteGuard({ onBackToSite }) {
       <div className="min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-100 px-4 py-10">
         <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center">
           <div className="w-full rounded-[1.75rem] border border-red-200 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-            <div className="mb-4 text-5xl">⛔</div>
+            <div className="mb-4 text-5xl">{'\u26D4'}</div>
             <h1 className="text-2xl font-black text-slate-900">Access Denied</h1>
             <p className="mt-3 text-sm font-medium text-slate-600">
               The Admin Panel is restricted to `{ADMIN_EMAIL}` only.
@@ -999,7 +997,7 @@ function ParentZoneRouteGuard({ children }) {
       <div className="min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-100 px-4 py-10">
         <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center">
           <div className="w-full rounded-[1.75rem] border border-indigo-200 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-            <div className="mb-4 text-5xl">🔒</div>
+            <div className="mb-4 text-5xl">{'\u{1F512}'}</div>
             <h1 className="text-2xl font-black text-slate-900">Parent Zone Locked</h1>
             <p className="mt-3 text-sm font-semibold text-slate-600">
               Enter the 4-digit parent PIN to open this route.

@@ -191,12 +191,12 @@ export default function PoemsPage() {
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-to-b from-indigo-950 via-sky-900 to-cyan-800 px-4 py-8 text-white sm:px-6 lg:px-10">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-8 top-8 text-3xl opacity-90">🐦</div>
-        <div className="absolute right-10 top-12 text-4xl opacity-90">🐼</div>
-        <div className="absolute left-1/4 top-24 text-4xl opacity-80">🌸</div>
-        <div className="absolute right-1/3 top-32 text-3xl opacity-80">🦋</div>
-        <div className="absolute left-14 bottom-28 text-5xl opacity-70">🌊</div>
-        <div className="absolute right-8 bottom-24 text-5xl opacity-70">🌌</div>
+        <div className="absolute left-8 top-8 text-3xl opacity-90">{'\u{1F426}'}</div>
+        <div className="absolute right-10 top-12 text-4xl opacity-90">{'\u{1F43C}'}</div>
+        <div className="absolute left-1/4 top-24 text-4xl opacity-80">{'\u{1F338}'}</div>
+        <div className="absolute right-1/3 top-32 text-3xl opacity-80">{'\u{1F98B}'}</div>
+        <div className="absolute left-14 bottom-28 text-5xl opacity-70">{'\u{1F30A}'}</div>
+        <div className="absolute right-8 bottom-24 text-5xl opacity-70">{'\u{1F30C}'}</div>
         <div className="absolute -left-16 top-1/3 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-3xl" />
         <div className="absolute right-0 top-1/2 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" />
       </div>
@@ -207,7 +207,7 @@ export default function PoemsPage() {
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-100/80">Poems Garden</p>
               <h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">
-                Cute Galaxy Poems 🐦🐼🌸
+                Cute Galaxy Poems {'\u{1F426}\u{1F43C}\u{1F338}'}
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-cyan-50/90 sm:text-base">
                 First 5 poems are free. Remaining poems cost {POEM_UNLOCK_COST_GEMS} gems each.
@@ -218,6 +218,7 @@ export default function PoemsPage() {
               <span>Current Gems: {currentGems}</span>
               <Link
                 to="/"
+                onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
                 className="rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-semibold hover:bg-white/25"
               >
                 Back Home
@@ -294,14 +295,14 @@ export default function PoemsPage() {
             {!selectedPoem ? (
               <div className="grid min-h-[320px] place-items-center text-center">
                 <div>
-                  <div className="mb-3 text-5xl">🌸🐦📖</div>
+                  <div className="mb-3 text-5xl">{'\u{1F338}\u{1F426}\u{1F4D6}'}</div>
                   <p className="text-lg font-black text-white">Select a poem to start reading.</p>
                 </div>
               </div>
             ) : !selectedPoemUnlocked ? (
               <div className="grid min-h-[320px] place-items-center text-center">
                 <div>
-                  <div className="mb-3 text-5xl">🔒</div>
+                  <div className="mb-3 text-5xl">{'\u{1F512}'}</div>
                   <p className="text-lg font-black text-white">This poem is locked.</p>
                   <p className="mt-1 text-sm text-cyan-100/85">
                     Unlock for {POEM_UNLOCK_COST_GEMS} gems to read this poem.
@@ -350,4 +351,3 @@ export default function PoemsPage() {
     </section>
   );
 }
-

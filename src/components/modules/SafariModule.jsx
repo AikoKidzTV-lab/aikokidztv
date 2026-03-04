@@ -62,6 +62,15 @@ const getOptionStateClass = ({ hasAnswered, option, selectedOption, answer }) =>
   return 'border-slate-200 bg-slate-100 text-slate-600';
 };
 
+const CATEGORY_EMOJI_FALLBACK = {
+  Wild: '\u{1F981}',
+  Farm: '\u{1F42E}',
+  Pet: '\u{1F436}',
+  Bird: '\u{1F985}',
+  Ocean: '\u{1F42C}',
+  Bug: '\u{1F98B}',
+};
+
 const SafariModule = ({ onBack, onHome }) => {
   const { user, fetchProfile } = useAuth();
   const { openAuthModal } = useAuthModal();
@@ -350,6 +359,12 @@ const SafariModule = ({ onBack, onHome }) => {
     quizSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const getAnimalEmoji = (animal) => {
+    const directEmoji = String(animal?.emoji || '').trim();
+    if (directEmoji) return directEmoji;
+    return CATEGORY_EMOJI_FALLBACK[String(animal?.category || '').trim()] || '\u{1F43E}';
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-amber-50 via-white to-emerald-100 text-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -368,6 +383,7 @@ const SafariModule = ({ onBack, onHome }) => {
             {'\u{1F3E0}'} Back to Home
           </button>
           <button
+            type="button"
             onClick={handleScrollToQuiz}
             className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-800 shadow hover:shadow-md hover:bg-emerald-200 transition"
           >
@@ -435,8 +451,8 @@ const SafariModule = ({ onBack, onHome }) => {
                     className={`absolute inset-0 flex flex-col items-center justify-center p-6 rounded-3xl border-4 border-white ${animal.bg}`}
                     style={{ backfaceVisibility: 'hidden' }}
                   >
-                    <span className="text-8xl mb-4 group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">
-                      {animal.emoji || '\uD83D\uDC3E'}
+                    <span className="text-8xl mb-4 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_10px_10px_rgba(15,23,42,0.28)]">
+                      {getAnimalEmoji(animal)}
                     </span>
                     <h3 className={`text-3xl font-extrabold ${animal.text}`}>{animal.name}</h3>
                     <span className="mt-4 text-xs font-bold uppercase tracking-wider bg-white/60 px-4 py-2 rounded-full text-gray-600">
@@ -477,7 +493,7 @@ const SafariModule = ({ onBack, onHome }) => {
         </div>
 
         {/* Safari Master Quiz */}
-        <section ref={quizSectionRef} className="mt-12 rounded-3xl border border-emerald-200 bg-white/90 p-5 shadow-sm sm:p-7">
+        <section id="safari-master-quiz" ref={quizSectionRef} className="mt-12 rounded-3xl border border-emerald-200 bg-white/90 p-5 shadow-sm sm:p-7">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 px-4 py-1.5 text-sm font-black text-emerald-900">
               {'\u{1F9ED}'} Safari Master Quiz (100 Questions)

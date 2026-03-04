@@ -56,7 +56,7 @@ export default function ColoringBook({ onBack }) {
     () =>
       pages.map((page, index) => ({
         ...page,
-        label: `🎨 Page ${index + 1}`,
+        label: `${'\u{1F3A8}'} Page ${index + 1}`,
       })),
     [pages]
   );
@@ -319,15 +319,18 @@ export default function ColoringBook({ onBack }) {
   const handleBack = () => {
     if (typeof onBack === 'function') {
       onBack();
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       return;
     }
 
     if (selectedPage) {
       setSelectedPage(null);
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       return;
     }
 
     window.history.back();
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
   return (
@@ -461,7 +464,7 @@ export default function ColoringBook({ onBack }) {
             <div>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-600">Painting Canvas</p>
               <h2 className="mt-1 text-2xl font-black text-slate-900">
-                {selectedPage ? `${selectedPage.label} • Color It!` : 'Choose a page to start coloring'}
+                {selectedPage ? `${selectedPage.label} ${'\u2022'} Color It!` : 'Choose a page to start coloring'}
               </h2>
             </div>
             {selectedPage && (
@@ -568,7 +571,7 @@ export default function ColoringBook({ onBack }) {
             ) : (
               <div className="grid min-h-[45vh] place-items-center rounded-[1rem] bg-gradient-to-b from-emerald-50 to-sky-50 text-center">
                 <div className="max-w-md px-6">
-                  <div className="mb-3 text-5xl">🎨📚✨</div>
+                  <div className="mb-3 text-5xl">{'\u{1F3A8}\u{1F4DA}\u2728'}</div>
                   <p className="text-lg font-black text-slate-900">Pick a coloring page above to start drawing</p>
                   <p className="mt-2 text-sm font-medium text-slate-600">
                     Free pages open instantly. Premium pages require a one-time unlock.
@@ -583,13 +586,13 @@ export default function ColoringBook({ onBack }) {
       {pendingUnlockPage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-[1.5rem] border border-white/80 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.22)]">
-            <div className="mb-3 text-center text-5xl">🔒💎✨</div>
+            <div className="mb-3 text-center text-5xl">{'\u{1F512}\u{1F48E}\u2728'}</div>
             <h3 className="text-center text-xl font-black text-slate-900">Premium Coloring Page</h3>
             <p className="mt-3 text-center text-sm font-semibold text-slate-700">
               Unlock this magical page for {PREMIUM_UNLOCK_COST} Gems?
             </p>
             <p className="mt-1 text-center text-xs font-medium text-slate-500">
-              {pendingUnlockPage.label} • One-time unlock saved to your profile.
+              {pendingUnlockPage.label} {'\u2022'} One-time unlock saved to your profile.
             </p>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
