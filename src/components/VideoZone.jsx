@@ -114,82 +114,6 @@ export default function VideoZone() {
     };
   };
 
-  const unlockFeature = async ({ userId, featureKey, costGems }) => {
-    const { data: latestProfile, error: latestProfileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (latestProfileError) {
-      throw new Error(latestProfileError.message || 'Failed to refresh profile before unlock.');
-    }
-
-    const hasUnlockedFeaturesColumn = Object.prototype.hasOwnProperty.call(
-      latestProfile || {},
-      'unlocked_features'
-    );
-
-    if (!hasUnlockedFeaturesColumn) {
-      return {
-        ok: false,
-        code: 'missing_unlocked_features',
-        message: 'Profile features are still syncing. Please try again in a minute.',
-      };
-    }
-
-    const latestUnlockedFeatures = normalizeUnlockedFeatures(latestProfile?.unlocked_features);
-    if (latestUnlockedFeatures.includes(featureKey)) {
-      return {
-        ok: true,
-        alreadyUnlocked: true,
-      };
-    }
-
-    const latestGems = Number(latestProfile?.gems || 0);
-    if (latestGems < costGems) {
-      return {
-        ok: false,
-        code: 'insufficient_gems',
-        message: `You need ${costGems} Gems but only have ${latestGems}.`,
-      };
-    }
-
-    // Prevent stale-state deductions by requiring gems to match the freshly fetched value.
-    const { data: updatedProfile, error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        gems: latestGems - costGems,
-        unlocked_features: [...latestUnlockedFeatures, featureKey],
-      })
-      .eq('id', userId)
-      .eq('gems', latestGems)
-      .select('id, gems, unlocked_features')
-      .maybeSingle();
-
-    if (updateError) {
-      if (isMissingColumnError(updateError, 'unlocked_features')) {
-        return {
-          ok: false,
-          code: 'missing_unlocked_features',
-          message: 'Profile features are still syncing. Please try again in a minute.',
-        };
-      }
-
-      throw new Error(updateError.message || 'Failed to unlock feature.');
-    }
-
-    if (!updatedProfile) {
-      return {
-        ok: false,
-        code: 'profile_sync_conflict',
-        message: 'Profile sync updated. Please try unlocking again.',
-      };
-    }
-
-    return { ok: true };
-  };
-
   useEffect(() => {
     let mounted = true;
 
@@ -304,25 +228,69 @@ export default function VideoZone() {
     setIsUnlockingMovies(true);
 
     try {
-      const unlockResult = await unlockFeature({
-        userId: user.id,
-        featureKey: MOVIES_FEATURE_KEY,
-        costGems: MOVIES_UNLOCK_COST_GEMS,
-      });
+      const { data: latestProfile, error: latestProfileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
 
-      if (!unlockResult.ok) {
-        showStatus(unlockResult.message || 'Could not unlock Movies right now.');
+      if (latestProfileError) {
+        if (isMissingColumnError(latestProfileError, 'unlocked_features')) {
+          showStatus('Profile features are still syncing. Please try again in a minute.');
+          return;
+        }
+        throw new Error(latestProfileError.message || 'Failed to refresh profile before unlock.');
+      }
+
+      const hasUnlockedFeaturesColumn = Object.prototype.hasOwnProperty.call(
+        latestProfile || {},
+        'unlocked_features'
+      );
+
+      if (!hasUnlockedFeaturesColumn) {
+        showStatus('Profile features are still syncing. Please try again in a minute.');
         return;
       }
 
-      if (unlockResult.alreadyUnlocked) {
+      // If DB value is null, treat it as [] before pushing new feature keys.
+      const latestUnlockedFeatures = normalizeUnlockedFeatures(
+        latestProfile?.unlocked_features ?? []
+      );
+      const availableGems = Number(latestProfile?.gems || 0);
+
+      if (latestUnlockedFeatures.includes(MOVIES_FEATURE_KEY)) {
         setIsMoviesUnlocked(true);
         showStatus('Movies are already unlocked. Enjoy!');
         return;
       }
 
+      if (availableGems < MOVIES_UNLOCK_COST_GEMS) {
+        showStatus(`You need ${MOVIES_UNLOCK_COST_GEMS} Gems but only have ${availableGems}.`);
+        return;
+      }
+
+      const nextUnlockedFeatures = [...new Set([...latestUnlockedFeatures, MOVIES_FEATURE_KEY])];
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          gems: availableGems - MOVIES_UNLOCK_COST_GEMS,
+          unlocked_features: nextUnlockedFeatures,
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        if (isMissingColumnError(updateError, 'unlocked_features')) {
+          showStatus('Profile features are still syncing. Please try again in a minute.');
+          return;
+        }
+        throw new Error(updateError.message || 'Could not unlock Movies right now.');
+      }
+
       setIsMoviesUnlocked(true);
-      await fetchProfile?.(user.id, { retryCount: 1, preferDirect: true });
+      await fetchProfile?.(user.id, { retryCount: 2, preferDirect: true });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('aiko:auth-refresh'));
+      }
       showStatus(`🎬 Movies unlocked! ${MOVIES_UNLOCK_COST_GEMS} Gems spent.`);
     } catch (error) {
       console.error('[VideoZone] Failed to unlock Movies section:', error);
