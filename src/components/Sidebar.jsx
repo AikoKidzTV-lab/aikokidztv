@@ -18,7 +18,7 @@ const Sidebar = () => {
 
   const handleNav = (target) => {
     if (target === 'top') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       return;
     }
     const el = document.getElementById(target);

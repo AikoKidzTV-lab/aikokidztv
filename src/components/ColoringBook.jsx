@@ -18,6 +18,13 @@ const PRESET_COLORS = [
   '#111111',
 ];
 
+const TOOL_BRUSH = 'brush';
+const TOOL_BUCKET = 'bucket';
+const LINE_LUMA_THRESHOLD = 210;
+const LINE_ALPHA_THRESHOLD = 24;
+const FILL_TOLERANCE = 28;
+const TRANSPARENT_ALPHA_LIMIT = 18;
+
 const parseUnlockedColoringPageIds = (unlockedItems) => {
   if (!Array.isArray(unlockedItems)) return [];
 
@@ -27,12 +34,67 @@ const parseUnlockedColoringPageIds = (unlockedItems) => {
     .filter(Boolean);
 };
 
+const hexToRgba = (hexColor) => {
+  const normalized = String(hexColor || '')
+    .replace('#', '')
+    .trim();
+
+  if (!normalized) return [17, 17, 17, 255];
+
+  const full = normalized.length === 3
+    ? normalized.split('').map((part) => `${part}${part}`).join('')
+    : normalized.padEnd(6, '0').slice(0, 6);
+
+  const value = Number.parseInt(full, 16);
+  if (!Number.isFinite(value)) return [17, 17, 17, 255];
+
+  return [
+    (value >> 16) & 255,
+    (value >> 8) & 255,
+    value & 255,
+    255,
+  ];
+};
+
+const getContainRect = (sourceWidth, sourceHeight, targetWidth, targetHeight) => {
+  if (!sourceWidth || !sourceHeight || !targetWidth || !targetHeight) {
+    return { x: 0, y: 0, width: targetWidth, height: targetHeight };
+  }
+
+  const sourceRatio = sourceWidth / sourceHeight;
+  const targetRatio = targetWidth / targetHeight;
+
+  let width = targetWidth;
+  let height = targetHeight;
+  let x = 0;
+  let y = 0;
+
+  if (sourceRatio > targetRatio) {
+    height = Math.round(targetWidth / sourceRatio);
+    y = Math.floor((targetHeight - height) / 2);
+  } else {
+    width = Math.round(targetHeight * sourceRatio);
+    x = Math.floor((targetWidth - width) / 2);
+  }
+
+  return { x, y, width, height };
+};
+
+const isLinePixel = (r, g, b, a) => {
+  if (a < LINE_ALPHA_THRESHOLD) return false;
+  const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luma <= LINE_LUMA_THRESHOLD;
+};
+
 export default function ColoringBook({ onBack }) {
   const { user, profile, fetchProfile } = useAuth();
   const canvasRef = useRef(null);
+  const imageLayerRef = useRef(null);
   const canvasContainerRef = useRef(null);
   const contextRef = useRef(null);
   const canvasSectionRef = useRef(null);
+  const lineArtMaskRef = useRef(null);
+  const lineArtMaskMetaRef = useRef({ width: 0, height: 0 });
   const isDrawingRef = useRef(false);
   const drawingSnapshotRef = useRef(null);
 
@@ -47,6 +109,7 @@ export default function ColoringBook({ onBack }) {
   const [brushColor, setBrushColor] = useState(PRESET_COLORS[0]);
   const [customColor, setCustomColor] = useState('#FF4136');
   const [brushSize, setBrushSize] = useState(12);
+  const [activeTool, setActiveTool] = useState(TOOL_BRUSH);
   const [imageLoadError, setImageLoadError] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
@@ -64,6 +127,200 @@ export default function ColoringBook({ onBack }) {
   const showStatus = (message) => {
     setStatusMessage(message);
     window.setTimeout(() => setStatusMessage(''), 2800);
+  };
+
+  const rebuildLineArtMask = React.useCallback(
+    () => {
+      const canvas = canvasRef.current;
+      const image = imageLayerRef.current;
+
+      if (!canvas || !image || !image.complete || !image.naturalWidth || !image.naturalHeight) {
+        lineArtMaskRef.current = null;
+        return false;
+      }
+
+      const width = canvas.width;
+      const height = canvas.height;
+      if (!width || !height) {
+        lineArtMaskRef.current = null;
+        return false;
+      }
+
+      const offscreen = document.createElement('canvas');
+      offscreen.width = width;
+      offscreen.height = height;
+      const offscreenCtx = offscreen.getContext('2d', { willReadFrequently: true });
+      if (!offscreenCtx) {
+        lineArtMaskRef.current = null;
+        return false;
+      }
+
+      const rect = getContainRect(image.naturalWidth, image.naturalHeight, width, height);
+      offscreenCtx.clearRect(0, 0, width, height);
+      offscreenCtx.drawImage(image, rect.x, rect.y, rect.width, rect.height);
+
+      let imageData;
+      try {
+        imageData = offscreenCtx.getImageData(0, 0, width, height);
+      } catch {
+        lineArtMaskRef.current = null;
+        return false;
+      }
+
+      const pixels = imageData.data;
+      const mask = new Uint8Array(width * height);
+
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const idx = y * width + x;
+          const inImageBounds =
+            x >= rect.x &&
+            x < rect.x + rect.width &&
+            y >= rect.y &&
+            y < rect.y + rect.height;
+
+          if (!inImageBounds) {
+            mask[idx] = 1;
+            continue;
+          }
+
+          const offset = idx * 4;
+          if (isLinePixel(pixels[offset], pixels[offset + 1], pixels[offset + 2], pixels[offset + 3])) {
+            mask[idx] = 1;
+          }
+        }
+      }
+
+      lineArtMaskRef.current = mask;
+      lineArtMaskMetaRef.current = { width, height };
+      return true;
+    },
+    []
+  );
+
+  const applyFloodFill = (nativeEvent) => {
+    const canvas = canvasRef.current;
+    const ctx = contextRef.current;
+    if (!canvas || !ctx || !selectedPage) return;
+
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const clientX = nativeEvent.touches ? nativeEvent.touches[0].clientX : nativeEvent.clientX;
+    const clientY = nativeEvent.touches ? nativeEvent.touches[0].clientY : nativeEvent.clientY;
+
+    const startX = Math.floor((clientX - rect.left) * (canvas.width / rect.width));
+    const startY = Math.floor((clientY - rect.top) * (canvas.height / rect.height));
+
+    if (
+      startX < 0 ||
+      startY < 0 ||
+      startX >= canvas.width ||
+      startY >= canvas.height
+    ) {
+      return;
+    }
+
+    const hasMask =
+      lineArtMaskRef.current &&
+      lineArtMaskMetaRef.current.width === canvas.width &&
+      lineArtMaskMetaRef.current.height === canvas.height;
+
+    if (!hasMask && !rebuildLineArtMask()) {
+      showStatus('Fill Bucket is loading. Please try again in a moment.');
+      return;
+    }
+
+    const boundaryMask = lineArtMaskRef.current;
+    if (!boundaryMask) return;
+
+    const pixelCount = canvas.width * canvas.height;
+    const seedIndex = startY * canvas.width + startX;
+    if (boundaryMask[seedIndex]) return;
+
+    const workCanvas = document.createElement('canvas');
+    workCanvas.width = canvas.width;
+    workCanvas.height = canvas.height;
+    const workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
+    if (!workCtx) return;
+
+    workCtx.drawImage(canvas, 0, 0);
+    const imageData = workCtx.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageData.data;
+    const targetOffset = seedIndex * 4;
+
+    const targetR = pixels[targetOffset];
+    const targetG = pixels[targetOffset + 1];
+    const targetB = pixels[targetOffset + 2];
+    const targetA = pixels[targetOffset + 3];
+    const [fillR, fillG, fillB, fillA] = hexToRgba(brushColor);
+
+    if (
+      Math.abs(targetR - fillR) <= 4 &&
+      Math.abs(targetG - fillG) <= 4 &&
+      Math.abs(targetB - fillB) <= 4 &&
+      Math.abs(targetA - fillA) <= 4
+    ) {
+      return;
+    }
+
+    const targetIsTransparent = targetA <= TRANSPARENT_ALPHA_LIMIT;
+    const visited = new Uint8Array(pixelCount);
+    const stack = [seedIndex];
+
+    const matchesSeedColor = (pixelIndex) => {
+      if (pixelIndex < 0 || pixelIndex >= pixelCount) return false;
+      if (boundaryMask[pixelIndex]) return false;
+
+      const offset = pixelIndex * 4;
+      const alpha = pixels[offset + 3];
+
+      if (targetIsTransparent) {
+        return alpha <= TRANSPARENT_ALPHA_LIMIT;
+      }
+
+      return (
+        Math.abs(pixels[offset] - targetR) <= FILL_TOLERANCE &&
+        Math.abs(pixels[offset + 1] - targetG) <= FILL_TOLERANCE &&
+        Math.abs(pixels[offset + 2] - targetB) <= FILL_TOLERANCE &&
+        Math.abs(alpha - targetA) <= 80
+      );
+    };
+
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (visited[current]) continue;
+      if (!matchesSeedColor(current)) continue;
+
+      visited[current] = 1;
+
+      const offset = current * 4;
+      pixels[offset] = fillR;
+      pixels[offset + 1] = fillG;
+      pixels[offset + 2] = fillB;
+      pixels[offset + 3] = fillA;
+
+      const x = current % canvas.width;
+      const y = (current - x) / canvas.width;
+
+      if (x > 0) stack.push(current - 1);
+      if (x < canvas.width - 1) stack.push(current + 1);
+      if (y > 0) stack.push(current - canvas.width);
+      if (y < canvas.height - 1) stack.push(current + canvas.width);
+    }
+
+    workCtx.putImageData(imageData, 0, 0);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(workCanvas, 0, 0);
+    ctx.restore();
+
+    try {
+      drawingSnapshotRef.current = canvas.toDataURL('image/png');
+    } catch {
+      drawingSnapshotRef.current = null;
+    }
   };
 
   useEffect(() => {
@@ -120,6 +377,7 @@ export default function ColoringBook({ onBack }) {
     if (!canvas || !container) return undefined;
 
     drawingSnapshotRef.current = null;
+    lineArtMaskRef.current = null;
     canvas.width = 0;
     canvas.height = 0;
 
@@ -164,6 +422,7 @@ export default function ColoringBook({ onBack }) {
         }
       }
       createContext();
+      rebuildLineArtMask();
     };
 
     resizeCanvas();
@@ -180,9 +439,10 @@ export default function ColoringBook({ onBack }) {
       resizeObserver?.disconnect?.();
       window.removeEventListener('resize', resizeCanvas);
       contextRef.current = null;
+      lineArtMaskRef.current = null;
       isDrawingRef.current = false;
     };
-  }, [selectedPage, brushColor, brushSize]);
+  }, [rebuildLineArtMask, selectedPage]);
 
   useEffect(() => {
     const ctx = contextRef.current;
@@ -273,6 +533,11 @@ export default function ColoringBook({ onBack }) {
 
   const startDrawing = ({ nativeEvent }) => {
     nativeEvent.preventDefault();
+    if (activeTool === TOOL_BUCKET) {
+      applyFloodFill(nativeEvent);
+      return;
+    }
+
     const ctx = contextRef.current;
     if (!ctx) return;
 
@@ -287,6 +552,7 @@ export default function ColoringBook({ onBack }) {
 
   const draw = ({ nativeEvent }) => {
     nativeEvent.preventDefault();
+    if (activeTool !== TOOL_BRUSH) return;
     if (!isDrawingRef.current) return;
     const ctx = contextRef.current;
     if (!ctx) return;
@@ -521,6 +787,37 @@ export default function ColoringBook({ onBack }) {
               <span className="w-8 text-right text-xs font-black text-slate-500">{brushSize}</span>
             </label>
 
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTool(TOOL_BRUSH)}
+                className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                  activeTool === TOOL_BRUSH
+                    ? 'border-emerald-300 bg-emerald-100 text-emerald-900'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {'\u{1F58C}\uFE0F'} Brush
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTool(TOOL_BUCKET)}
+                disabled={!selectedPage}
+                className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
+                  activeTool === TOOL_BUCKET
+                    ? 'border-sky-300 bg-sky-100 text-sky-900'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
+                } ${selectedPage ? '' : 'cursor-not-allowed opacity-60'}`}
+                title="Fill Bucket"
+              >
+                <span className="inline-flex items-center gap-1">
+                  <span className="-rotate-12">{'\u{1FAA3}'}</span>
+                  <span>{'\u{1F4A7}'}</span>
+                  <span>Fill Bucket</span>
+                </span>
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={clearCanvas}
@@ -542,9 +839,14 @@ export default function ColoringBook({ onBack }) {
                 className="relative mx-auto min-h-[55vh] w-full max-w-4xl overflow-hidden rounded-[1rem] border border-slate-200 bg-white sm:min-h-[70vh]"
               >
                 <img
+                  ref={imageLayerRef}
                   src={selectedPage.image_url}
                   alt={`${selectedPage.label} coloring page`}
-                  onLoad={() => setImageLoadError(false)}
+                  crossOrigin="anonymous"
+                  onLoad={() => {
+                    setImageLoadError(false);
+                    rebuildLineArtMask();
+                  }}
                   onError={() => setImageLoadError(true)}
                   className="absolute inset-0 h-full w-full object-contain bg-white"
                 />
@@ -559,7 +861,7 @@ export default function ColoringBook({ onBack }) {
                   onTouchMove={draw}
                   onTouchEnd={stopDrawing}
                   onTouchCancel={stopDrawing}
-                  className="absolute inset-0 h-full w-full touch-none cursor-crosshair"
+                  className={`absolute inset-0 h-full w-full touch-none ${activeTool === TOOL_BUCKET ? 'cursor-cell' : 'cursor-crosshair'}`}
                 />
 
                 {imageLoadError && (

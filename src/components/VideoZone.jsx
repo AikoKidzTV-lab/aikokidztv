@@ -348,18 +348,19 @@ export default function VideoZone() {
       </div>
 
       <div className="relative mx-auto max-w-7xl">
-        <div className="mb-6 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
+        <div className="relative mb-6 overflow-hidden rounded-3xl border border-slate-700/70 bg-slate-900 p-5 shadow-2xl sm:p-6">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-950/70" />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Video Zone</p>
-              <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-4xl">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Video Zone</p>
+              <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-4xl">
                 Aiko&apos;s Cinema Magic
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-700 sm:text-base">
+              <p className="mt-2 max-w-2xl text-sm text-slate-100 sm:text-base">
                 Unlock the Movies section once for {MOVIES_UNLOCK_COST_GEMS} Gems, then watch and earn +{FREE_VIDEO_REWARD_GEMS} Gems on each first watch.
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-900">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-cyan-400/10 px-4 py-2 text-xs font-semibold text-cyan-100">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               {isCheckingUnlockState
                 ? 'Checking access...'
@@ -369,12 +370,12 @@ export default function VideoZone() {
             </div>
           </div>
 
-          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-900">
+          <div className="relative mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200/70 bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-900">
             Current Gems: {currentGems}
           </div>
 
           {loadError && (
-            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            <div className="relative mt-4 rounded-2xl border border-red-300/40 bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100">
               Failed to load videos: {loadError}
             </div>
           )}
