@@ -334,7 +334,7 @@ export default function VideoZone() {
       </div>
 
       <div className="relative mx-auto max-w-7xl">
-        <div className="mb-6 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
+        <div className="clay-container mb-6 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200/80">Video Zone</p>
@@ -399,7 +399,7 @@ export default function VideoZone() {
                 return (
                   <article
                     key={video.id}
-                    className="group overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-300/40 hover:bg-white/10"
+                    className="clay-card group overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-300/40 hover:bg-white/10"
                   >
                     <div className="relative">
                       <img
@@ -455,7 +455,7 @@ export default function VideoZone() {
             )}
           </>
         ) : (
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center shadow-2xl backdrop-blur-xl">
+          <div className="clay-container rounded-3xl border border-white/10 bg-white/5 p-6 text-center shadow-2xl backdrop-blur-xl">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200/85">Movies Unlock</p>
             <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">🎬 Unlock Aiko&apos;s Movies</h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">

@@ -496,7 +496,7 @@ export default function LandingPageHabitat({
             </div>
           </div>
 
-          <div className="rounded-[1.8rem] border border-white/40 bg-white/15 p-5 shadow-2xl backdrop-blur-md">
+          <div className="clay-container rounded-[1.8rem] border border-white/40 bg-white/15 p-5 shadow-2xl backdrop-blur-md">
             <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-black">
               Practice Container
             </p>
@@ -505,7 +505,7 @@ export default function LandingPageHabitat({
                 <Link
                   key={item.id}
                   to={item.to}
-                  className="flex items-center justify-between rounded-2xl border border-white/70 bg-white/30 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:bg-white/45"
+                  className="clay-card flex items-center justify-between rounded-2xl border border-white/70 bg-white/30 px-4 py-3 text-left transition hover:-translate-y-0.5 hover:bg-white/45"
                 >
                   <span className="text-sm font-black tracking-wide text-black">{item.label}</span>
                   <span className="text-xl">{item.emoji}</span>
@@ -513,7 +513,7 @@ export default function LandingPageHabitat({
               ))}
             </div>
 
-            <div className="mt-4 rounded-2xl border border-white/35 bg-gradient-to-r from-white/20 to-white/10 p-4">
+            <div className="clay-card mt-4 rounded-2xl border border-white/35 bg-gradient-to-r from-white/20 to-white/10 p-4">
               <p className="text-sm font-black text-black">
                 Parent Zone practice now uses dedicated routes with one activity per page.
               </p>

@@ -12,7 +12,7 @@ export default function ParentZoneCosmicJourneyPage() {
       title="Cosmic Journey"
       description="Launch into a guided space exploration experience. Kids can interact with NASA's live solar system view below."
     >
-      <section className="relative overflow-hidden rounded-3xl border border-indigo-200/40 bg-slate-950 shadow-[0_20px_70px_rgba(15,23,42,0.55)]">
+      <section className="clay-container relative overflow-hidden rounded-3xl border border-indigo-200/40 bg-slate-950 shadow-[0_20px_70px_rgba(15,23,42,0.55)]">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-70"
           style={{ backgroundImage: `url(${MILKY_WAY_IMAGE_URL})` }}
@@ -52,7 +52,7 @@ export default function ParentZoneCosmicJourneyPage() {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-indigo-100 bg-white/95 p-4 shadow-sm sm:p-6">
+      <section className="clay-container rounded-3xl border border-indigo-100 bg-white/95 p-4 shadow-sm sm:p-6">
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-[0_18px_45px_rgba(15,23,42,0.25)]">
           <div className="relative aspect-[16/10] min-h-[420px] w-full">
             <iframe

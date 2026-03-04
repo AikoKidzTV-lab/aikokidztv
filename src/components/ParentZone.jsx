@@ -351,7 +351,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
               <p className="text-gray-500 mt-1">Track eye care, monitor play time, and manage daily usage limits.</p>
             </div>
 
-            <section className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
+            <section className="clay-container bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
               <div className="flex flex-col gap-5">
                 <div>
                   <h3 className="text-xl font-extrabold text-gray-900">Practice Container</h3>
@@ -365,7 +365,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                     <Link
                       key={activity.id}
                       to={activity.path}
-                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-sky-50 px-4 py-3 text-left font-black text-indigo-900 hover:-translate-y-0.5 transition"
+                      className="clay-card w-full flex items-center justify-between rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-sky-50 px-4 py-3 text-left font-black text-indigo-900 hover:-translate-y-0.5 transition"
                     >
                       <span>{activity.label}</span>
                       <span className="text-xl">{activity.emoji}</span>

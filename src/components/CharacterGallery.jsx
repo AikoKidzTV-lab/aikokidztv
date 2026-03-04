@@ -75,7 +75,7 @@ const CharacterGallery = () => {
           >
             <Link
               to={char.route}
-              className={`group relative block overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br p-6 transition duration-300 hover:-translate-y-1 ${char.theme} [box-shadow:14px_14px_30px_rgba(148,163,184,0.35),-10px_-10px_24px_rgba(255,255,255,0.8),inset_1px_1px_3px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(15,23,42,0.10)]`}
+              className={`clay-card group relative block overflow-hidden bg-gradient-to-br p-6 transition duration-300 hover:-translate-y-1 ${char.theme}`}
             >
               <div
                 className="pointer-events-none absolute inset-0"
