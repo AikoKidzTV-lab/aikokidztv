@@ -9,7 +9,7 @@ export default function ParentZoneNumbersPage() {
   return (
     <ParentZoneQuizPage
       title="Numbers"
-      description="30-question numbers test with Test Mode, milestone rewards, and final score bonus."
+      description="100-question numbers test with counting patterns, basic math, and milestone gem rewards."
       quizEmoji="Numbers"
       variant="numbers"
       questions={JUNIOR_NUMBERS_QUIZ_QUESTIONS}

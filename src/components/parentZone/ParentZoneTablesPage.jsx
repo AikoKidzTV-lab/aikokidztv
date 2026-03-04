@@ -9,7 +9,7 @@ export default function ParentZoneTablesPage() {
   return (
     <ParentZoneQuizPage
       title="Tables"
-      description="30-question multiplication tables test with Test Mode, milestone rewards, and final score bonus."
+      description="100-question multiplication tables test (2 to 20) with milestone gem rewards."
       quizEmoji="Tables"
       variant="tables"
       questions={JUNIOR_TABLES_QUIZ_QUESTIONS}
