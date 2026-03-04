@@ -118,7 +118,7 @@ export default function ParentZoneCalculatorPage() {
     return (
       <ParentZoneQuizPage
         title="Calculator Arithmetic Practice"
-        description="100-question mixed arithmetic test across addition, subtraction, multiplication, division, and logic."
+        description="100-question arithmetic test: 25 Addition, 25 Subtraction, 25 Multiplication, 25 Division."
         quizEmoji="Calculator"
         variant="numbers"
         questions={JUNIOR_CALCULATOR_QUIZ_QUESTIONS}
