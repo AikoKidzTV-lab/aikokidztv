@@ -629,10 +629,87 @@ export const unlockZoneWithGems = async ({ userId, zoneId, costGems }) => {
     };
   }
 
+  const retryPatch = {
+    gems: Math.max(0, postGems - spend),
+  };
+  if (hasOwn(postUpdateProfileRaw, 'unlocked_zones')) {
+    retryPatch.unlocked_zones = [...new Set([...postUnlockedZones, zoneId])];
+  }
+  if (hasOwn(postUpdateProfileRaw, 'unlocked_features')) {
+    retryPatch.unlocked_features = [...new Set([...postUnlockedFeatures, zoneId])];
+  }
+  if (!hasOwn(retryPatch, 'unlocked_zones') && !hasOwn(retryPatch, 'unlocked_features')) {
+    return {
+      ok: false,
+      code: 'missing_unlock_columns',
+      message: 'Profile is missing both unlocked_zones and unlocked_features columns.',
+    };
+  }
+
+  const runRetryUpdate = (columns) =>
+    supabase
+      .from('profiles')
+      .update(stripUnsupportedColumnsFromPatch(retryPatch))
+      .eq('id', userId)
+      .eq('gems', postGems)
+      .gte('gems', spend)
+      .select(columns)
+      .maybeSingle();
+
+  let { data: retriedProfile, error: retryError } = await runRetryUpdate(ECONOMY_SELECT_COLUMNS);
+
+  if (retryError && isMissingColumnError(retryError, 'magic_art_uses')) {
+    markMagicArtUsesUnsupported();
+    ({ data: retriedProfile, error: retryError } = await runRetryUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK));
+  }
+
+  if (retryError && isMissingColumnError(retryError, 'unlocked_videos')) {
+    markUnlockedVideosUnsupported();
+    ({ data: retriedProfile, error: retryError } = await runRetryUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS));
+  }
+
+  if (retryError) {
+    if (isRlsDeniedError(retryError)) {
+      return {
+        ok: false,
+        code: 'rls_update_denied',
+        message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
+      };
+    }
+    return {
+      ok: false,
+      code: 'profile_update_error',
+      message: retryError.message || 'Failed to update profile.',
+    };
+  }
+
+  if (retriedProfile) {
+    return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(retriedProfile)) };
+  }
+
+  const { data: finalProfileRaw, error: finalProfileError } = await readProfileRowById({
+    userId,
+    maybeSingle: false,
+  });
+  if (finalProfileError) {
+    return {
+      ok: false,
+      code: 'profile_update_error',
+      message: finalProfileError.message || 'Failed to confirm unlock status.',
+    };
+  }
+
+  const finalProfile = normalizeEconomyProfile(finalProfileRaw);
+  const finalUnlockedZones = normalizeStringArray(finalProfileRaw?.unlocked_zones ?? []);
+  const finalUnlockedFeatures = normalizeStringArray(finalProfileRaw?.unlocked_features ?? []);
+  if (finalUnlockedZones.includes(zoneId) || finalUnlockedFeatures.includes(zoneId)) {
+    return { ok: true, alreadyUnlocked: true, profile: applyMagicUsesFallback(userId, finalProfile) };
+  }
+
   return {
     ok: false,
-    code: 'profile_sync_conflict',
-    message: 'Profile changed during unlock. Please try once more.',
+    code: 'profile_update_error',
+    message: 'Profile unlock is busy right now. Please try again.',
   };
 };
 
@@ -778,10 +855,105 @@ export const unlockFeatureWithGems = async ({ userId, featureId, costGems }) => 
     };
   }
 
+  const retryRawFeatures = Array.isArray(postUpdateProfileRaw?.unlocked_features)
+    ? postUpdateProfileRaw.unlocked_features
+    : [];
+  const retryNextUnlockedFeatures = [...new Set([...retryRawFeatures, featureId])];
+
+  const runRetryUpdate = (columns) =>
+    supabase
+      .from('profiles')
+      .update({
+        gems: Math.max(0, postGems - spend),
+        unlocked_features: retryNextUnlockedFeatures,
+      })
+      .eq('id', userId)
+      .eq('gems', postGems)
+      .gte('gems', spend)
+      .select(columns)
+      .maybeSingle();
+
+  let { data: retriedProfile, error: retryError } = await runRetryUpdate(ECONOMY_SELECT_COLUMNS);
+
+  if (retryError && isMissingColumnError(retryError, 'magic_art_uses')) {
+    markMagicArtUsesUnsupported();
+    ({ data: retriedProfile, error: retryError } = await runRetryUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK));
+  }
+
+  if (retryError && isMissingColumnError(retryError, 'unlocked_videos')) {
+    markUnlockedVideosUnsupported();
+    ({ data: retriedProfile, error: retryError } = await runRetryUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS));
+  }
+
+  if (retryError) {
+    if (isRlsDeniedError(retryError)) {
+      return {
+        ok: false,
+        code: 'rls_update_denied',
+        message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
+      };
+    }
+
+    if (isMissingColumnError(retryError, 'unlocked_features')) {
+      return {
+        ok: false,
+        code: 'missing_unlocked_features_column',
+        message: 'profiles.unlocked_features column is missing from the active schema.',
+      };
+    }
+
+    return {
+      ok: false,
+      code: 'profile_update_error',
+      message: retryError.message || 'Could not unlock feature right now.',
+    };
+  }
+
+  if (retriedProfile) {
+    return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(retriedProfile)) };
+  }
+
+  const { data: finalProfileRaw, error: finalProfileError } = await readProfileRowById({
+    userId,
+    maybeSingle: false,
+  });
+  if (finalProfileError) {
+    return {
+      ok: false,
+      code: 'profile_update_error',
+      message: finalProfileError.message || 'Failed to confirm feature unlock.',
+    };
+  }
+
+  const finalProfile = normalizeEconomyProfile(finalProfileRaw);
+  const finalUnlockedFeatures = normalizeStringArray(finalProfileRaw?.unlocked_features || []);
+  if (finalUnlockedFeatures.includes(featureId)) {
+    return { ok: true, alreadyUnlocked: true, profile: applyMagicUsesFallback(userId, finalProfile) };
+  }
+
+  const finalGems = normalizeNumber(finalProfile?.gems, 0);
+  if (finalGems < spend) {
+    return {
+      ok: false,
+      code: 'insufficient_gems',
+      message: `You need ${spend} Gems but only have ${finalGems}.`,
+      gems: finalGems,
+      required: spend,
+    };
+  }
+
+  if (!hasOwn(finalProfileRaw, 'unlocked_features')) {
+    return {
+      ok: false,
+      code: 'missing_unlocked_features_column',
+      message: 'profiles.unlocked_features column is missing from the active schema.',
+    };
+  }
+
   return {
     ok: false,
-    code: 'profile_sync_conflict',
-    message: 'Profile changed during unlock. Please try once more.',
+    code: 'profile_update_error',
+    message: 'Profile unlock is busy right now. Please try again.',
   };
 };
 

@@ -11,6 +11,16 @@ import {
 const UNKNOWN_CATEGORY = 'Uncategorized';
 const MOVIES_UNLOCK_COST_GEMS = 500;
 const MOVIES_FEATURE_KEY = 'movies';
+const VIDEO_CLAY_THEME = {
+  '--clay-surface-bg': 'rgba(15, 23, 42, 0.82)',
+  '--clay-surface-border': 'rgba(148, 163, 184, 0.35)',
+  '--clay-shadow-outer':
+    '18px 18px 38px rgba(2, 6, 23, 0.66), -14px -14px 30px rgba(34, 211, 238, 0.08)',
+  '--clay-shadow-inner':
+    'inset 3px 3px 9px rgba(255, 255, 255, 0.12), inset -4px -4px 10px rgba(2, 6, 23, 0.58)',
+  '--clay-shadow':
+    '18px 18px 38px rgba(2, 6, 23, 0.66), -14px -14px 30px rgba(34, 211, 238, 0.08), inset 3px 3px 9px rgba(255, 255, 255, 0.12), inset -4px -4px 10px rgba(2, 6, 23, 0.58)',
+};
 
 const isMissingColumnError = (error, columnName) => {
   if (!columnName) return false;
@@ -272,7 +282,7 @@ export default function VideoZone() {
       showStatus(
         unlockResult?.alreadyUnlocked
           ? 'Movies are already unlocked. Enjoy!'
-          : `🎬 Movies unlocked! ${MOVIES_UNLOCK_COST_GEMS} Gems spent.`
+          : `${'\u{1F3AC}'} Movies unlocked! ${MOVIES_UNLOCK_COST_GEMS} Gems spent.`
       );
     } catch (error) {
       console.error('[VideoZone] Failed to unlock Movies section:', error);
@@ -327,7 +337,10 @@ export default function VideoZone() {
   };
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-8 sm:px-6 lg:px-8">
+    <section
+      className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-8 sm:px-6 lg:px-8"
+      style={VIDEO_CLAY_THEME}
+    >
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 top-8 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
         <div className="absolute right-0 top-24 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
@@ -338,11 +351,11 @@ export default function VideoZone() {
         <div className="clay-container mb-6 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200/80">Video Zone</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-100">Video Zone</p>
               <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-4xl">
                 Aiko&apos;s Cinema Magic
               </h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-200 sm:text-base">
+              <p className="mt-2 max-w-2xl text-sm text-slate-100 sm:text-base">
                 Unlock the Movies section once for {MOVIES_UNLOCK_COST_GEMS} Gems, then watch and earn +{FREE_VIDEO_REWARD_GEMS} Gems on each first watch.
               </p>
             </div>
@@ -395,7 +408,7 @@ export default function VideoZone() {
                 const rewardKey = getWatchRewardKey(video.id);
                 const rewardClaimed = claimedRewards.includes(rewardKey);
                 const isBusy = actionVideoId === video.id;
-                const actionLabel = rewardClaimed ? 'Watch Again' : `Watch +${FREE_VIDEO_REWARD_GEMS} 💎`;
+                const actionLabel = rewardClaimed ? 'Watch Again' : `Watch +${FREE_VIDEO_REWARD_GEMS} ${'\u{1F48E}'}`;
 
                 return (
                   <article
@@ -451,14 +464,14 @@ export default function VideoZone() {
 
             {filteredVideos.length === 0 && (
               <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-slate-200">
-                {isLoading ? 'Loading videos...' : '🧸 Coming Soon! Fresh movie adventures will pop up here very soon.'}
+                {isLoading ? 'Loading videos...' : `${'\u{1F9F8}'} Coming Soon! Fresh movie adventures will pop up here very soon.`}
               </div>
             )}
           </>
         ) : (
           <div className="clay-container rounded-3xl border border-white/10 bg-white/5 p-6 text-center shadow-2xl backdrop-blur-xl">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200/85">Movies Unlock</p>
-            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">🎬 Unlock Aiko&apos;s Movies</h2>
+            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">{'\u{1F3AC}'} Unlock Aiko&apos;s Movies</h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">
               Spend <span className="font-black text-cyan-100">{MOVIES_UNLOCK_COST_GEMS} Gems</span> once to unlock the full Movies section.
             </p>
@@ -479,8 +492,8 @@ export default function VideoZone() {
                   : !user?.id
                     ? 'Login to Unlock Movies'
                     : canUnlockMovies
-                      ? `Unlock Movies for ${MOVIES_UNLOCK_COST_GEMS} 💎`
-                      : `Need ${MOVIES_UNLOCK_COST_GEMS} 💎`}
+                      ? `Unlock Movies for ${MOVIES_UNLOCK_COST_GEMS} ${'\u{1F48E}'}`
+                      : `Need ${MOVIES_UNLOCK_COST_GEMS} ${'\u{1F48E}'}`}
             </button>
             {!user?.id && (
               <p className="mt-3 text-xs font-semibold text-slate-300">

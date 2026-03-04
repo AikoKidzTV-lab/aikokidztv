@@ -924,26 +924,30 @@ function AdminRoutePage() {
   return <AdminRouteGuard onBackToSite={() => navigate('/')} />;
 }
 
-function HomeRouteScrollReset() {
+function RouteScrollToTop() {
   const location = useLocation();
 
   React.useLayoutEffect(() => {
-    if (location.pathname !== '/' || typeof window === 'undefined') return undefined;
+    if (typeof window === 'undefined') return undefined;
 
     const scrollTopNow = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
 
-    // Always force home route to open from the top, never from a preserved section offset.
+    // Always force each route to open from the top, never from a preserved section offset.
     scrollTopNow();
     const rafId = window.requestAnimationFrame(scrollTopNow);
+    const timeoutId = window.setTimeout(scrollTopNow, 0);
 
     // Remove any stale hash like "/#story-studio" when returning home.
-    if (location.hash) {
+    if (location.pathname === '/' && location.hash) {
       window.history.replaceState(window.history.state, '', '/');
       scrollTopNow();
     }
 
-    return () => window.cancelAnimationFrame(rafId);
-  }, [location.hash, location.key, location.pathname]);
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [location.hash, location.key, location.pathname, location.search]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || !('scrollRestoration' in window.history)) return undefined;
@@ -1028,7 +1032,7 @@ function App() {
       <KidsModeProvider>
         <ParentControlsProvider>
           <BrowserRouter>
-            <HomeRouteScrollReset />
+            <RouteScrollToTop />
             <AuthModalProvider>
               <Routes>
                 <Route path="/" element={<HomeRoutePage />} />

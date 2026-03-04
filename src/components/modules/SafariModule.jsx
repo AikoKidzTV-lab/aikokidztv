@@ -66,6 +66,7 @@ const SafariModule = ({ onBack, onHome }) => {
   const { user, fetchProfile } = useAuth();
   const { openAuthModal } = useAuthModal();
   const { isTestMode } = useParentControls();
+  const quizSectionRef = useRef(null);
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [flippedCards, setFlippedCards] = useState({});
@@ -345,6 +346,10 @@ const SafariModule = ({ onBack, onHome }) => {
     finalRewardClaimedRef.current = false;
   };
 
+  const handleScrollToQuiz = () => {
+    quizSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-amber-50 via-white to-emerald-100 text-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -354,16 +359,22 @@ const SafariModule = ({ onBack, onHome }) => {
             onClick={onBack}
             className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow hover:shadow-md transition"
           >
-            ? Back to Learning Zone
+            {'\u2B05\uFE0F'} Back to Learning Zone
           </button>
           <button
             onClick={onHome}
             className="inline-flex items-center gap-2 rounded-full bg-lime-100 px-4 py-2 text-sm font-semibold text-lime-800 shadow hover:shadow-md hover:bg-lime-200 transition"
           >
-            \uD83C\uDFE0 Back to Home
+            {'\u{1F3E0}'} Back to Home
+          </button>
+          <button
+            onClick={handleScrollToQuiz}
+            className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-800 shadow hover:shadow-md hover:bg-emerald-200 transition"
+          >
+            {'\u{1F4DD}'} Take Safari Quiz
           </button>
           <div className="ml-auto flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-slate-700 shadow">
-            <span className="text-lg">\uD83D\uDD0A</span>
+            <span className="text-lg">{'\u{1F50A}'}</span>
             Tap a card to flip, then press the sound button
           </div>
         </div>
@@ -371,13 +382,13 @@ const SafariModule = ({ onBack, onHome }) => {
         {/* Header */}
         <div className="text-center mb-8">
           <p className="text-xs uppercase tracking-[0.3em] text-amber-600">
-            AikoKidzTV • Learning Zone
+            {'AikoKidzTV \u2022 Learning Zone'}
           </p>
           <h1 className="text-4xl sm:text-5xl font-black drop-shadow-sm flex justify-center items-center gap-3">
-            \uD83E\uDD93 Animal Safari \uD83E\uDD92
+            {'\u{1F993}'} Animal Safari {'\u{1F992}'}
           </h1>
           <p className="text-gray-600 font-medium text-lg max-w-3xl mx-auto">
-            Tap an animal to flip the card, then tap \uD83D\uDD0A to hear it!
+            Tap an animal to flip the card, then tap {'\u{1F50A}'} to hear it!
           </p>
           <div className="mt-2 text-sm text-gray-500">
             Showing {filteredAnimals.length} of {ANIMALS_DATA.length} animals
@@ -425,7 +436,7 @@ const SafariModule = ({ onBack, onHome }) => {
                     style={{ backfaceVisibility: 'hidden' }}
                   >
                     <span className="text-8xl mb-4 group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">
-                      {animal.emoji}
+                      {animal.emoji || '\uD83D\uDC3E'}
                     </span>
                     <h3 className={`text-3xl font-extrabold ${animal.text}`}>{animal.name}</h3>
                     <span className="mt-4 text-xs font-bold uppercase tracking-wider bg-white/60 px-4 py-2 rounded-full text-gray-600">
@@ -455,7 +466,7 @@ const SafariModule = ({ onBack, onHome }) => {
                         onClick={(event) => playSound(event, animal.name, animal.sound)}
                         className={`mt-3 py-3 px-4 rounded-xl font-extrabold text-lg flex items-center justify-center gap-2 w-full transition-transform hover:scale-105 active:scale-95 shadow-sm border-2 border-white ${animal.bg} ${animal.text}`}
                       >
-                        \uD83D\uDD0A Hear Sound!
+                        {'\u{1F50A}'} Hear Sound!
                       </button>
                     </div>
                   </div>
@@ -466,10 +477,10 @@ const SafariModule = ({ onBack, onHome }) => {
         </div>
 
         {/* Safari Master Quiz */}
-        <section className="mt-12 rounded-3xl border border-emerald-200 bg-white/90 p-5 shadow-sm sm:p-7">
+        <section ref={quizSectionRef} className="mt-12 rounded-3xl border border-emerald-200 bg-white/90 p-5 shadow-sm sm:p-7">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 px-4 py-1.5 text-sm font-black text-emerald-900">
-              \uD83E\uDDAD Safari Master Quiz (100 Questions)
+              {'\u{1F9ED}'} Safari Master Quiz (100 Questions)
             </div>
             <p className="text-sm font-black text-slate-900">
               {quizCompleted
