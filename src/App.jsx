@@ -41,20 +41,12 @@ import MimiBioPage from './components/pages/MimiBioPage';
 import MikoBioPage from './components/pages/MikoBioPage';
 import ChikoBioPage from './components/pages/ChikoBioPage';
 
-const themes = [
-  { key: 'light', label: 'Light Mode' },
-  { key: 'dark', label: 'Dark Mode' },
-  { key: 'colorblind', label: 'Colorblind Mode' },
-];
+const themes = [{ key: 'light', label: 'Light Mode' }];
 
 const themeTokens = {
-  light: { bg: '#f8fafc', text: '#0f172a', surface: '#ffffff' },
-  dark: { bg: '#0b1220', text: '#f8fafc', surface: '#111827' },
-  colorblind: { bg: '#f5f7fb', text: '#0f172a', surface: '#ffffff' },
+  light: { bg: '#ffffff', text: '#0f172a', surface: '#ffffff' },
 };
 
-const DISPLAY_MODE_STORAGE_KEY = 'aiko_display_mode';
-const BRIGHTNESS_STORAGE_KEY = 'aiko_brightness_pct';
 const WELLBEING_USAGE_STORAGE_KEY = 'aiko_wellbeing_usage_v1';
 const WELLBEING_SYNC_EVENT = 'aiko:wellbeing-sync';
 const PARENT_ZONE_ROUTE_UNLOCK_KEY = 'aiko_parent_zone_route_unlock_v1';
@@ -150,10 +142,6 @@ const Navbar = ({
   onOpenSettings,
   onLogout,
   isAdmin,
-  displayMode,
-  onSetDisplayMode,
-  brightness,
-  onBrightnessChange,
   onGoToAdmin,
   isForcedOffline,
   onToggleForcedOffline,
@@ -174,11 +162,6 @@ const Navbar = ({
 
   const toggleDropdown = () => setOpen((v) => !v);
   const networkLabel = isForcedOffline ? 'Offline' : 'Online';
-  const modeOptions = [
-    { key: 'light', label: 'Light', icon: '\u2600\uFE0F' },
-    { key: 'dark', label: 'Dark', icon: '\u{1F319}' },
-    { key: 'colorblind', label: 'Colorblind', icon: '\u25E7' },
-  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b border-slate-200/80 bg-white/80 dark:bg-slate-900/80 dark:border-slate-800/80">
@@ -297,45 +280,6 @@ const Navbar = ({
             )}
           </div>
 
-          <div className="hidden lg:flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/80">
-            <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white/90 p-1 dark:border-slate-700 dark:bg-slate-900/70">
-              {modeOptions.map((mode) => {
-                const active = displayMode === mode.key;
-                return (
-                  <button
-                    key={mode.key}
-                    onClick={() => onSetDisplayMode?.(mode.key)}
-                    aria-pressed={active}
-                    aria-label={`Switch to ${mode.label} Mode`}
-                    className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
-                      active
-                        ? 'bg-slate-900 text-white shadow dark:bg-white dark:text-slate-900'
-                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span className="mr-1">{mode.icon}</span>
-                    {mode.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
-              <span>Brightness</span>
-              <input
-                type="range"
-                min="50"
-                max="100"
-                step="1"
-                value={brightness}
-                onChange={(e) => onBrightnessChange?.(Number(e.target.value))}
-                className="w-24 accent-pink-500"
-                aria-label="Brightness"
-              />
-              <span className="w-10 text-right">{brightness}%</span>
-            </label>
-          </div>
-
           <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
             <Gem size={16} className="text-pink-400" />
             <span className="text-sm font-semibold text-slate-800 dark:text-white">{profile?.gems ?? 0}</span>
@@ -426,17 +370,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const { openAuthModal, isAuthModalOpen } = useAuthModal();
-  const [displayMode, setDisplayMode] = useState(() => {
-    if (typeof window === 'undefined') return 'light';
-    const savedMode = window.localStorage.getItem(DISPLAY_MODE_STORAGE_KEY);
-    return themes.some((theme) => theme.key === savedMode) ? savedMode : 'light';
-  });
-  const [brightness, setBrightness] = useState(() => {
-    if (typeof window === 'undefined') return 100;
-    const parsed = Number(window.localStorage.getItem(BRIGHTNESS_STORAGE_KEY));
-    if (!Number.isFinite(parsed)) return 100;
-    return Math.min(100, Math.max(50, parsed));
-  });
+  const displayMode = 'light';
   const [showSettings, setShowSettings] = useState(false);
   const [parentPinGateOpen, setParentPinGateOpen] = useState(false);
   const [pendingParentRoute, setPendingParentRoute] = useState('');
@@ -470,39 +404,25 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle('dark', displayMode === 'dark');
-    root.classList.toggle('colorblind-mode', displayMode === 'colorblind');
+    root.classList.remove('dark');
+    root.classList.remove('colorblind-mode');
   }, [displayMode]);
 
   useEffect(() => {
-    const tokens = themeTokens[displayMode] || themeTokens.light;
+    const tokens = themeTokens.light;
     const root = document.documentElement;
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DISPLAY_MODE_STORAGE_KEY, displayMode);
-    }
-    root.setAttribute('data-theme', displayMode);
+    root.setAttribute('data-theme', 'light');
     root.style.setProperty('--bg-primary', tokens.bg);
     root.style.setProperty('--surface', tokens.surface);
     root.style.setProperty('--text-primary', tokens.text);
     root.style.setProperty('--text-secondary', `${tokens.text}cc`);
-    if (displayMode === 'colorblind') {
-      root.style.setProperty('--focus-ring', '#0ea5e9');
-      root.style.setProperty('--accent-safe', '#0ea5e9');
-    } else {
-      root.style.removeProperty('--focus-ring');
-      root.style.removeProperty('--accent-safe');
-    }
+    root.style.removeProperty('--focus-ring');
+    root.style.removeProperty('--accent-safe');
     if (typeof document !== 'undefined') {
       document.body.style.backgroundColor = tokens.bg;
       document.body.style.color = tokens.text;
     }
   }, [displayMode]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(BRIGHTNESS_STORAGE_KEY, String(brightness));
-  }, [brightness]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -661,7 +581,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     [canOpenLearningModule, isKidsModeOn]
   );
 
-  const appliedTokens = themeTokens[displayMode] || themeTokens.light;
+  const appliedTokens = themeTokens.light;
   const appShellStyle = {
     backgroundColor: 'var(--bg-primary)',
     color: 'var(--text-primary)',
@@ -669,7 +589,6 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     '--surface': appliedTokens.surface,
     '--text-primary': appliedTokens.text,
     '--text-secondary': `${appliedTokens.text}cc`,
-    filter: `brightness(${(brightness / 100).toFixed(2)})`,
   };
 
   if (parentZoneOpen) {
@@ -714,12 +633,6 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
             onClose={closeSettingsModal}
             themes={themes}
             themeKey={displayMode}
-            onThemeChange={(key) => {
-              setDisplayMode(key);
-              setShowSettings(false);
-            }}
-            brightness={brightness}
-            onBrightnessChange={setBrightness}
             onLogin={() => {
               setShowSettings(false);
               openAuthModal('login');
@@ -830,12 +743,6 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
         onClose={closeSettingsModal}
         themes={themes}
         themeKey={displayMode}
-        onThemeChange={(key) => {
-          setDisplayMode(key);
-          setShowSettings(false);
-        }}
-        brightness={brightness}
-        onBrightnessChange={setBrightness}
         onLogin={() => {
           setShowSettings(false);
           openAuthModal('login');

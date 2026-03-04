@@ -7,11 +7,9 @@ import React, { useEffect, useState } from 'react';
 export default function SettingsModal({
   open,
   onClose,
-  themes = [],
+  themes = [{ key: 'light', label: 'Light' }],
   themeKey,
   onThemeChange,
-  brightness = 100,
-  onBrightnessChange,
   onLogin,
   onCreateAccount,
   onLogout,
@@ -177,22 +175,6 @@ export default function SettingsModal({
                   ))}
                 </div>
 
-                <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                  <label className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-gray-700">Brightness</span>
-                    <input
-                      type="range"
-                      min="50"
-                      max="100"
-                      step="1"
-                      value={brightness}
-                      onChange={(e) => onBrightnessChange?.(Number(e.target.value))}
-                      className="w-full accent-pink-500"
-                      aria-label="Brightness"
-                    />
-                    <span className="w-11 text-right text-sm font-bold text-gray-700">{brightness}%</span>
-                  </label>
-                </div>
               </div>
 
               <div className="w-full md:w-1/3">

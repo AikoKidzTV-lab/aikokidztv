@@ -12,14 +12,14 @@ const UNKNOWN_CATEGORY = 'Uncategorized';
 const MOVIES_UNLOCK_COST_GEMS = 500;
 const MOVIES_FEATURE_KEY = 'movies';
 const VIDEO_CLAY_THEME = {
-  '--clay-surface-bg': 'rgba(15, 23, 42, 0.82)',
-  '--clay-surface-border': 'rgba(148, 163, 184, 0.35)',
+  '--clay-surface-bg': '#ffffff',
+  '--clay-surface-border': 'rgba(56, 189, 248, 0.36)',
   '--clay-shadow-outer':
-    '18px 18px 38px rgba(2, 6, 23, 0.66), -14px -14px 30px rgba(34, 211, 238, 0.08)',
+    '18px 18px 38px rgba(59, 130, 246, 0.18), -14px -14px 30px rgba(255, 255, 255, 0.96)',
   '--clay-shadow-inner':
-    'inset 3px 3px 9px rgba(255, 255, 255, 0.12), inset -4px -4px 10px rgba(2, 6, 23, 0.58)',
+    'inset 3px 3px 9px rgba(255, 255, 255, 0.9), inset -4px -4px 10px rgba(236, 72, 153, 0.14)',
   '--clay-shadow':
-    '18px 18px 38px rgba(2, 6, 23, 0.66), -14px -14px 30px rgba(34, 211, 238, 0.08), inset 3px 3px 9px rgba(255, 255, 255, 0.12), inset -4px -4px 10px rgba(2, 6, 23, 0.58)',
+    '18px 18px 38px rgba(59, 130, 246, 0.18), -14px -14px 30px rgba(255, 255, 255, 0.96), inset 3px 3px 9px rgba(255, 255, 255, 0.9), inset -4px -4px 10px rgba(236, 72, 153, 0.14)',
 };
 
 const isMissingColumnError = (error, columnName) => {
@@ -338,13 +338,13 @@ export default function VideoZone() {
 
   return (
     <section
-      className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-8 sm:px-6 lg:px-8"
+      className="relative min-h-screen overflow-hidden bg-white px-4 py-8 sm:px-6 lg:px-8"
       style={VIDEO_CLAY_THEME}
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 top-8 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
-        <div className="absolute right-0 top-24 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
-        <div className="absolute bottom-8 left-1/4 h-72 w-72 rounded-full bg-amber-300/10 blur-3xl" />
+        <div className="absolute -left-24 top-8 h-56 w-56 rounded-full bg-fuchsia-400/22 blur-3xl" />
+        <div className="absolute right-0 top-24 h-64 w-64 rounded-full bg-cyan-300/24 blur-3xl" />
+        <div className="absolute bottom-8 left-1/4 h-72 w-72 rounded-full bg-amber-300/20 blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-7xl">
@@ -359,7 +359,7 @@ export default function VideoZone() {
                 Unlock the Movies section once for {MOVIES_UNLOCK_COST_GEMS} Gems, then watch and earn +{FREE_VIDEO_REWARD_GEMS} Gems on each first watch.
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-slate-900/70 px-4 py-2 text-xs font-semibold text-cyan-100">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-900">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               {isCheckingUnlockState
                 ? 'Checking access...'
@@ -374,7 +374,7 @@ export default function VideoZone() {
           </div>
 
           {loadError && (
-            <div className="mt-4 rounded-2xl border border-red-300/20 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-100">
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
               Failed to load videos: {loadError}
             </div>
           )}
@@ -394,7 +394,7 @@ export default function VideoZone() {
                     className={`rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
                       active
                         ? 'bg-gradient-to-r from-fuchsia-400 to-cyan-300 text-slate-950 shadow-[0_8px_24px_rgba(34,211,238,0.25)]'
-                        : 'border border-white/15 bg-white/5 text-white hover:bg-white/10'
+                        : 'border border-cyan-200 bg-white text-slate-800 hover:bg-cyan-50'
                     }`}
                   >
                     {category}
@@ -413,7 +413,7 @@ export default function VideoZone() {
                 return (
                   <article
                     key={video.id}
-                    className="clay-card group overflow-hidden rounded-2xl border border-white/10 bg-white/5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-300/40 hover:bg-white/10"
+                    className="clay-card group overflow-hidden rounded-2xl border border-cyan-100/80 bg-white text-left transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-300/70"
                   >
                     <div className="relative">
                       <img
@@ -423,21 +423,21 @@ export default function VideoZone() {
                         loading="lazy"
                       />
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/55 via-slate-900/5 to-transparent" />
 
                       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
                         <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-slate-900">
                           {video.category}
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-900/80 px-2.5 py-1 text-[11px] font-bold text-white">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-900/85 px-2.5 py-1 text-[11px] font-bold text-white">
                           {rewardClaimed ? 'Reward Claimed' : 'Free Reward'}
                         </span>
                       </div>
                     </div>
 
                     <div className="p-4">
-                      <h3 className="min-h-[3rem] text-base font-extrabold text-white">{video.title}</h3>
-                      <p className="mt-2 text-xs text-slate-300">
+                      <h3 className="min-h-[3rem] text-base font-extrabold text-slate-900">{video.title}</h3>
+                      <p className="mt-2 text-xs text-slate-700">
                         {rewardClaimed
                           ? 'Reward already claimed for this video.'
                           : `First watch grants +${FREE_VIDEO_REWARD_GEMS} Gems.`}
@@ -463,17 +463,17 @@ export default function VideoZone() {
             </div>
 
             {filteredVideos.length === 0 && (
-              <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-sm text-slate-200">
+              <div className="mt-6 rounded-2xl border border-dashed border-sky-200 bg-sky-50 p-6 text-center text-sm text-slate-700">
                 {isLoading ? 'Loading videos...' : `${'\u{1F9F8}'} Coming Soon! Fresh movie adventures will pop up here very soon.`}
               </div>
             )}
           </>
         ) : (
-          <div className="clay-container rounded-3xl border border-white/10 bg-white/5 p-6 text-center shadow-2xl backdrop-blur-xl">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200/85">Movies Unlock</p>
-            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">{'\u{1F3AC}'} Unlock Aiko&apos;s Movies</h2>
-            <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">
-              Spend <span className="font-black text-cyan-100">{MOVIES_UNLOCK_COST_GEMS} Gems</span> once to unlock the full Movies section.
+          <div className="clay-container rounded-3xl border border-cyan-200 bg-white p-6 text-center shadow-2xl backdrop-blur-xl">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700">Movies Unlock</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">{'\u{1F3AC}'} Unlock Aiko&apos;s Movies</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-700 sm:text-base">
+              Spend <span className="font-black text-cyan-800">{MOVIES_UNLOCK_COST_GEMS} Gems</span> once to unlock the full Movies section.
             </p>
             <button
               type="button"
@@ -496,7 +496,7 @@ export default function VideoZone() {
                       : `Need ${MOVIES_UNLOCK_COST_GEMS} ${'\u{1F48E}'}`}
             </button>
             {!user?.id && (
-              <p className="mt-3 text-xs font-semibold text-slate-300">
+              <p className="mt-3 text-xs font-semibold text-slate-600">
                 Please log in first to unlock with Gems.
               </p>
             )}

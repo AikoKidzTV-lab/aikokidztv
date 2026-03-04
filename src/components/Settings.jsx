@@ -2,8 +2,6 @@ import React from 'react';
 
 const fallbackThemes = [
   { key: 'light', label: 'Light' },
-  { key: 'dark', label: 'Dark' },
-  { key: 'colorblind', label: 'Colorblind' },
 ];
 
 export default function Settings({
@@ -13,8 +11,6 @@ export default function Settings({
   themes = fallbackThemes,
   themeKey = 'light',
   onThemeChange,
-  brightness = 100,
-  onBrightnessChange,
 }) {
   const resolvedIsOpen = typeof isOpen === 'boolean' ? isOpen : Boolean(open);
   if (!resolvedIsOpen) return null;
@@ -63,22 +59,6 @@ export default function Settings({
             })}
           </div>
 
-          <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
-            <label className="flex items-center gap-3">
-              <span className="text-sm font-bold text-slate-700">Brightness</span>
-              <input
-                type="range"
-                min="50"
-                max="100"
-                step="1"
-                value={brightness}
-                onChange={(event) => onBrightnessChange?.(Number(event.target.value))}
-                className="w-full accent-indigo-600"
-                aria-label="Brightness"
-              />
-              <span className="w-10 text-right text-sm font-bold text-slate-700">{brightness}%</span>
-            </label>
-          </div>
         </section>
 
         <section className="mt-6 rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-5">
