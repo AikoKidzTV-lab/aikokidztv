@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import LandingPageHabitat from './components/LandingPageHabitat';
 import Footer from './components/Footer';
 import AdminDashboard from './components/AdminDashboard';
@@ -24,7 +24,7 @@ import { KidsModeProvider, useKidsMode } from './context/KidsModeContext';
 import { AuthModalProvider, useAuthModal } from './context/AuthModalContext';
 import { ParentControlsProvider } from './context/ParentControlsContext';
 import { Gem, ChevronDown, Sparkles, LogOut, Bell } from 'lucide-react';
-import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { ADMIN_EMAIL, isAdminEmail } from './utils/admin';
 import ParentZoneHubPage from './components/parentZone/ParentZoneHubPage';
 import ParentZoneTablesPage from './components/parentZone/ParentZoneTablesPage';
@@ -449,6 +449,12 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const isAdmin = isAdminEmail(user?.email) || String(profile?.role || '').toLowerCase() === 'admin';
   const { isKidsModeOn } = useKidsMode();
   const usageAccumulatorMsRef = React.useRef(0);
+  const forceScrollTop = React.useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const scrollTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    scrollTop();
+    window.requestAnimationFrame(scrollTop);
+  }, []);
   const openSettingsModal = React.useCallback(() => setShowSettings(true), []);
   const closeSettingsModal = React.useCallback(() => setShowSettings(false), []);
 
@@ -722,7 +728,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   if (magicArt) {
     const backHome = () => {
       setMagicArt(false);
-      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+      setTimeout(() => forceScrollTop(), 0);
     };
     return (
       <ErrorBoundary>
@@ -742,7 +748,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     };
     const backToHome = () => {
       setLearningModule(null);
-      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+      setTimeout(() => forceScrollTop(), 0);
     };
     const ComingSoon = ({ title, emoji }) => (
       <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-emerald-50 text-slate-900 flex items-center">
@@ -912,6 +918,30 @@ function AdminRoutePage() {
   return <AdminRouteGuard onBackToSite={() => navigate('/')} />;
 }
 
+function HomeRouteScrollReset() {
+  const location = useLocation();
+
+  React.useLayoutEffect(() => {
+    if (location.pathname !== '/' || typeof window === 'undefined') return undefined;
+
+    const scrollTopNow = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+    // Always force home route to open from the top, never from a preserved section offset.
+    scrollTopNow();
+    const rafId = window.requestAnimationFrame(scrollTopNow);
+
+    // Remove any stale hash like "/#story-studio" when returning home.
+    if (location.hash) {
+      window.history.replaceState(window.history.state, '', '/');
+      scrollTopNow();
+    }
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [location.hash, location.key, location.pathname]);
+
+  return null;
+}
+
 const readParentZoneRouteUnlock = () => {
   if (typeof window === 'undefined') return false;
   try {
@@ -983,6 +1013,7 @@ function App() {
       <KidsModeProvider>
         <ParentControlsProvider>
           <BrowserRouter>
+            <HomeRouteScrollReset />
             <AuthModalProvider>
               <Routes>
                 <Route path="/" element={<HomeRoutePage />} />
