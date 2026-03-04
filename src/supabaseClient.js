@@ -48,14 +48,22 @@ export const appSiteOrigin =
   (appMode === 'production' || isProductionHost ? PRODUCTION_SITE_ORIGIN : runtimeOrigin) ||
   PRODUCTION_SITE_ORIGIN;
 
+export const getAuthRedirectOrigin = () => {
+  const browserOrigin =
+    typeof window !== 'undefined' ? normalizeOrigin(window.location.origin) : null;
+
+  return browserOrigin || appSiteOrigin;
+};
+
 export const getAuthRedirectUrl = (path = '/') => {
   const safePath = typeof path === 'string' && path.trim() ? path.trim() : '/';
   const normalizedPath = safePath.startsWith('/') ? safePath : `/${safePath}`;
+  const redirectOrigin = getAuthRedirectOrigin();
 
   try {
-    return new URL(normalizedPath, `${appSiteOrigin}/`).toString();
+    return new URL(normalizedPath, `${redirectOrigin}/`).toString();
   } catch {
-    return `${appSiteOrigin}${normalizedPath}`;
+    return `${redirectOrigin}${normalizedPath}`;
   }
 };
 

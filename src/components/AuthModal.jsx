@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2, Lock, Mail, Sparkles, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { PRODUCTION_AUTH_REDIRECT_URL, supabase } from '../supabaseClient';
+import { getAuthRedirectUrl, supabase } from '../supabaseClient';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 import { isAdminEmail } from '../utils/admin';
 
@@ -57,7 +57,7 @@ const getAuthRuntimeContext = (mode, email) => ({
   email,
   origin: typeof window !== 'undefined' ? window.location.origin : 'server',
   path: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
-  authRedirectUrl: PRODUCTION_AUTH_REDIRECT_URL,
+  authRedirectUrl: getAuthRedirectUrl('/'),
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '(missing)',
   hasAnonKey: Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY),
 });
@@ -100,7 +100,7 @@ const getBackgroundCheckWarning = (error) => {
 };
 
 const getAuthRedirectUrlForRequest = () => {
-  return PRODUCTION_AUTH_REDIRECT_URL;
+  return getAuthRedirectUrl('/');
 };
 
 const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
@@ -265,6 +265,9 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
         source,
         userId: signedInUser?.id || null,
       });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('aiko:auth-refresh'));
+      }
     }
 
     closeModal();
@@ -381,9 +384,6 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
           supabase.auth.signInWithPassword({
             email: emailToUse,
             password,
-            options: {
-              emailRedirectTo: getAuthRedirectUrlForRequest(),
-            },
           }),
           'signInWithPassword'
         );

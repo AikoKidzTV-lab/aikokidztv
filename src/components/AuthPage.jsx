@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, ArrowRight, Loader, KeyRound, Shield } from 'lucide-react';
-import { PRODUCTION_AUTH_REDIRECT_URL, supabase } from '../supabaseClient';
+import { getAuthRedirectUrl, supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 
 const AUTH_REQUEST_TIMEOUT_MS = 15000;
@@ -50,6 +51,7 @@ const SIGNUP_BONUS_FLAG_PREFIX = 'aiko_signup_bonus_v1_';
 const SIGNUP_BONUS_WINDOW_MS = 30 * 60 * 1000;
 
 const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
+  const { fetchProfile } = useAuth();
   const [mode, setMode] = useState(initialMode); // 'login' | 'reset'
   const [step, setStep] = useState('email'); // 'email' | 'otp' | 'newPassword'
   const [email, setEmail] = useState('');
@@ -86,7 +88,7 @@ const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
           email,
           options: {
             shouldCreateUser: mode !== 'reset', // allow creation for login/signup, block for reset flow
-            emailRedirectTo: PRODUCTION_AUTH_REDIRECT_URL,
+            emailRedirectTo: getAuthRedirectUrl('/'),
           },
         }),
         'Send OTP request',
@@ -143,7 +145,7 @@ const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
         setStep('newPassword');
         setInfo('Verified! Set a new password below.');
       } else {
-        const userId = authData?.user?.id;
+        const userId = authData?.user?.id ?? authData?.session?.user?.id ?? null;
         let bonusApplied = false;
 
         if (userId) {
@@ -200,6 +202,14 @@ const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
             ? `Logged in successfully! Welcome bonus unlocked: +${NEW_USER_BONUS_GEMS} Gems.`
             : 'Logged in successfully!'
         );
+        if (userId) {
+          await fetchProfile?.(userId, { retryCount: 2, preferDirect: true });
+          if (typeof window !== 'undefined') {
+            window.setTimeout(() => {
+              void fetchProfile?.(userId, { retryCount: 1, preferDirect: true });
+            }, 200);
+          }
+        }
         if (onLoginSuccess) onLoginSuccess();
       }
     } catch (err) {
@@ -224,6 +234,11 @@ const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
       );
       if (updateError) throw updateError;
       setInfo('Password updated! You are now signed in.');
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id || null;
+      if (userId) {
+        await fetchProfile?.(userId, { retryCount: 2, preferDirect: true });
+      }
       if (onLoginSuccess) onLoginSuccess();
     } catch (err) {
       setError(getAuthErrorMessage(err, 'Failed to update password.'));
