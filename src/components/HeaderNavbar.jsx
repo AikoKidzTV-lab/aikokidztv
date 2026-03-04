@@ -28,9 +28,8 @@ function ProfileDropdownMenu({
   onOpenLogin,
   onOpenSignup,
   onOpenParentZone,
+  onOpenCosmicJourney,
   onGoToAdmin,
-  displayMode = 'light',
-  onSetDisplayMode,
 }) {
   if (!open) return null;
 
@@ -38,10 +37,6 @@ function ProfileDropdownMenu({
   const isLoggedIn = Boolean(user);
   const canSeeAdminPanel =
     user?.email === ADMIN_EMAIL || String(profile?.role || '').toLowerCase() === 'admin';
-  const modeOptions = [
-    { key: 'light', label: 'Light', icon: '\u2600\uFE0F' },
-    { key: 'dark', label: 'Dark', icon: '\uD83C\uDF19' },
-  ];
 
   const run = (fn) => () => {
     fn?.();
@@ -110,40 +105,12 @@ function ProfileDropdownMenu({
       </div>
 
       <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-800/80">
-        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Display Controls</p>
-
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {modeOptions.map((mode) => {
-            const active = displayMode === mode.key;
-            return (
-              <button
-                key={mode.key}
-                type="button"
-                onClick={() => onSetDisplayMode?.(mode.key)}
-                aria-pressed={active}
-                className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
-                  active
-                    ? 'border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-500 dark:bg-sky-500/20 dark:text-sky-100'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                <span className="mr-1">{mode.icon}</span>
-                {mode.label}
-              </button>
-            );
-          })}
-        </div>
-
         <button
           type="button"
-          onClick={run(() => {
-            if (typeof window !== 'undefined') {
-              window.location.assign('/parent-zone/cosmic-journey');
-            }
-          })}
-          className="mt-3 w-full rounded-xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-3 py-2.5 text-left text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
+          onClick={run(onOpenCosmicJourney)}
+          className="w-full rounded-xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-3 py-2.5 text-left text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
         >
-          🚀 Cosmic Journey
+          {'\u{1F680}'} Cosmic Journey
           <span className="block text-xs font-semibold text-indigo-100">Open secure space exploration zone</span>
         </button>
       </div>
@@ -156,16 +123,13 @@ export default function HeaderNavbar({
   onOpenLogin,
   onOpenSignup,
   onOpenParentZone,
+  onOpenCosmicJourney,
   isAdmin,
   onGoToAdmin,
   onGoToVideos,
   onGoToPoems,
   isForcedOffline,
   onToggleForcedOffline,
-  displayMode = 'light',
-  onSetDisplayMode = () => {},
-  brightness = 100,
-  onBrightnessChange = () => {},
 }) {
   const { user, profile } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -380,11 +344,8 @@ export default function HeaderNavbar({
               onOpenLogin={onOpenLogin}
               onOpenSignup={onOpenSignup}
               onOpenParentZone={onOpenParentZone}
+              onOpenCosmicJourney={onOpenCosmicJourney}
               onGoToAdmin={onGoToAdmin}
-              displayMode={displayMode}
-              onSetDisplayMode={onSetDisplayMode}
-              brightness={brightness}
-              onBrightnessChange={onBrightnessChange}
             />
           </div>
         </div>
@@ -393,5 +354,4 @@ export default function HeaderNavbar({
     </>
   );
 }
-
 

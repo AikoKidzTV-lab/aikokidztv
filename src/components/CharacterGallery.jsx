@@ -7,33 +7,49 @@ const featuredCharacters = [
     key: 'aiko',
     name: 'AIKO BIO',
     role: 'Energetic Leader',
-    emoji: '🌟',
+    emoji: '\u{1F31F}',
     route: '/aiko-bio',
-    theme: 'border-white/40 bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-500',
+    theme: 'from-amber-200 via-yellow-100 to-orange-200',
   },
   {
     key: 'niko',
     name: 'NIKO BIO',
     role: 'The Calm Singer',
-    emoji: '🎤',
+    emoji: '\u{1F3A4}',
     route: '/niko-bio',
-    theme: 'border-white/40 bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600',
+    theme: 'from-rose-200 via-pink-100 to-fuchsia-200',
   },
   {
     key: 'kinu',
     name: 'KINU BIO',
     role: 'Smart Dancer',
-    emoji: '🕺',
+    emoji: '\u{1F57A}',
     route: '/kinu-bio',
-    theme: 'border-white/40 bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600',
+    theme: 'from-violet-200 via-purple-100 to-indigo-200',
   },
   {
     key: 'mimi',
     name: 'MIMI BIO',
     role: 'Creative Artist',
-    emoji: '🎨',
+    emoji: '\u{1F3A8}',
     route: '/mimi-bio',
-    theme: 'border-white/40 bg-gradient-to-br from-sky-500 via-cyan-500 to-blue-600',
+    theme: 'from-sky-200 via-cyan-100 to-blue-200',
+  },
+  {
+    key: 'miko',
+    name: 'MIKO BIO',
+    role: 'Curious Explorer',
+    emoji: '\u{1F9ED}',
+    route: '/miko-bio',
+    theme: 'from-emerald-200 via-teal-100 to-cyan-200',
+  },
+  {
+    key: 'chiko',
+    name: 'CHIKO BIO',
+    role: 'Fun Prankster',
+    emoji: '\u{1F61C}',
+    route: '/chiko-bio',
+    theme: 'from-lime-200 via-amber-100 to-yellow-200',
   },
 ];
 
@@ -49,7 +65,7 @@ const CharacterGallery = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {featuredCharacters.map((char, index) => (
           <motion.div
             key={char.key}
@@ -59,25 +75,31 @@ const CharacterGallery = () => {
           >
             <Link
               to={char.route}
-              className={`group relative block overflow-hidden rounded-2xl border-2 p-6 shadow-md transition duration-300 hover:-translate-y-1 hover:shadow-xl ${char.theme}`}
+              className={`group relative block overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br p-6 transition duration-300 hover:-translate-y-1 ${char.theme} [box-shadow:14px_14px_30px_rgba(148,163,184,0.35),-10px_-10px_24px_rgba(255,255,255,0.8),inset_1px_1px_3px_rgba(255,255,255,0.9),inset_-4px_-4px_10px_rgba(15,23,42,0.10)]`}
             >
-              <div className="pointer-events-none absolute inset-0 bg-slate-900/35" />
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    'radial-gradient(circle at 20% 12%, rgba(255,255,255,0.65), transparent 36%), radial-gradient(circle at 85% 85%, rgba(15,23,42,0.12), transparent 45%)',
+                }}
+              />
 
               <div className="relative z-10 flex items-center gap-4">
-                <div className="grid h-14 w-14 place-items-center rounded-full border border-white/70 bg-white/90 text-2xl shadow-inner">
-                  <span className="[text-shadow:0_2px_4px_rgba(0,0,0,0.45)]">{char.emoji}</span>
+                <div className="grid h-14 w-14 place-items-center rounded-full border border-white/80 bg-white/90 text-2xl [box-shadow:inset_2px_2px_6px_rgba(255,255,255,0.9),inset_-3px_-4px_8px_rgba(15,23,42,0.12)]">
+                  <span>{char.emoji}</span>
                 </div>
                 <div className="min-w-0">
-                  <h3 className="truncate text-lg font-black tracking-wide text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.9)]">
+                  <h3 className="truncate text-lg font-black tracking-wide text-slate-900">
                     {char.name}
                   </h3>
-                  <p className="text-sm font-bold text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.9)]">
+                  <p className="text-sm font-bold text-slate-700">
                     {char.role}
                   </p>
                 </div>
               </div>
 
-              <div className="relative z-10 mt-4 rounded-xl border border-white/70 bg-white/95 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-slate-900">
+              <div className="relative z-10 mt-4 rounded-xl border border-white/80 bg-white/90 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-slate-900 [box-shadow:inset_1px_1px_3px_rgba(255,255,255,0.8),inset_-2px_-2px_6px_rgba(15,23,42,0.12)]">
                 Open Page
               </div>
             </Link>

@@ -197,6 +197,9 @@ const buildEconomyBackfill = (profile = null) => {
   if (hasOwn(profile, 'unlocked_zones') && !Array.isArray(profile?.unlocked_zones)) {
     patch.unlocked_zones = [];
   }
+  if (hasOwn(profile, 'unlocked_features') && !Array.isArray(profile?.unlocked_features)) {
+    patch.unlocked_features = [];
+  }
   if (supportsUnlockedVideosColumn && hasUnlockedVideos && !Array.isArray(profile?.unlocked_videos)) {
     patch.unlocked_videos = [];
   }
@@ -573,6 +576,164 @@ export const unlockZoneWithGems = async ({ userId, zoneId, costGems }) => {
     }
 
     const latestGems = normalizeNumber(latestProfile?.gems, 0);
+    if (latestGems < spend) {
+      return {
+        ok: false,
+        code: 'insufficient_gems',
+        message: `You need ${spend} Gems but only have ${latestGems}.`,
+        gems: latestGems,
+        required: spend,
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    code: 'profile_sync_conflict',
+    message: 'Profile was updated from another session. Please try again.',
+  };
+};
+
+export const unlockFeatureWithGems = async ({ userId, featureId, costGems }) => {
+  if (!userId) return { ok: false, code: 'auth_required', message: 'Please log in first.' };
+  if (!featureId || typeof featureId !== 'string') {
+    return { ok: false, code: 'invalid_feature', message: 'Invalid feature id.' };
+  }
+
+  const spend = normalizeNumber(costGems, 0);
+  if (spend <= 0) {
+    return { ok: false, code: 'invalid_cost', message: 'Invalid unlock cost.' };
+  }
+
+  const runRead = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error && isMissingColumnError(error, 'unlocked_features')) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('profiles')
+        .select('gems')
+        .eq('id', userId)
+        .single();
+
+      if (fallbackError) {
+        return { data: null, error: fallbackError, hasUnlockedFeaturesColumn: false };
+      }
+
+      return {
+        data: {
+          gems: normalizeNumber(fallbackData?.gems, 0),
+          unlocked_features: [],
+        },
+        error: null,
+        hasUnlockedFeaturesColumn: false,
+      };
+    }
+
+    return { data, error, hasUnlockedFeaturesColumn: true };
+  };
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data: latestProfile, error: latestProfileError, hasUnlockedFeaturesColumn } = await runRead();
+
+    if (latestProfileError) {
+      if (isRlsDeniedError(latestProfileError)) {
+        return {
+          ok: false,
+          code: 'rls_update_denied',
+          message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
+        };
+      }
+      return {
+        ok: false,
+        code: 'profile_fetch_error',
+        message: latestProfileError.message || 'Failed to refresh profile before unlock.',
+      };
+    }
+
+    if (!hasUnlockedFeaturesColumn) {
+      return {
+        ok: false,
+        code: 'missing_unlocked_features_column',
+        message: 'profiles.unlocked_features column is missing from the active schema.',
+      };
+    }
+
+    const currentGems = normalizeNumber(latestProfile?.gems, 0);
+    const currentUnlockedFeatures = normalizeStringArray(latestProfile?.unlocked_features ?? []);
+
+    if (currentUnlockedFeatures.includes(featureId)) {
+      const latest = await readEconomyState(userId);
+      if (latest.ok) {
+        return { ok: true, alreadyUnlocked: true, profile: latest.profile };
+      }
+      return {
+        ok: true,
+        alreadyUnlocked: true,
+        profile: normalizeEconomyProfile({
+          gems: currentGems,
+          unlocked_features: currentUnlockedFeatures,
+        }),
+      };
+    }
+
+    const nextUnlockedFeatures = [...new Set([...currentUnlockedFeatures, featureId])];
+    const { data: updatedProfile, error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        gems: Math.max(0, currentGems - spend),
+        unlocked_features: nextUnlockedFeatures,
+      })
+      .eq('id', userId)
+      .eq('gems', currentGems)
+      .gte('gems', spend)
+      .select(ECONOMY_SELECT_COLUMNS)
+      .maybeSingle();
+
+    if (updateError) {
+      if (isMissingColumnError(updateError, 'magic_art_uses')) {
+        markMagicArtUsesUnsupported();
+      }
+
+      if (isRlsDeniedError(updateError)) {
+        return {
+          ok: false,
+          code: 'rls_update_denied',
+          message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
+        };
+      }
+
+      if (isMissingColumnError(updateError, 'unlocked_features')) {
+        return {
+          ok: false,
+          code: 'missing_unlocked_features_column',
+          message: 'profiles.unlocked_features column is missing from the active schema.',
+        };
+      }
+
+      return {
+        ok: false,
+        code: 'profile_update_error',
+        message: updateError.message || 'Could not unlock feature right now.',
+      };
+    }
+
+    if (updatedProfile) {
+      return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(updatedProfile)) };
+    }
+
+    const latest = await readEconomyState(userId);
+    if (!latest.ok) return latest;
+
+    const latestFeatures = normalizeStringArray(latest.profile?.unlocked_features);
+    if (latestFeatures.includes(featureId)) {
+      return { ok: true, alreadyUnlocked: true, profile: latest.profile };
+    }
+
+    const latestGems = normalizeNumber(latest.profile?.gems, 0);
     if (latestGems < spend) {
       return {
         ok: false,

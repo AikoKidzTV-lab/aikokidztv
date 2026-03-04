@@ -38,6 +38,8 @@ import AikoBioPage from './components/pages/AikoBioPage';
 import NikoBioPage from './components/pages/NikoBioPage';
 import KinuBioPage from './components/pages/KinuBioPage';
 import MimiBioPage from './components/pages/MimiBioPage';
+import MikoBioPage from './components/pages/MikoBioPage';
+import ChikoBioPage from './components/pages/ChikoBioPage';
 
 const themes = [
   { key: 'light', label: 'Light Mode' },
@@ -421,6 +423,7 @@ const Navbar = ({
 };
 
 const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
+  const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const { openAuthModal, isAuthModalOpen } = useAuthModal();
   const [displayMode, setDisplayMode] = useState(() => {
@@ -436,6 +439,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [parentPinGateOpen, setParentPinGateOpen] = useState(false);
+  const [pendingParentRoute, setPendingParentRoute] = useState('');
   const [parentZoneOpen, setParentZoneOpen] = useState(false);
   const [skipParentZonePinOnce, setSkipParentZonePinOnce] = useState(false);
   const [isForcedOffline, setIsForcedOffline] = useState(false);
@@ -568,12 +572,29 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     }, 0);
   };
 
-  const requestParentZoneAccess = () => {
+  const requestParentZoneAccess = (targetRoute = '') => {
     closeSettingsModal();
+    setPendingParentRoute(targetRoute || '');
     setParentPinGateOpen(true);
   };
 
+  const handleParentPinGateClose = () => {
+    setParentPinGateOpen(false);
+    setPendingParentRoute('');
+  };
+
   const handleParentZoneUnlocked = () => {
+    if (pendingParentRoute) {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(PARENT_ZONE_ROUTE_UNLOCK_KEY, 'true');
+      }
+      const target = pendingParentRoute;
+      setPendingParentRoute('');
+      setParentPinGateOpen(false);
+      navigate(target);
+      return;
+    }
+
     setSkipParentZonePinOnce(true);
     setParentZoneOpen(true);
   };
@@ -662,7 +683,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
           />
           <ParentPinGateModal
             open={parentPinGateOpen}
-            onClose={() => setParentPinGateOpen(false)}
+            onClose={handleParentPinGateClose}
             onUnlocked={handleParentZoneUnlocked}
           />
           <Settings
@@ -776,20 +797,17 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
         onOpenLogin={() => openAuthModal('login')}
         onOpenSignup={() => openAuthModal('signup')}
         onOpenParentZone={requestParentZoneAccess}
+        onOpenCosmicJourney={() => requestParentZoneAccess('/parent-zone/cosmic-journey')}
         isAdmin={isAdmin}
         onGoToAdmin={onGoToAdmin}
         onGoToVideos={onGoToVideos}
         onGoToPoems={onGoToPoems}
         isForcedOffline={isForcedOffline}
         onToggleForcedOffline={() => setIsForcedOffline((v) => !v)}
-        displayMode={displayMode}
-        onSetDisplayMode={setDisplayMode}
-        brightness={brightness}
-        onBrightnessChange={setBrightness}
       />
       <ParentPinGateModal
         open={parentPinGateOpen}
-        onClose={() => setParentPinGateOpen(false)}
+        onClose={handleParentPinGateClose}
         onUnlocked={handleParentZoneUnlocked}
       />
       <KidsMascot />
@@ -975,6 +993,8 @@ function App() {
               <Route path="/niko-bio" element={<NikoBioPage />} />
               <Route path="/kinu-bio" element={<KinuBioPage />} />
               <Route path="/mimi-bio" element={<MimiBioPage />} />
+              <Route path="/miko-bio" element={<MikoBioPage />} />
+              <Route path="/chiko-bio" element={<ChikoBioPage />} />
               <Route path="/parent-zone" element={<ParentZoneRouteGuard><ParentZoneHubPage /></ParentZoneRouteGuard>} />
               <Route path="/parent-zone/tables" element={<ParentZoneRouteGuard><ParentZoneTablesPage /></ParentZoneRouteGuard>} />
               <Route path="/parent-zone/numbers" element={<ParentZoneRouteGuard><ParentZoneNumbersPage /></ParentZoneRouteGuard>} />
