@@ -38,7 +38,7 @@ export default function ShapesSection({ onShapeClick, activeId }) {
         {/* Custom Parent Note */}
         <div className="mt-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r-xl">
           <p className="text-indigo-900 font-semibold text-sm">
-            💡 <span className="font-extrabold">Fun Fact:</span> Some shapes even parents don't know! So learn
+            {'\u{1F4A1}'} <span className="font-extrabold">Fun Fact:</span> Some shapes even parents don't know! So learn
             with your kidz only on AikoKidzTV site and app.
           </p>
         </div>

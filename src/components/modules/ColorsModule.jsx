@@ -172,30 +172,30 @@ const ColorsModule = ({ onBack, onHome }) => {
             onClick={onBack}
             className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-slate-800 shadow hover:shadow-md transition"
           >
-            ⬅️ Back to Learning Zone
+            {'\u2B05\uFE0F'} Back to Learning Zone
           </button>
           <button
             onClick={onHome}
             className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-800 shadow hover:shadow-md hover:bg-sky-200 transition"
           >
-            🏠 Back to Home
+            {'\u{1F3E0}'} Back to Home
           </button>
           <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-900 shadow">
             <span>Gems:</span>
             <span>{gemsBalance}</span>
           </div>
           <div className="ml-auto flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-slate-700 shadow">
-            <span className="text-lg">🔊</span>
+            <span className="text-lg">{'\u{1F50A}'}</span>
             {speechReady ? 'Tap a palette then paint!' : 'Speech not supported'}
           </div>
         </div>
 
         <div className="flex flex-col gap-2 mb-8">
           <p className="text-xs uppercase tracking-[0.3em] text-emerald-500">
-            AikoKidzTV • Learning Zone
+            {'AikoKidzTV \u2022 Learning Zone'}
           </p>
           <h1 className="text-4xl md:text-5xl font-black drop-shadow-sm flex items-center gap-3">
-            🎨 Color Fill Game & Shapes
+            {'\u{1F3A8}'} Color Fill Game & Shapes
           </h1>
           <p className="text-base md:text-lg text-slate-700/90 max-w-2xl">
             Pick a paint color, tap a canvas to fill it, celebrate when you match, and keep exploring friendly shapes below.
@@ -205,7 +205,7 @@ const ColorsModule = ({ onBack, onHome }) => {
         {/* Empathy & Inclusion Zone */}
         <div className="bg-blue-50 rounded-xl p-6 mb-8 border-2 border-blue-800 shadow-md">
           <h3 className="text-2xl font-extrabold text-blue-900 mb-4 border-b-2 border-blue-200 pb-2">
-            🌍 Empathy & Inclusion Zone
+            {'\u{1F30D}'} Empathy & Inclusion Zone
           </h3>
           <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg border-2 border-gray-300">
@@ -230,7 +230,7 @@ const ColorsModule = ({ onBack, onHome }) => {
             </div>
             <div className="bg-yellow-100 p-4 rounded-lg border-l-8 border-yellow-500">
               <h4 className="font-bold text-lg text-black flex items-center gap-2">
-                💪 Empathy Lens (For Everyone Else)
+                {'\u{1F4AA}'} Empathy Lens (For Everyone Else)
               </h4>
               <p className="text-sm text-gray-800 font-medium mt-1">
                 Toggle the switch above to see how colorblind people see their world. <strong>Please understand their view - don't make any meme on them.</strong> Let's build empathy and understand that everyone's world is beautiful in its own way.
@@ -264,11 +264,11 @@ const ColorsModule = ({ onBack, onHome }) => {
                   }`}
                   style={{ backgroundColor: displayHex }}
                 >
-                  {isLocked && (
-                    <span className="absolute inset-0 flex items-center justify-center text-white drop-shadow-md text-xs">
-                      🔒
-                    </span>
-                  )}
+                    {isLocked && (
+                      <span className="absolute inset-0 flex items-center justify-center text-white drop-shadow-md text-xs">
+                        {'\u{1F512}'}
+                      </span>
+                    )}
                 </button>
               );
             })}
@@ -299,7 +299,7 @@ const ColorsModule = ({ onBack, onHome }) => {
                       {color.name}
                       {isLocked && (
                         <span className="text-xs bg-amber-100 text-amber-800 border border-amber-300 px-2 py-1 rounded-full font-bold">
-                          🔒 {color.unlockCost} Gems required
+                          {'\u{1F512}'} {color.unlockCost} Gems required
                         </span>
                       )}
                     </h3>

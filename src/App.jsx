@@ -454,7 +454,17 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     const scrollTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     scrollTop();
     window.requestAnimationFrame(scrollTop);
+    window.setTimeout(scrollTop, 0);
   }, []);
+  const navigateHomeToTop = React.useCallback(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      window.history.replaceState(window.history.state, '', '/');
+    }
+    setLearningModule(null);
+    setMagicArt(false);
+    navigate('/');
+    forceScrollTop();
+  }, [forceScrollTop, navigate]);
   const openSettingsModal = React.useCallback(() => setShowSettings(true), []);
   const closeSettingsModal = React.useCallback(() => setShowSettings(false), []);
 
@@ -726,10 +736,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   }
 
   if (magicArt) {
-    const backHome = () => {
-      setMagicArt(false);
-      setTimeout(() => forceScrollTop(), 0);
-    };
+    const backHome = () => navigateHomeToTop();
     return (
       <ErrorBoundary>
         <MagicArt key="magic-art-screen" onBack={backHome} />
@@ -747,8 +754,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
       }, 0);
     };
     const backToHome = () => {
-      setLearningModule(null);
-      setTimeout(() => forceScrollTop(), 0);
+      navigateHomeToTop();
     };
     const ComingSoon = ({ title, emoji }) => (
       <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-emerald-50 text-slate-900 flex items-center">
@@ -938,6 +944,15 @@ function HomeRouteScrollReset() {
 
     return () => window.cancelAnimationFrame(rafId);
   }, [location.hash, location.key, location.pathname]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !('scrollRestoration' in window.history)) return undefined;
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    return () => {
+      window.history.scrollRestoration = previous;
+    };
+  }, []);
 
   return null;
 }
