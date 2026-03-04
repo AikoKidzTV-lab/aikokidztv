@@ -28,6 +28,7 @@ export default function BlenderCredit() {
           <div className="mt-8 flex justify-center">
             <Link
               to="/"
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
               className="rounded-2xl border border-purple-300 bg-purple-600 px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-purple-700"
             >
               🔙 Back to Home

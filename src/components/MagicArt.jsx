@@ -298,7 +298,7 @@ const MagicArt = ({ onBack }) => {
       onBack();
       return;
     }
-    window.location.reload();
+    window.location.assign('/');
   };
 
   return (
@@ -529,4 +529,3 @@ const MagicArt = ({ onBack }) => {
 };
 
 export default MagicArt;
-

@@ -25,6 +25,7 @@ export default function CharacterBioPageLayout({ character }) {
         <div className="mb-6 flex items-center gap-3">
           <Link
             to="/"
+            onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
             className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 hover:bg-slate-50"
           >
             Back to Home

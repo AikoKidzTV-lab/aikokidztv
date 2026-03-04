@@ -921,7 +921,14 @@ function HomeRoutePage() {
 function AdminRoutePage() {
   const navigate = useNavigate();
 
-  return <AdminRouteGuard onBackToSite={() => navigate('/')} />;
+  return (
+    <AdminRouteGuard
+      onBackToSite={() => {
+        navigate('/');
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      }}
+    />
+  );
 }
 
 function RouteScrollToTop() {
@@ -1007,7 +1014,10 @@ function ParentZoneRouteGuard({ children }) {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/')}
+                onClick={() => {
+                  navigate('/');
+                  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+                }}
                 className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50"
               >
                 Back to Home

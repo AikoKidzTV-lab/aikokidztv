@@ -15,12 +15,12 @@ const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').trim();
 const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 const publicSiteUrl = String(import.meta.env.VITE_PUBLIC_SITE_URL || '').trim();
 const appMode = String(import.meta.env.MODE || '').trim();
-const PRODUCTION_SITE_ORIGIN = 'https://aikokidztv.com';
+const PRODUCTION_SITE_ORIGIN = 'https://www.aikokidztv.com';
 export const PRODUCTION_AUTH_REDIRECT_URL = `${PRODUCTION_SITE_ORIGIN}/`;
 const runtimeOrigin =
   typeof window !== 'undefined' ? normalizeOrigin(window.location.origin) : null;
 const runtimeHostName = typeof window !== 'undefined' ? window.location.hostname : '';
-const isProductionHost = /(^|\.)aikokidztv\.com$/i.test(runtimeHostName);
+const isAikokidzDomainHost = /(^|\.)aikokidztv\.com$/i.test(runtimeHostName);
 const getBrowserLocalStorage = () => {
   if (typeof window === 'undefined') return undefined;
   try {
@@ -45,12 +45,20 @@ if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(supabaseUrl)) {
 
 export const appSiteOrigin =
   normalizeOrigin(publicSiteUrl) ||
-  (appMode === 'production' || isProductionHost ? PRODUCTION_SITE_ORIGIN : runtimeOrigin) ||
+  (appMode === 'production' || isAikokidzDomainHost ? PRODUCTION_SITE_ORIGIN : runtimeOrigin) ||
   PRODUCTION_SITE_ORIGIN;
 
 export const getAuthRedirectOrigin = () => {
   const browserOrigin =
     typeof window !== 'undefined' ? normalizeOrigin(window.location.origin) : null;
+  const browserHostName =
+    typeof window !== 'undefined' ? String(window.location.hostname || '').trim() : '';
+  const isBrowserOnAikokidzDomain = /(^|\.)aikokidztv\.com$/i.test(browserHostName);
+
+  // Keep production auth redirects pinned to the canonical www domain.
+  if (isBrowserOnAikokidzDomain || appMode === 'production') {
+    return PRODUCTION_SITE_ORIGIN;
+  }
 
   return browserOrigin || appSiteOrigin;
 };
