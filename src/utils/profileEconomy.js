@@ -142,6 +142,7 @@ export const normalizeEconomyProfile = (profile = null) => {
     gems: normalizeNumber(profile.gems, 0),
     magic_art_uses: normalizeNumber(profile.magic_art_uses, magicArtFallback),
     unlocked_zones: normalizeStringArray(profile.unlocked_zones),
+    unlocked_features: normalizeStringArray(profile.unlocked_features),
     unlocked_videos: supportsUnlockedVideosColumn
       ? normalizeStringArray(profile.unlocked_videos)
       : [],

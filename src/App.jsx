@@ -54,6 +54,7 @@ const DISPLAY_MODE_STORAGE_KEY = 'aiko_display_mode';
 const BRIGHTNESS_STORAGE_KEY = 'aiko_brightness_pct';
 const WELLBEING_USAGE_STORAGE_KEY = 'aiko_wellbeing_usage_v1';
 const WELLBEING_SYNC_EVENT = 'aiko:wellbeing-sync';
+const PARENT_ZONE_ROUTE_UNLOCK_KEY = 'aiko_parent_zone_route_unlock_v1';
 const DAILY_LIMIT_MINUTES = 300;
 const LEARNING_ZONE_CORE_MODULES = new Set(['alphabets', 'numbers']);
 const LEARNING_ZONE_PREMIUM_MODULES = new Set(['colors', 'animals']);
@@ -888,6 +889,71 @@ function AdminRoutePage() {
   return <AdminRouteGuard onBackToSite={() => navigate('/')} />;
 }
 
+const readParentZoneRouteUnlock = () => {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.sessionStorage.getItem(PARENT_ZONE_ROUTE_UNLOCK_KEY) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+function ParentZoneRouteGuard({ children }) {
+  const navigate = useNavigate();
+  const [isUnlocked, setIsUnlocked] = useState(() => readParentZoneRouteUnlock());
+  const [showPinModal, setShowPinModal] = useState(() => !readParentZoneRouteUnlock());
+
+  const handleUnlocked = () => {
+    setIsUnlocked(true);
+    setShowPinModal(false);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(PARENT_ZONE_ROUTE_UNLOCK_KEY, 'true');
+    }
+  };
+
+  if (isUnlocked) {
+    return children;
+  }
+
+  return (
+    <>
+      <div className="min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-100 px-4 py-10">
+        <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center">
+          <div className="w-full rounded-[1.75rem] border border-indigo-200 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+            <div className="mb-4 text-5xl">🔒</div>
+            <h1 className="text-2xl font-black text-slate-900">Parent Zone Locked</h1>
+            <p className="mt-3 text-sm font-semibold text-slate-600">
+              Enter the 4-digit parent PIN to open this route.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPinModal(true)}
+                className="rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-black text-white shadow-sm hover:bg-indigo-700"
+              >
+                Unlock Parent Zone
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+              >
+                Back to Home
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ParentPinGateModal
+        open={showPinModal}
+        onClose={() => setShowPinModal(false)}
+        onUnlocked={handleUnlocked}
+      />
+    </>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -904,24 +970,24 @@ function App() {
                 <Route path="/coloring" element={<ColoringBook />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/blender-credit" element={<BlenderCredit />} />
-                <Route path="/aiko-bio" element={<AikoBioPage />} />
-                <Route path="/niko-bio" element={<NikoBioPage />} />
-                <Route path="/kinu-bio" element={<KinuBioPage />} />
-                <Route path="/mimi-bio" element={<MimiBioPage />} />
-                <Route path="/parent-zone" element={<ParentZoneHubPage />} />
-                <Route path="/parent-zone/tables" element={<ParentZoneTablesPage />} />
-                <Route path="/parent-zone/numbers" element={<ParentZoneNumbersPage />} />
-                <Route path="/numbers" element={<ParentZoneNumbersPage />} />
-                <Route path="/parent-zone/law" element={<ParentZoneJuniorLawPage />} />
-                <Route path="/parent-zone/rights" element={<ParentZoneJuniorRightsPage />} />
-                <Route path="/parent-zone/junior-law" element={<ParentZoneJuniorLawPage />} />
-                <Route path="/parent-zone/junior-rights" element={<ParentZoneJuniorRightsPage />} />
-                <Route path="/parent-zone/science" element={<ParentZoneSciencePage />} />
-                <Route path="/parent-zone/junior-science" element={<ParentZoneSciencePage />} />
-                <Route path="/parent-zone/calculator" element={<ParentZoneCalculatorPage />} />
-              </Routes>
-            </AuthModalProvider>
-          </BrowserRouter>
+              <Route path="/aiko-bio" element={<AikoBioPage />} />
+              <Route path="/niko-bio" element={<NikoBioPage />} />
+              <Route path="/kinu-bio" element={<KinuBioPage />} />
+              <Route path="/mimi-bio" element={<MimiBioPage />} />
+              <Route path="/parent-zone" element={<ParentZoneRouteGuard><ParentZoneHubPage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/tables" element={<ParentZoneRouteGuard><ParentZoneTablesPage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/numbers" element={<ParentZoneRouteGuard><ParentZoneNumbersPage /></ParentZoneRouteGuard>} />
+              <Route path="/numbers" element={<ParentZoneRouteGuard><ParentZoneNumbersPage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/law" element={<ParentZoneRouteGuard><ParentZoneJuniorLawPage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/rights" element={<ParentZoneRouteGuard><ParentZoneJuniorRightsPage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/junior-law" element={<ParentZoneRouteGuard><ParentZoneJuniorLawPage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/junior-rights" element={<ParentZoneRouteGuard><ParentZoneJuniorRightsPage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/science" element={<ParentZoneRouteGuard><ParentZoneSciencePage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/junior-science" element={<ParentZoneRouteGuard><ParentZoneSciencePage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/calculator" element={<ParentZoneRouteGuard><ParentZoneCalculatorPage /></ParentZoneRouteGuard>} />
+            </Routes>
+          </AuthModalProvider>
+        </BrowserRouter>
         </ParentControlsProvider>
       </KidsModeProvider>
     </AuthProvider>

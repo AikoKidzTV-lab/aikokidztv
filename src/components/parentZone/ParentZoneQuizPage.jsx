@@ -159,6 +159,7 @@ export default function ParentZoneQuizPage({
   quizEmoji = 'Quiz',
   variant = 'law',
   questions = [],
+  headerActions = null,
   milestoneSize = DEFAULT_MILESTONE_SIZE,
   passThreshold = DEFAULT_PASS_THRESHOLD,
   finalPassRewardGems = DEFAULT_FINAL_PASS_REWARD_GEMS,
@@ -475,8 +476,11 @@ export default function ParentZoneQuizPage({
     <ParentZoneRouteLayout title={title} description={description}>
       <section className={`rounded-3xl border ${theme.cardBorder} ${theme.cardBg} p-5 shadow-sm sm:p-7`}>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div className={`rounded-full border px-4 py-1.5 text-sm font-black ${theme.badge}`}>
-            {quizEmoji} {totalQuestions} Question Test
+          <div className="flex flex-wrap items-center gap-2">
+            <div className={`rounded-full border px-4 py-1.5 text-sm font-black ${theme.badge}`}>
+              {quizEmoji} {totalQuestions} Question Test
+            </div>
+            {headerActions}
           </div>
           <p className="text-sm font-black text-slate-900">
             {isCompleted

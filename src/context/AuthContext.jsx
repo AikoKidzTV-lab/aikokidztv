@@ -74,6 +74,7 @@ export const AuthProvider = ({ children }) => {
       ...rawProfile,
       gems: Number.isFinite(gems) ? Math.max(0, Math.floor(gems)) : 0,
       unlocked_zones: toStringArray(rawProfile.unlocked_zones),
+      unlocked_features: toStringArray(rawProfile.unlocked_features),
       unlocked_videos: toStringArray(rawProfile.unlocked_videos),
       unlocked_items: toStringArray(rawProfile.unlocked_items),
       claimed_rewards: toStringArray(rawProfile.claimed_rewards),
