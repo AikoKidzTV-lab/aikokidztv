@@ -1,12 +1,7 @@
 import React from 'react';
 import CharacterBioPageLayout from './CharacterBioPageLayout';
+import { CHARACTER_PROFILE_BY_KEY } from '../../constants/characters';
 
 export default function MikoBioPage() {
-  return (
-    <CharacterBioPageLayout
-      title="Miko Bio"
-      emoji={'\u{1F9ED}'}
-      description="Dedicated route for Miko Bio."
-    />
-  );
+  return <CharacterBioPageLayout character={CHARACTER_PROFILE_BY_KEY.miko} />;
 }

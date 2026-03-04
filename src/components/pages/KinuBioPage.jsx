@@ -1,13 +1,7 @@
 import React from 'react';
 import CharacterBioPageLayout from './CharacterBioPageLayout';
+import { CHARACTER_PROFILE_BY_KEY } from '../../constants/characters';
 
 export default function KinuBioPage() {
-  return (
-    <CharacterBioPageLayout
-      title="Kinu Bio"
-      emoji="🕺"
-      description="Dedicated route for Kinu Bio."
-    />
-  );
+  return <CharacterBioPageLayout character={CHARACTER_PROFILE_BY_KEY.kinu} />;
 }
-

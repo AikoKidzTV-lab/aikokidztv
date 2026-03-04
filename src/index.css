@@ -14,12 +14,14 @@
   --text-strong-contrast: #0b1220;
   --text-body-contrast: #111827;
   --text-muted-contrast: #1f2937;
-  --clay-surface-bg: rgba(255, 255, 255, 0.7);
-  --clay-surface-border: rgba(255, 255, 255, 0.62);
-  --clay-shadow-outer: 16px 16px 32px #c8d0d8, -16px -16px 32px #ffffff;
-  --clay-shadow-inner: inset 4px 4px 8px rgba(255, 255, 255, 0.8), inset -4px -4px 8px rgba(0, 0, 0, 0.05);
+  --clay-surface-bg: #ffffff;
+  --clay-surface-border: rgba(14, 116, 144, 0.2);
+  --clay-shadow-outer: 16px 16px 32px rgba(14, 116, 144, 0.22), -16px -16px 32px rgba(255, 255, 255, 0.92);
+  --clay-shadow-inner: inset 4px 4px 8px rgba(255, 255, 255, 0.75), inset -4px -4px 8px rgba(14, 116, 144, 0.09);
   --clay-shadow: var(--clay-shadow-outer), var(--clay-shadow-inner);
   --clay-press-shadow: inset 4px 4px 10px rgba(0, 0, 0, 0.12), inset -4px -4px 10px rgba(255, 255, 255, 0.72);
+  --clay-button-shadow: 10px 10px 18px rgba(14, 116, 144, 0.23), -8px -8px 16px rgba(255, 255, 255, 0.9), inset 2px 2px 4px rgba(255, 255, 255, 0.78), inset -2px -2px 4px rgba(14, 116, 144, 0.12);
+  --clay-button-hover-shadow: 12px 12px 22px rgba(14, 116, 144, 0.28), -10px -10px 20px rgba(255, 255, 255, 0.95), inset 2px 2px 5px rgba(255, 255, 255, 0.82), inset -2px -2px 5px rgba(14, 116, 144, 0.15);
 }
 
 .dark {
@@ -32,11 +34,13 @@
   --text-strong-contrast: #ffffff;
   --text-body-contrast: #f8fafc;
   --text-muted-contrast: #e2e8f0;
-  --clay-surface-bg: rgba(17, 24, 39, 0.78);
+  --clay-surface-bg: #1f2937;
   --clay-surface-border: rgba(148, 163, 184, 0.25);
-  --clay-shadow-outer: 16px 16px 32px rgba(2, 6, 23, 0.45), -16px -16px 32px rgba(148, 163, 184, 0.08);
+  --clay-shadow-outer: 16px 16px 32px rgba(2, 6, 23, 0.55), -16px -16px 32px rgba(103, 232, 249, 0.08);
   --clay-shadow-inner: inset 4px 4px 8px rgba(255, 255, 255, 0.12), inset -4px -4px 8px rgba(2, 6, 23, 0.4);
   --clay-press-shadow: inset 4px 4px 10px rgba(2, 6, 23, 0.45), inset -4px -4px 10px rgba(255, 255, 255, 0.09);
+  --clay-button-shadow: 10px 10px 18px rgba(2, 6, 23, 0.55), -8px -8px 16px rgba(103, 232, 249, 0.06), inset 2px 2px 4px rgba(255, 255, 255, 0.16), inset -2px -2px 4px rgba(2, 6, 23, 0.42);
+  --clay-button-hover-shadow: 12px 12px 22px rgba(2, 6, 23, 0.62), -10px -10px 20px rgba(103, 232, 249, 0.08), inset 2px 2px 5px rgba(255, 255, 255, 0.19), inset -2px -2px 5px rgba(2, 6, 23, 0.48);
 }
 
 body {
@@ -243,8 +247,6 @@ p, li, dt, dd {
   border-radius: 35px;
   background: var(--clay-surface-bg);
   border: 1px solid var(--clay-surface-border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: var(--clay-shadow);
 }
@@ -265,14 +267,14 @@ p, li, dt, dd {
 
 button {
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  box-shadow: 10px 10px 18px rgba(160, 172, 186, 0.35), -8px -8px 16px rgba(255, 255, 255, 0.75), inset 2px 2px 4px rgba(255, 255, 255, 0.72), inset -2px -2px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--clay-surface-border);
+  box-shadow: var(--clay-button-shadow);
   transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
 }
 
 button:hover {
   transform: translateY(-2px) scale(1.01);
-  box-shadow: 12px 12px 22px rgba(160, 172, 186, 0.4), -10px -10px 20px rgba(255, 255, 255, 0.8), inset 2px 2px 5px rgba(255, 255, 255, 0.78), inset -2px -2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--clay-button-hover-shadow);
 }
 
 button:active {
@@ -289,16 +291,15 @@ button:disabled {
 .clay-container,
 .clay-surface {
   border-radius: 35px !important;
+  background-color: var(--clay-surface-bg) !important;
   border: 1px solid var(--clay-surface-border) !important;
   box-shadow: var(--clay-shadow) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 .clay-button {
   border-radius: 999px !important;
-  border: 1px solid rgba(255, 255, 255, 0.65) !important;
-  box-shadow: 10px 10px 18px rgba(160, 172, 186, 0.35), -8px -8px 16px rgba(255, 255, 255, 0.75), inset 2px 2px 4px rgba(255, 255, 255, 0.72), inset -2px -2px 4px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid var(--clay-surface-border) !important;
+  box-shadow: var(--clay-button-shadow) !important;
 }
 
 .clay-button:hover {

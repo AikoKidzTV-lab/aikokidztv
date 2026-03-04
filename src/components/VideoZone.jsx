@@ -232,7 +232,7 @@ export default function VideoZone() {
       // Fresh server read before unlock attempt to bypass local state/cache.
       const latestProfileState = await readProfileFeatures(user.id, { includeGems: true });
       if (!latestProfileState?.hasUnlockedFeaturesColumn) {
-        showStatus('Profile features are still syncing. Please try again in a minute.');
+        showStatus('Unlock field is unavailable in profile schema. Please check Supabase column setup.');
         return;
       }
       if (latestProfileState.unlockedFeatures.includes(MOVIES_FEATURE_KEY)) {
@@ -241,23 +241,15 @@ export default function VideoZone() {
         return;
       }
 
-      let unlockResult = await unlockFeatureWithGems({
+      const unlockResult = await unlockFeatureWithGems({
         userId: user.id,
         featureId: MOVIES_FEATURE_KEY,
         costGems: MOVIES_UNLOCK_COST_GEMS,
       });
 
-      if (!unlockResult?.ok && unlockResult?.code === 'profile_sync_conflict') {
-        unlockResult = await unlockFeatureWithGems({
-          userId: user.id,
-          featureId: MOVIES_FEATURE_KEY,
-          costGems: MOVIES_UNLOCK_COST_GEMS,
-        });
-      }
-
       if (!unlockResult?.ok) {
         if (unlockResult?.code === 'missing_unlocked_features_column') {
-          showStatus('Profile features are still syncing. Please try again in a minute.');
+          showStatus('Unlock field is unavailable in profile schema. Please check Supabase column setup.');
           return;
         }
         if (unlockResult?.code === 'insufficient_gems') {

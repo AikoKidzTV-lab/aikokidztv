@@ -618,10 +618,14 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
       const unlockedZones = Array.isArray(profile?.unlocked_zones)
         ? profile.unlocked_zones
         : [];
+      const unlockedFeatures = Array.isArray(profile?.unlocked_features)
+        ? profile.unlocked_features
+        : [];
+      const unlockedSet = new Set([...unlockedZones, ...unlockedFeatures].map((item) => String(item || '').trim()));
 
-      return unlockedZones.includes(moduleKey);
+      return unlockedSet.has(moduleKey);
     },
-    [profile?.unlocked_zones]
+    [profile?.unlocked_features, profile?.unlocked_zones]
   );
 
   const handleSelectLearningModule = React.useCallback(

@@ -1,9 +1,26 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-export default function CharacterBioPageLayout({ title, description, emoji }) {
+export default function CharacterBioPageLayout({ character }) {
+  if (!character) return null;
+
+  const {
+    name,
+    cardTitle,
+    emoji,
+    bio,
+    colorTheme,
+    specialHobby,
+    card,
+  } = character;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-sky-100 px-4 py-10">
+    <div
+      className="min-h-screen px-4 py-10"
+      style={{
+        background: `linear-gradient(145deg, ${card.shadowLight} 0%, #ffffff 48%, ${card.color} 100%)`,
+      }}
+    >
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center gap-3">
           <Link
@@ -14,18 +31,54 @@ export default function CharacterBioPageLayout({ title, description, emoji }) {
           </Link>
         </div>
 
-        <section className="rounded-3xl border border-white/90 bg-white/95 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-600">Learning Zone</p>
-          <h1 className="mt-3 text-4xl font-black text-slate-900">
-            {emoji} {title}
+        <section
+          className={`rounded-[35px] border p-8 ${card.textClass}`}
+          style={{
+            background: card.color,
+            borderColor: card.shadowLight,
+            boxShadow: `16px 16px 32px ${card.shadowDark}, -16px -16px 32px ${card.shadowLight}, inset 4px 4px 8px ${card.innerLight}, inset -4px -4px 8px ${card.innerDark}`,
+          }}
+        >
+          <p className="text-xs font-black uppercase tracking-[0.2em] opacity-85">Learning Zone Character</p>
+          <h1 className="mt-3 text-4xl font-black">
+            {emoji} {cardTitle}
           </h1>
-          <p className="mt-3 text-base font-semibold text-slate-700">{description}</p>
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-800">
-            Placeholder page ready. Content module will be added next.
+          <p className="mt-2 text-xl font-black">{name}</p>
+
+          <div
+            className={`mt-5 rounded-2xl border px-4 py-3 text-sm font-black uppercase tracking-[0.08em] ${card.pillTextClass}`}
+            style={{
+              background: card.pillBg,
+              borderColor: card.innerLight,
+              boxShadow: `inset 2px 2px 6px ${card.innerLight}, inset -3px -3px 8px ${card.innerDark}`,
+            }}
+          >
+            Theme: {colorTheme}
+          </div>
+
+          <div
+            className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-black ${card.pillTextClass}`}
+            style={{
+              background: card.pillBg,
+              borderColor: card.innerLight,
+              boxShadow: `inset 2px 2px 6px ${card.innerLight}, inset -3px -3px 8px ${card.innerDark}`,
+            }}
+          >
+            Special Hobby: {specialHobby}
+          </div>
+
+          <div
+            className={`mt-4 rounded-2xl border px-5 py-4 text-base font-bold ${card.pillTextClass}`}
+            style={{
+              background: card.pillBg,
+              borderColor: card.innerLight,
+              boxShadow: `inset 2px 2px 6px ${card.innerLight}, inset -3px -3px 8px ${card.innerDark}`,
+            }}
+          >
+            {bio}
           </div>
         </section>
       </div>
     </div>
   );
 }
-
