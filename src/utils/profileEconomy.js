@@ -37,6 +37,17 @@ const isRlsDeniedError = (error) => {
   return error?.code === '42501' || text.includes('row-level security');
 };
 
+const isMissingRpcFunctionError = (error, functionName) => {
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  const fn = String(functionName || '').toLowerCase();
+  return (
+    error?.code === '42883' ||
+    error?.code === 'PGRST202' ||
+    (text.includes('function') && text.includes('does not exist')) ||
+    (fn && text.includes(fn) && text.includes('not found'))
+  );
+};
+
 const markMagicArtUsesUnsupported = () => {
   supportsMagicArtUsesColumn = false;
 };
@@ -636,7 +647,18 @@ export const unlockFeatureWithGems = async ({ userId, featureId, costGems }) => 
     return { data, error, hasUnlockedFeaturesColumn: true };
   };
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  const tryRpcUnlock = async () => {
+    const { error } = await supabase.rpc('unlock_feature_with_gems', {
+      p_user_id: userId,
+      p_feature_id: featureId,
+      p_cost_gems: spend,
+    });
+
+    if (error) return { ok: false, error };
+    return { ok: true };
+  };
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
     const { data: latestProfile, error: latestProfileError, hasUnlockedFeaturesColumn } = await runRead();
 
     if (latestProfileError) {
@@ -680,6 +702,37 @@ export const unlockFeatureWithGems = async ({ userId, featureId, costGems }) => 
       };
     }
 
+    if (currentGems < spend) {
+      return {
+        ok: false,
+        code: 'insufficient_gems',
+        message: `You need ${spend} Gems but only have ${currentGems}.`,
+        gems: currentGems,
+        required: spend,
+      };
+    }
+
+    const rpcResult = await tryRpcUnlock();
+    if (rpcResult.ok) {
+      const latest = await readEconomyState(userId);
+      if (latest.ok && normalizeStringArray(latest.profile?.unlocked_features).includes(featureId)) {
+        return { ok: true, profile: latest.profile };
+      }
+    } else if (!isMissingRpcFunctionError(rpcResult.error, 'unlock_feature_with_gems')) {
+      if (isRlsDeniedError(rpcResult.error)) {
+        return {
+          ok: false,
+          code: 'rls_update_denied',
+          message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
+        };
+      }
+      return {
+        ok: false,
+        code: 'rpc_unlock_error',
+        message: rpcResult.error?.message || 'Could not unlock feature right now.',
+      };
+    }
+
     const nextUnlockedFeatures = [...new Set([...currentUnlockedFeatures, featureId])];
     const { data: updatedProfile, error: updateError } = await supabase
       .from('profiles')
@@ -688,7 +741,6 @@ export const unlockFeatureWithGems = async ({ userId, featureId, costGems }) => 
         unlocked_features: nextUnlockedFeatures,
       })
       .eq('id', userId)
-      .eq('gems', currentGems)
       .gte('gems', spend)
       .select(ECONOMY_SELECT_COLUMNS)
       .maybeSingle();
@@ -748,7 +800,7 @@ export const unlockFeatureWithGems = async ({ userId, featureId, costGems }) => 
   return {
     ok: false,
     code: 'profile_sync_conflict',
-    message: 'Profile was updated from another session. Please try again.',
+    message: 'Could not finalize unlock because profile data changed during update. Please retry.',
   };
 };
 

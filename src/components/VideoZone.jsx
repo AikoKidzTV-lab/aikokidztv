@@ -229,11 +229,31 @@ export default function VideoZone() {
     setIsUnlockingMovies(true);
 
     try {
-      const unlockResult = await unlockFeatureWithGems({
+      // Fresh server read before unlock attempt to bypass local state/cache.
+      const latestProfileState = await readProfileFeatures(user.id, { includeGems: true });
+      if (!latestProfileState?.hasUnlockedFeaturesColumn) {
+        showStatus('Profile features are still syncing. Please try again in a minute.');
+        return;
+      }
+      if (latestProfileState.unlockedFeatures.includes(MOVIES_FEATURE_KEY)) {
+        setIsMoviesUnlocked(true);
+        showStatus('Movies are already unlocked. Enjoy!');
+        return;
+      }
+
+      let unlockResult = await unlockFeatureWithGems({
         userId: user.id,
         featureId: MOVIES_FEATURE_KEY,
         costGems: MOVIES_UNLOCK_COST_GEMS,
       });
+
+      if (!unlockResult?.ok && unlockResult?.code === 'profile_sync_conflict') {
+        unlockResult = await unlockFeatureWithGems({
+          userId: user.id,
+          featureId: MOVIES_FEATURE_KEY,
+          costGems: MOVIES_UNLOCK_COST_GEMS,
+        });
+      }
 
       if (!unlockResult?.ok) {
         if (unlockResult?.code === 'missing_unlocked_features_column') {
@@ -246,17 +266,6 @@ export default function VideoZone() {
         }
         if (unlockResult?.code === 'rls_update_denied') {
           showStatus('Profile update blocked by RLS policy. Please allow profile updates for the authenticated user.');
-          return;
-        }
-        if (unlockResult?.code === 'profile_sync_conflict') {
-          await fetchProfile?.(user.id, { retryCount: 2, preferDirect: true });
-          const { unlockedFeatures: refreshedUnlockedFeatures } = await readProfileFeatures(user.id, { includeGems: false });
-          if (refreshedUnlockedFeatures.includes(MOVIES_FEATURE_KEY)) {
-            setIsMoviesUnlocked(true);
-            showStatus('Movies are now unlocked. Enjoy!');
-            return;
-          }
-          showStatus('Profile refreshed. Please tap Unlock once more.');
           return;
         }
         showStatus(unlockResult.message || 'Could not unlock Movies right now.');

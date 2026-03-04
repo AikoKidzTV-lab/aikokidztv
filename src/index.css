@@ -289,19 +289,6 @@ button:disabled {
 .clay-container,
 .clay-surface {
   border-radius: 35px !important;
-  background: var(--clay-surface-bg) !important;
-  border: 1px solid var(--clay-surface-border) !important;
-  box-shadow: var(--clay-shadow) !important;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-/* Auto-apply claymorphism to common rounded white card surfaces across the app. */
-:is(section, div, article, a)[class*='rounded-3xl'][class*='bg-white'],
-:is(section, div, article, a)[class*='rounded-2xl'][class*='bg-white/'],
-:is(section, div, article, a)[class*='rounded-[1.8rem]'][class*='bg-white/'] {
-  border-radius: 35px !important;
-  background: var(--clay-surface-bg) !important;
   border: 1px solid var(--clay-surface-border) !important;
   box-shadow: var(--clay-shadow) !important;
   backdrop-filter: blur(14px);
