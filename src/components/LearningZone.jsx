@@ -4,18 +4,18 @@ import { useKidsMode } from '../context/KidsModeContext';
 import { LEARNING_ZONE_PREMIUM_UNLOCKS } from '../constants/gemEconomy';
 import { unlockZoneWithGems } from '../utils/profileEconomy';
 
-const isSchemaColumnError = (message = '') =>
-  /could not find.*column|schema cache|pgrst204|42703|unlocked_videos/i.test(String(message));
-
 const getUnlockStatusMessage = (unlockResult) => {
   if (!unlockResult?.ok) {
     if (unlockResult?.code === 'insufficient_gems') {
       return unlockResult.message || 'Not enough Gems to unlock this zone.';
     }
-    if (isSchemaColumnError(unlockResult?.message)) {
-      return 'Profile data is syncing. Please try again in a moment.';
+    if (unlockResult?.code === 'missing_unlock_columns') {
+      return 'Profile unlock columns are missing in Supabase.';
     }
-    return 'Unable to unlock premium card right now.';
+    if (unlockResult?.code === 'profile_sync_conflict') {
+      return 'Profile changed during unlock. Please try once more.';
+    }
+    return unlockResult?.message || 'Unable to unlock premium card right now.';
   }
   return '';
 };
@@ -66,15 +66,26 @@ export default function LearningZone({ onSelect }) {
   const { isKidsModeOn } = useKidsMode();
   const [statusMessage, setStatusMessage] = React.useState('');
   const [processingAction, setProcessingAction] = React.useState('');
+  const statusTimeoutRef = React.useRef(null);
 
-  const unlockedZones = React.useMemo(
-    () => (Array.isArray(profile?.unlocked_zones) ? profile.unlocked_zones : []),
-    [profile?.unlocked_zones]
-  );
+  const unlockedZones = React.useMemo(() => {
+    const zones = Array.isArray(profile?.unlocked_zones) ? profile.unlocked_zones : [];
+    const features = Array.isArray(profile?.unlocked_features) ? profile.unlocked_features : [];
+    return [...new Set([...zones, ...features].map((value) => String(value || '').trim()).filter(Boolean))];
+  }, [profile?.unlocked_features, profile?.unlocked_zones]);
+
+  React.useEffect(() => () => {
+    if (statusTimeoutRef.current) {
+      window.clearTimeout(statusTimeoutRef.current);
+    }
+  }, []);
 
   const showStatus = React.useCallback((message) => {
+    if (statusTimeoutRef.current) {
+      window.clearTimeout(statusTimeoutRef.current);
+    }
     setStatusMessage(message);
-    window.setTimeout(() => setStatusMessage(''), 2600);
+    statusTimeoutRef.current = window.setTimeout(() => setStatusMessage(''), 2600);
   }, []);
 
   const canAccessCard = React.useCallback(
@@ -130,10 +141,7 @@ export default function LearningZone({ onSelect }) {
         return;
       }
 
-      await fetchProfile?.(user.id, { retryCount: 2, preferDirect: true });
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('aiko:auth-refresh'));
-      }
+      await fetchProfile?.(user.id, { retryCount: 1, preferDirect: true });
       showStatus(`${box.title} unlocked permanently for ${box.unlockCost} 💎`);
     } catch (error) {
       console.error('[LearningZone] Premium unlock failed:', error);

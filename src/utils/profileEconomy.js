@@ -7,9 +7,9 @@ const MISSING_MAGIC_ART_USES_FALLBACK = 0;
 
 const ECONOMY_SELECT_COLUMNS = '*';
 const ECONOMY_SELECT_COLUMNS_FALLBACK =
-  'id, role, gems, unlocked_zones, unlocked_videos, unlocked_items, claimed_rewards, created_at, updated_at';
+  'id, role, gems, unlocked_zones, unlocked_features, unlocked_videos, unlocked_items, claimed_rewards, created_at, updated_at';
 const ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS =
-  'id, role, gems, unlocked_zones, unlocked_items, claimed_rewards, created_at, updated_at';
+  'id, role, gems, unlocked_zones, unlocked_features, unlocked_items, claimed_rewards, created_at, updated_at';
 const LOCAL_MAGIC_ART_USES_PREFIX = 'aiko_magic_art_uses_v1_';
 
 let supportsMagicArtUsesColumn = true;
@@ -35,17 +35,6 @@ const isMissingColumnError = (error, columnName) => {
 const isRlsDeniedError = (error) => {
   const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
   return error?.code === '42501' || text.includes('row-level security');
-};
-
-const isMissingRpcFunctionError = (error, functionName) => {
-  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
-  const fn = String(functionName || '').toLowerCase();
-  return (
-    error?.code === '42883' ||
-    error?.code === 'PGRST202' ||
-    (text.includes('function') && text.includes('does not exist')) ||
-    (fn && text.includes(fn) && text.includes('not found'))
-  );
 };
 
 const markMagicArtUsesUnsupported = () => {
@@ -184,6 +173,7 @@ const applyMagicUsesFallback = (userId, profile) => {
 const getEconomyDefaults = () => ({
   gems: 0,
   unlocked_zones: [],
+  unlocked_features: [],
   ...(supportsUnlockedVideosColumn ? { unlocked_videos: [] } : {}),
   unlocked_items: [],
   claimed_rewards: [],
@@ -516,92 +506,133 @@ export const unlockZoneWithGems = async ({ userId, zoneId, costGems }) => {
     return { ok: false, code: 'invalid_cost', message: 'Invalid unlock cost.' };
   }
 
-  // DB-first unlock flow:
-  // 1) always fetch the latest profile from Supabase
-  // 2) do a constrained update (id + exact gems + gte gems)
-  // 3) retry on race, so stale local state never causes persistent sync errors
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const current = await readEconomyState(userId);
-    if (!current.ok) return current;
+  const { data: latestProfileRaw, error: latestProfileError } = await readProfileRowById({
+    userId,
+    maybeSingle: false,
+  });
 
-    const profile = normalizeEconomyProfile(current.profile);
-    const currentGems = normalizeNumber(profile?.gems, 0);
-    const currentUnlockedZones = normalizeStringArray(profile?.unlocked_zones);
+  if (latestProfileError) {
+    return {
+      ok: false,
+      code: 'profile_fetch_error',
+      message: latestProfileError.message || 'Failed to load latest profile before unlock.',
+    };
+  }
 
-    if (currentUnlockedZones.includes(zoneId)) {
-      return { ok: true, alreadyUnlocked: true, profile };
-    }
+  const latestProfile = normalizeEconomyProfile(latestProfileRaw);
+  const currentGems = normalizeNumber(latestProfile?.gems, 0);
+  const currentUnlockedZones = normalizeStringArray(latestProfileRaw?.unlocked_zones ?? []);
+  const currentUnlockedFeatures = normalizeStringArray(latestProfileRaw?.unlocked_features ?? []);
+  const alreadyUnlocked =
+    currentUnlockedZones.includes(zoneId) || currentUnlockedFeatures.includes(zoneId);
 
-    const nextUnlockedZones = [...new Set([...currentUnlockedZones, zoneId])];
-    const patch = stripUnsupportedColumnsFromPatch({
-      gems: Math.max(0, currentGems - spend),
-      unlocked_zones: nextUnlockedZones,
-    });
+  if (alreadyUnlocked) {
+    return { ok: true, alreadyUnlocked: true, profile: applyMagicUsesFallback(userId, latestProfile) };
+  }
 
-    const runUpdate = (columns) => supabase
-      .from('profiles')
-      .update(patch)
-      .eq('id', userId)
-      .eq('gems', currentGems)
-      .gte('gems', spend)
-      .select(columns)
-      .maybeSingle();
+  if (currentGems < spend) {
+    return {
+      ok: false,
+      code: 'insufficient_gems',
+      message: `You need ${spend} Gems but only have ${currentGems}.`,
+      gems: currentGems,
+      required: spend,
+    };
+  }
 
-    let { data: updated, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS);
+  const patch = {
+    gems: Math.max(0, currentGems - spend),
+  };
 
-    if (updateError && isMissingColumnError(updateError, 'magic_art_uses')) {
-      markMagicArtUsesUnsupported();
-      ({ data: updated, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK));
-    }
+  if (hasOwn(latestProfileRaw, 'unlocked_zones')) {
+    patch.unlocked_zones = [...new Set([...currentUnlockedZones, zoneId])];
+  }
+  if (hasOwn(latestProfileRaw, 'unlocked_features')) {
+    patch.unlocked_features = [...new Set([...currentUnlockedFeatures, zoneId])];
+  }
 
-    if (updateError && isMissingColumnError(updateError, 'unlocked_videos')) {
-      markUnlockedVideosUnsupported();
-      ({ data: updated, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS));
-    }
+  if (!hasOwn(patch, 'unlocked_zones') && !hasOwn(patch, 'unlocked_features')) {
+    return {
+      ok: false,
+      code: 'missing_unlock_columns',
+      message: 'Profile is missing both unlocked_zones and unlocked_features columns.',
+    };
+  }
 
-    if (updateError) {
-      if (isRlsDeniedError(updateError)) {
-        return {
-          ok: false,
-          code: 'rls_update_denied',
-          message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
-        };
-      }
+  const runUpdate = (columns) => supabase
+    .from('profiles')
+    .update(stripUnsupportedColumnsFromPatch(patch))
+    .eq('id', userId)
+    .eq('gems', currentGems)
+    .gte('gems', spend)
+    .select(columns)
+    .maybeSingle();
+
+  let { data: updatedProfile, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS);
+
+  if (updateError && isMissingColumnError(updateError, 'magic_art_uses')) {
+    markMagicArtUsesUnsupported();
+    ({ data: updatedProfile, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK));
+  }
+
+  if (updateError && isMissingColumnError(updateError, 'unlocked_videos')) {
+    markUnlockedVideosUnsupported();
+    ({ data: updatedProfile, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS));
+  }
+
+  if (updateError) {
+    if (isRlsDeniedError(updateError)) {
       return {
         ok: false,
-        code: 'profile_update_error',
-        message: updateError.message || 'Failed to update profile.',
+        code: 'rls_update_denied',
+        message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
       };
     }
+    return {
+      ok: false,
+      code: 'profile_update_error',
+      message: updateError.message || 'Failed to update profile.',
+    };
+  }
 
-    if (updated) {
-      return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(updated)) };
-    }
+  if (updatedProfile) {
+    return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(updatedProfile)) };
+  }
 
-    const latest = await readEconomyState(userId);
-    if (!latest.ok) return latest;
+  const { data: postUpdateProfileRaw, error: postUpdateError } = await readProfileRowById({
+    userId,
+    maybeSingle: false,
+  });
+  if (postUpdateError) {
+    return {
+      ok: false,
+      code: 'profile_update_error',
+      message: postUpdateError.message || 'Unlock update did not complete.',
+    };
+  }
 
-    const latestProfile = normalizeEconomyProfile(latest.profile);
-    if (normalizeStringArray(latestProfile?.unlocked_zones).includes(zoneId)) {
-      return { ok: true, alreadyUnlocked: true, profile: latestProfile };
-    }
+  const postUpdateProfile = normalizeEconomyProfile(postUpdateProfileRaw);
+  const postUnlockedZones = normalizeStringArray(postUpdateProfileRaw?.unlocked_zones ?? []);
+  const postUnlockedFeatures = normalizeStringArray(postUpdateProfileRaw?.unlocked_features ?? []);
+  if (postUnlockedZones.includes(zoneId) || postUnlockedFeatures.includes(zoneId)) {
+    return { ok: true, alreadyUnlocked: true, profile: applyMagicUsesFallback(userId, postUpdateProfile) };
+  }
 
-    const latestGems = normalizeNumber(latestProfile?.gems, 0);
-    if (latestGems < spend) {
-      return {
-        ok: false,
-        code: 'insufficient_gems',
-        message: `You need ${spend} Gems but only have ${latestGems}.`,
-        gems: latestGems,
-        required: spend,
-      };
-    }
+  const postGems = normalizeNumber(postUpdateProfile?.gems, 0);
+  if (postGems < spend) {
+    return {
+      ok: false,
+      code: 'insufficient_gems',
+      message: `You need ${spend} Gems but only have ${postGems}.`,
+      gems: postGems,
+      required: spend,
+    };
   }
 
   return {
     ok: false,
     code: 'profile_sync_conflict',
-    message: 'Profile was updated from another session. Please try again.',
+    message: 'Profile changed during unlock. Please try once more.',
   };
 };
 
@@ -616,67 +647,90 @@ export const unlockFeatureWithGems = async ({ userId, featureId, costGems }) => 
     return { ok: false, code: 'invalid_cost', message: 'Invalid unlock cost.' };
   }
 
-  const runRead = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+  const { data: latestProfileRaw, error: latestProfileError } = await readProfileRowById({
+    userId,
+    maybeSingle: false,
+  });
 
-    if (error && isMissingColumnError(error, 'unlocked_features')) {
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('profiles')
-        .select('gems')
-        .eq('id', userId)
-        .single();
-
-      if (fallbackError) {
-        return { data: null, error: fallbackError, hasUnlockedFeaturesColumn: false };
-      }
-
-      return {
-        data: {
-          gems: normalizeNumber(fallbackData?.gems, 0),
-          unlocked_features: [],
-        },
-        error: null,
-        hasUnlockedFeaturesColumn: false,
-      };
-    }
-
-    return { data, error, hasUnlockedFeaturesColumn: true };
-  };
-
-  const tryRpcUnlock = async () => {
-    const { error } = await supabase.rpc('unlock_feature_with_gems', {
-      p_user_id: userId,
-      p_feature_id: featureId,
-      p_cost_gems: spend,
-    });
-
-    if (error) return { ok: false, error };
-    return { ok: true };
-  };
-
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const { data: latestProfile, error: latestProfileError, hasUnlockedFeaturesColumn } = await runRead();
-
-    if (latestProfileError) {
-      if (isRlsDeniedError(latestProfileError)) {
-        return {
-          ok: false,
-          code: 'rls_update_denied',
-          message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
-        };
-      }
+  if (latestProfileError) {
+    if (isRlsDeniedError(latestProfileError)) {
       return {
         ok: false,
-        code: 'profile_fetch_error',
-        message: latestProfileError.message || 'Failed to refresh profile before unlock.',
+        code: 'rls_update_denied',
+        message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
+      };
+    }
+    return {
+      ok: false,
+      code: 'profile_fetch_error',
+      message: latestProfileError.message || 'Failed to refresh profile before unlock.',
+    };
+  }
+
+  if (!hasOwn(latestProfileRaw, 'unlocked_features')) {
+    return {
+      ok: false,
+      code: 'missing_unlocked_features_column',
+      message: 'profiles.unlocked_features column is missing from the active schema.',
+    };
+  }
+
+  const latestProfile = normalizeEconomyProfile(latestProfileRaw);
+  const currentGems = normalizeNumber(latestProfile?.gems, 0);
+  const currentUnlockedFeatures = normalizeStringArray(latestProfileRaw?.unlocked_features || []);
+  const baseUnlockedFeatures = Array.isArray(latestProfileRaw?.unlocked_features)
+    ? latestProfileRaw.unlocked_features
+    : [];
+
+  if (currentUnlockedFeatures.includes(featureId)) {
+    return { ok: true, alreadyUnlocked: true, profile: applyMagicUsesFallback(userId, latestProfile) };
+  }
+
+  if (currentGems < spend) {
+    return {
+      ok: false,
+      code: 'insufficient_gems',
+      message: `You need ${spend} Gems but only have ${currentGems}.`,
+      gems: currentGems,
+      required: spend,
+    };
+  }
+
+  const nextUnlockedFeatures = [...new Set([...baseUnlockedFeatures, featureId])];
+  const runUpdate = (columns) => supabase
+    .from('profiles')
+    .update({
+      gems: Math.max(0, currentGems - spend),
+      unlocked_features: nextUnlockedFeatures,
+    })
+    .eq('id', userId)
+    .eq('gems', currentGems)
+    .gte('gems', spend)
+    .select(columns)
+    .maybeSingle();
+
+  let { data: updatedProfile, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS);
+
+  if (updateError && isMissingColumnError(updateError, 'magic_art_uses')) {
+    markMagicArtUsesUnsupported();
+    ({ data: updatedProfile, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK));
+  }
+
+  if (updateError && isMissingColumnError(updateError, 'unlocked_videos')) {
+    markUnlockedVideosUnsupported();
+    ({ data: updatedProfile, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS));
+  }
+
+  if (updateError) {
+    if (isRlsDeniedError(updateError)) {
+      return {
+        ok: false,
+        code: 'rls_update_denied',
+        message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
       };
     }
 
-    if (!hasUnlockedFeaturesColumn) {
+    if (isMissingColumnError(updateError, 'unlocked_features')) {
       return {
         ok: false,
         code: 'missing_unlocked_features_column',
@@ -684,123 +738,50 @@ export const unlockFeatureWithGems = async ({ userId, featureId, costGems }) => 
       };
     }
 
-    const currentGems = normalizeNumber(latestProfile?.gems, 0);
-    const currentUnlockedFeatures = normalizeStringArray(latestProfile?.unlocked_features ?? []);
+    return {
+      ok: false,
+      code: 'profile_update_error',
+      message: updateError.message || 'Could not unlock feature right now.',
+    };
+  }
 
-    if (currentUnlockedFeatures.includes(featureId)) {
-      const latest = await readEconomyState(userId);
-      if (latest.ok) {
-        return { ok: true, alreadyUnlocked: true, profile: latest.profile };
-      }
-      return {
-        ok: true,
-        alreadyUnlocked: true,
-        profile: normalizeEconomyProfile({
-          gems: currentGems,
-          unlocked_features: currentUnlockedFeatures,
-        }),
-      };
-    }
+  if (updatedProfile) {
+    return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(updatedProfile)) };
+  }
 
-    if (currentGems < spend) {
-      return {
-        ok: false,
-        code: 'insufficient_gems',
-        message: `You need ${spend} Gems but only have ${currentGems}.`,
-        gems: currentGems,
-        required: spend,
-      };
-    }
+  const { data: postUpdateProfileRaw, error: postUpdateError } = await readProfileRowById({
+    userId,
+    maybeSingle: false,
+  });
+  if (postUpdateError) {
+    return {
+      ok: false,
+      code: 'profile_update_error',
+      message: postUpdateError.message || 'Could not finalize feature unlock.',
+    };
+  }
 
-    const rpcResult = await tryRpcUnlock();
-    if (rpcResult.ok) {
-      const latest = await readEconomyState(userId);
-      if (latest.ok && normalizeStringArray(latest.profile?.unlocked_features).includes(featureId)) {
-        return { ok: true, profile: latest.profile };
-      }
-    } else if (!isMissingRpcFunctionError(rpcResult.error, 'unlock_feature_with_gems')) {
-      if (isRlsDeniedError(rpcResult.error)) {
-        return {
-          ok: false,
-          code: 'rls_update_denied',
-          message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
-        };
-      }
-      return {
-        ok: false,
-        code: 'rpc_unlock_error',
-        message: rpcResult.error?.message || 'Could not unlock feature right now.',
-      };
-    }
+  const postUpdateProfile = normalizeEconomyProfile(postUpdateProfileRaw);
+  const postUnlockedFeatures = normalizeStringArray(postUpdateProfileRaw?.unlocked_features || []);
+  if (postUnlockedFeatures.includes(featureId)) {
+    return { ok: true, alreadyUnlocked: true, profile: applyMagicUsesFallback(userId, postUpdateProfile) };
+  }
 
-    const nextUnlockedFeatures = [...new Set([...currentUnlockedFeatures, featureId])];
-    const { data: updatedProfile, error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        gems: Math.max(0, currentGems - spend),
-        unlocked_features: nextUnlockedFeatures,
-      })
-      .eq('id', userId)
-      .gte('gems', spend)
-      .select(ECONOMY_SELECT_COLUMNS)
-      .maybeSingle();
-
-    if (updateError) {
-      if (isMissingColumnError(updateError, 'magic_art_uses')) {
-        markMagicArtUsesUnsupported();
-      }
-
-      if (isRlsDeniedError(updateError)) {
-        return {
-          ok: false,
-          code: 'rls_update_denied',
-          message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
-        };
-      }
-
-      if (isMissingColumnError(updateError, 'unlocked_features')) {
-        return {
-          ok: false,
-          code: 'missing_unlocked_features_column',
-          message: 'profiles.unlocked_features column is missing from the active schema.',
-        };
-      }
-
-      return {
-        ok: false,
-        code: 'profile_update_error',
-        message: updateError.message || 'Could not unlock feature right now.',
-      };
-    }
-
-    if (updatedProfile) {
-      return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(updatedProfile)) };
-    }
-
-    const latest = await readEconomyState(userId);
-    if (!latest.ok) return latest;
-
-    const latestFeatures = normalizeStringArray(latest.profile?.unlocked_features);
-    if (latestFeatures.includes(featureId)) {
-      return { ok: true, alreadyUnlocked: true, profile: latest.profile };
-    }
-
-    const latestGems = normalizeNumber(latest.profile?.gems, 0);
-    if (latestGems < spend) {
-      return {
-        ok: false,
-        code: 'insufficient_gems',
-        message: `You need ${spend} Gems but only have ${latestGems}.`,
-        gems: latestGems,
-        required: spend,
-      };
-    }
+  const postGems = normalizeNumber(postUpdateProfile?.gems, 0);
+  if (postGems < spend) {
+    return {
+      ok: false,
+      code: 'insufficient_gems',
+      message: `You need ${spend} Gems but only have ${postGems}.`,
+      gems: postGems,
+      required: spend,
+    };
   }
 
   return {
     ok: false,
     code: 'profile_sync_conflict',
-    message: 'Could not finalize unlock because profile data changed during update. Please retry.',
+    message: 'Profile changed during unlock. Please try once more.',
   };
 };
 

@@ -19,9 +19,9 @@ const isNetworkError = (error) => {
 
 const AUTH_TIMEOUT_MS = 20000;
 const PROFILE_FALLBACK_COLUMNS =
-  'id, role, gems, unlocked_zones, unlocked_videos, unlocked_items, claimed_rewards';
+  'id, role, gems, unlocked_zones, unlocked_features, unlocked_videos, unlocked_items, claimed_rewards';
 const PROFILE_FALLBACK_COLUMNS_NO_UNLOCKED_VIDEOS =
-  'id, role, gems, unlocked_zones, unlocked_items, claimed_rewards';
+  'id, role, gems, unlocked_zones, unlocked_features, unlocked_items, claimed_rewards';
 
 const isMissingColumnError = (error, columnName) => {
   if (!columnName) return false;
