@@ -1,20 +1,19 @@
 import React from 'react';
-import ParentZoneRouteLayout from './ParentZoneRouteLayout';
+import ParentZoneQuizPage from './ParentZoneQuizPage';
+import {
+  JUNIOR_TABLES_MILESTONE_SIZE,
+  JUNIOR_TABLES_QUIZ_QUESTIONS,
+} from '../../constants/juniorQuizzes';
 
 export default function ParentZoneTablesPage() {
   return (
-    <ParentZoneRouteLayout
+    <ParentZoneQuizPage
       title="Tables"
-      description="Dedicated Tables activity route. The full 30-question form will be added next."
-    >
-      <section className="rounded-3xl border border-dashed border-indigo-300 bg-indigo-50/70 p-8 text-center">
-        <p className="text-4xl">🧮</p>
-        <h2 className="mt-3 text-2xl font-black text-indigo-900">Tables Activity Placeholder</h2>
-        <p className="mt-2 text-sm font-semibold text-indigo-700">
-          Upcoming: 30-question multiplication and rapid recall practice.
-        </p>
-      </section>
-    </ParentZoneRouteLayout>
+      description="30-question multiplication tables test with Test Mode, milestone rewards, and final score bonus."
+      quizEmoji="Tables"
+      variant="tables"
+      questions={JUNIOR_TABLES_QUIZ_QUESTIONS}
+      milestoneSize={JUNIOR_TABLES_MILESTONE_SIZE}
+    />
   );
 }
-
