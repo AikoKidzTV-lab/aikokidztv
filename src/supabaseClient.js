@@ -16,10 +16,20 @@ const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').tri
 const publicSiteUrl = String(import.meta.env.VITE_PUBLIC_SITE_URL || '').trim();
 const appMode = String(import.meta.env.MODE || '').trim();
 const PRODUCTION_SITE_ORIGIN = 'https://aikokidztv.com';
+export const PRODUCTION_AUTH_REDIRECT_URL = `${PRODUCTION_SITE_ORIGIN}/`;
 const runtimeOrigin =
   typeof window !== 'undefined' ? normalizeOrigin(window.location.origin) : null;
 const runtimeHostName = typeof window !== 'undefined' ? window.location.hostname : '';
 const isProductionHost = /(^|\.)aikokidztv\.com$/i.test(runtimeHostName);
+const getBrowserLocalStorage = () => {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+};
+const browserLocalStorage = getBrowserLocalStorage();
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
@@ -56,7 +66,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     flowType: 'pkce',
     storageKey: 'aikokidztv.auth.session',
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storage: browserLocalStorage,
   },
   global: {
     fetch: async (...args) => {

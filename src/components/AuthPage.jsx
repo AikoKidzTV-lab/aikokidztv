@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, ArrowRight, Loader, KeyRound, Shield } from 'lucide-react';
-import { getAuthRedirectUrl, supabase } from '../supabaseClient';
+import { PRODUCTION_AUTH_REDIRECT_URL, supabase } from '../supabaseClient';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 
 const AUTH_REQUEST_TIMEOUT_MS = 15000;
@@ -86,7 +86,7 @@ const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
           email,
           options: {
             shouldCreateUser: mode !== 'reset', // allow creation for login/signup, block for reset flow
-            emailRedirectTo: getAuthRedirectUrl('/'),
+            emailRedirectTo: PRODUCTION_AUTH_REDIRECT_URL,
           },
         }),
         'Send OTP request',

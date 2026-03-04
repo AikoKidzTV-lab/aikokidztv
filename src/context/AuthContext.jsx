@@ -95,11 +95,23 @@ export const AuthProvider = ({ children }) => {
 
     if (preferDirect) {
       try {
-        const { data: directProfile, error: directError } = await withTimeout(
+        let { data: directProfile, error: directError } = await withTimeout(
           supabase.from('profiles').select('*').eq('id', userId).single(),
           AUTH_TIMEOUT_MS,
           'Profile direct fetch'
         );
+
+        if (directError && isMissingColumnError(directError, 'unlocked_videos')) {
+          ({ data: directProfile, error: directError } = await withTimeout(
+            supabase
+              .from('profiles')
+              .select(PROFILE_FALLBACK_COLUMNS_NO_UNLOCKED_VIDEOS)
+              .eq('id', userId)
+              .single(),
+            AUTH_TIMEOUT_MS,
+            'Profile direct fetch without unlocked_videos'
+          ));
+        }
 
         if (directError) {
           throw directError;

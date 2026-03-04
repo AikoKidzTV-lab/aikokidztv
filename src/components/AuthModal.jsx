@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2, Lock, Mail, Sparkles, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAuthRedirectUrl, supabase } from '../supabaseClient';
+import { PRODUCTION_AUTH_REDIRECT_URL, supabase } from '../supabaseClient';
 import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 import { isAdminEmail } from '../utils/admin';
 
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
-const PRODUCTION_AUTH_REDIRECT_URL = 'https://aikokidztv.com/';
 
 const normalizeMode = (value) => (value === 'signup' ? 'signup' : 'login');
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
@@ -101,13 +100,7 @@ const getBackgroundCheckWarning = (error) => {
 };
 
 const getAuthRedirectUrlForRequest = () => {
-  const mode = String(import.meta.env.MODE || '').trim();
-  const isProdLikeHost =
-    typeof window !== 'undefined' && /(^|\.)aikokidztv\.com$/i.test(window.location.hostname);
-  if (mode === 'production' || isProdLikeHost) {
-    return PRODUCTION_AUTH_REDIRECT_URL;
-  }
-  return getAuthRedirectUrl('/');
+  return PRODUCTION_AUTH_REDIRECT_URL;
 };
 
 const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
@@ -388,6 +381,9 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
           supabase.auth.signInWithPassword({
             email: emailToUse,
             password,
+            options: {
+              emailRedirectTo: getAuthRedirectUrlForRequest(),
+            },
           }),
           'signInWithPassword'
         );
