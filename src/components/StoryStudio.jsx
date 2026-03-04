@@ -48,7 +48,7 @@ const StoryStudio = () => {
   const [cooldownTime, setCooldownTime] = useState(0);
 
   const chatEndRef = useRef(null);
-  const inputRef = useRef(null);
+  const hasMountedChatRef = useRef(false);
 
   // Check API connectivity on mount
   useEffect(() => {
@@ -96,15 +96,12 @@ const StoryStudio = () => {
   }, [cooldownTime, sessionCount]);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
-
-  // Focus input on character change
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
+    if (!hasMountedChatRef.current) {
+      hasMountedChatRef.current = true;
+      return;
     }
-  }, [selectedChar]);
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [messages, loading]);
 
   const checkApiConnectivity = async () => {
     setApiStatus('checking');
@@ -483,7 +480,6 @@ const StoryStudio = () => {
          <div className="flex gap-3">
             <div className="relative flex-grow">
                <textarea 
-                 ref={inputRef}
                  value={input}
                  onChange={(e) => setInput(e.target.value)}
                  onKeyDown={(e) => {
