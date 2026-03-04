@@ -9,7 +9,7 @@ export default function ParentZoneJuniorLawPage() {
   return (
     <ParentZoneQuizPage
       title="Junior Law & Rights"
-      description="80-question interactive law and rights test with milestone rewards and final result bonus."
+      description="100-question interactive law and rights test with milestone rewards and final result bonus."
       quizEmoji="Law"
       variant="law"
       questions={JUNIOR_LAW_QUIZ_QUESTIONS}

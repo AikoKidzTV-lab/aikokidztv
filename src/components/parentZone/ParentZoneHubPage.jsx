@@ -16,6 +16,7 @@ export default function ParentZoneHubPage() {
     <ParentZoneRouteLayout
       title="Practice Container"
       description="Vertical single-column Parent Zone navigation. Each item opens a dedicated route page."
+      showParentZoneMenu={false}
     >
       <section className="rounded-3xl border border-indigo-100 bg-white/95 p-5 shadow-sm sm:p-6">
         <div className="space-y-3">

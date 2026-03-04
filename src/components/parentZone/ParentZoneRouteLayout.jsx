@@ -1,7 +1,16 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import ParentPinGateModal from '../ParentPinGateModal';
 
-export default function ParentZoneRouteLayout({ title, description, children }) {
+export default function ParentZoneRouteLayout({
+  title,
+  description,
+  children,
+  showParentZoneMenu = true,
+}) {
+  const navigate = useNavigate();
+  const [isParentPinOpen, setIsParentPinOpen] = React.useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-indigo-100 px-4 py-8">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -12,12 +21,15 @@ export default function ParentZoneRouteLayout({ title, description, children }) 
           >
             Back to Home
           </Link>
-          <Link
-            to="/parent-zone"
-            className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 shadow-sm hover:bg-indigo-100"
-          >
-            Parent Zone Menu
-          </Link>
+          {showParentZoneMenu ? (
+            <button
+              type="button"
+              onClick={() => setIsParentPinOpen(true)}
+              className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700 shadow-sm hover:bg-indigo-100"
+            >
+              Parent Zone Menu
+            </button>
+          ) : null}
         </div>
 
         <section className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.1)] sm:p-8">
@@ -30,7 +42,14 @@ export default function ParentZoneRouteLayout({ title, description, children }) 
 
         {children}
       </div>
+
+      {showParentZoneMenu ? (
+        <ParentPinGateModal
+          open={isParentPinOpen}
+          onClose={() => setIsParentPinOpen(false)}
+          onUnlocked={() => navigate('/parent-zone')}
+        />
+      ) : null}
     </div>
   );
 }
-

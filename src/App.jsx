@@ -22,6 +22,7 @@ import PoemsPage from './components/PoemsPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { KidsModeProvider, useKidsMode } from './context/KidsModeContext';
 import { AuthModalProvider, useAuthModal } from './context/AuthModalContext';
+import { ParentControlsProvider } from './context/ParentControlsContext';
 import { Gem, ChevronDown, Sparkles, LogOut, Bell } from 'lucide-react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { ADMIN_EMAIL, isAdminEmail } from './utils/admin';
@@ -891,35 +892,37 @@ function App() {
   return (
     <AuthProvider>
       <KidsModeProvider>
-        <BrowserRouter>
-          <AuthModalProvider>
-            <Routes>
-              <Route path="/" element={<HomeRoutePage />} />
-              <Route path="/admin" element={<AdminRoutePage />} />
-              <Route path="/videos" element={<VideoZone />} />
-              <Route path="/poems" element={<PoemsPage />} />
-              <Route path="/story" element={<StoryReader />} />
-              <Route path="/coloring" element={<ColoringBook />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/blender-credit" element={<BlenderCredit />} />
-              <Route path="/aiko-bio" element={<AikoBioPage />} />
-              <Route path="/niko-bio" element={<NikoBioPage />} />
-              <Route path="/kinu-bio" element={<KinuBioPage />} />
-              <Route path="/mimi-bio" element={<MimiBioPage />} />
-              <Route path="/parent-zone" element={<ParentZoneHubPage />} />
-              <Route path="/parent-zone/tables" element={<ParentZoneTablesPage />} />
-              <Route path="/parent-zone/numbers" element={<ParentZoneNumbersPage />} />
-              <Route path="/numbers" element={<ParentZoneNumbersPage />} />
-              <Route path="/parent-zone/law" element={<ParentZoneJuniorLawPage />} />
-              <Route path="/parent-zone/rights" element={<ParentZoneJuniorRightsPage />} />
-              <Route path="/parent-zone/junior-law" element={<ParentZoneJuniorLawPage />} />
-              <Route path="/parent-zone/junior-rights" element={<ParentZoneJuniorRightsPage />} />
-              <Route path="/parent-zone/science" element={<ParentZoneSciencePage />} />
-              <Route path="/parent-zone/junior-science" element={<ParentZoneSciencePage />} />
-              <Route path="/parent-zone/calculator" element={<ParentZoneCalculatorPage />} />
-            </Routes>
-          </AuthModalProvider>
-        </BrowserRouter>
+        <ParentControlsProvider>
+          <BrowserRouter>
+            <AuthModalProvider>
+              <Routes>
+                <Route path="/" element={<HomeRoutePage />} />
+                <Route path="/admin" element={<AdminRoutePage />} />
+                <Route path="/videos" element={<VideoZone />} />
+                <Route path="/poems" element={<PoemsPage />} />
+                <Route path="/story" element={<StoryReader />} />
+                <Route path="/coloring" element={<ColoringBook />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/blender-credit" element={<BlenderCredit />} />
+                <Route path="/aiko-bio" element={<AikoBioPage />} />
+                <Route path="/niko-bio" element={<NikoBioPage />} />
+                <Route path="/kinu-bio" element={<KinuBioPage />} />
+                <Route path="/mimi-bio" element={<MimiBioPage />} />
+                <Route path="/parent-zone" element={<ParentZoneHubPage />} />
+                <Route path="/parent-zone/tables" element={<ParentZoneTablesPage />} />
+                <Route path="/parent-zone/numbers" element={<ParentZoneNumbersPage />} />
+                <Route path="/numbers" element={<ParentZoneNumbersPage />} />
+                <Route path="/parent-zone/law" element={<ParentZoneJuniorLawPage />} />
+                <Route path="/parent-zone/rights" element={<ParentZoneJuniorRightsPage />} />
+                <Route path="/parent-zone/junior-law" element={<ParentZoneJuniorLawPage />} />
+                <Route path="/parent-zone/junior-rights" element={<ParentZoneJuniorRightsPage />} />
+                <Route path="/parent-zone/science" element={<ParentZoneSciencePage />} />
+                <Route path="/parent-zone/junior-science" element={<ParentZoneSciencePage />} />
+                <Route path="/parent-zone/calculator" element={<ParentZoneCalculatorPage />} />
+              </Routes>
+            </AuthModalProvider>
+          </BrowserRouter>
+        </ParentControlsProvider>
       </KidsModeProvider>
     </AuthProvider>
   );

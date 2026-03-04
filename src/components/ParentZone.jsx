@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useKidsMode } from '../context/KidsModeContext';
+import { useParentControls } from '../context/ParentControlsContext';
 import { Link } from 'react-router-dom';
 
 const PARENT_PIN_STORAGE_KEY = 'aiko_parent_pin';
 const EYE_TRACKER_STORAGE_KEY = 'aiko_eye_health_tracker_v1';
 const WELLBEING_USAGE_STORAGE_KEY = 'aiko_wellbeing_usage_v1';
 const WELLBEING_SYNC_EVENT = 'aiko:wellbeing-sync';
-const TEST_MODE_STORAGE_KEY = 'aiko_parent_test_mode_v1';
-const TEST_MODE_SYNC_EVENT = 'aiko:test-mode-sync';
 const DAILY_LIMIT_MINUTES = 300;
 const PARENT_ZONE_ACTIVITY_ROUTES = [
   { id: 'tables', label: 'Tables', path: '/parent-zone/tables', emoji: '\u{1F9EE}' },
@@ -84,13 +83,10 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
     leftEyeOS: '',
     updatedAt: null,
   });
-  const [isTestMode, setIsTestMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(TEST_MODE_STORAGE_KEY) === 'true';
-  });
   const [eyeSaveStatus, setEyeSaveStatus] = useState('');
   const [wellbeingUsage, setWellbeingUsage] = useState(() => readWellbeingUsage());
   const { isKidsModeOn, toggleKidsMode } = useKidsMode();
+  const { isTestMode, setIsTestMode } = useParentControls();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -128,12 +124,6 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
       window.localStorage.removeItem(PARENT_PIN_STORAGE_KEY);
     }
   }, [savedPin]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(TEST_MODE_STORAGE_KEY, String(isTestMode));
-    window.dispatchEvent(new Event(TEST_MODE_SYNC_EVENT));
-  }, [isTestMode]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

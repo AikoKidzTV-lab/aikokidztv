@@ -2,6 +2,7 @@ import React from 'react';
 import ParentZoneRouteLayout from './ParentZoneRouteLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useAuthModal } from '../../context/AuthModalContext';
+import { useParentControls } from '../../context/ParentControlsContext';
 import { addUserGems } from '../../utils/gemWallet';
 
 const DEFAULT_MILESTONE_SIZE = 10;
@@ -166,13 +167,13 @@ export default function ParentZoneQuizPage({
 }) {
   const { user, fetchProfile } = useAuth();
   const { openAuthModal } = useAuthModal();
+  const { isTestMode } = useParentControls();
   const theme = THEME_BY_VARIANT[variant] || THEME_BY_VARIANT.law;
 
   const normalizedMilestoneSize = Math.max(1, Math.floor(Number(milestoneSize) || DEFAULT_MILESTONE_SIZE));
   const totalQuestions = questions.length;
   const totalMilestones = Math.max(1, Math.ceil(totalQuestions / normalizedMilestoneSize));
 
-  const [isTestMode, setIsTestMode] = React.useState(false);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [selectedOption, setSelectedOption] = React.useState(null);
   const [typedAnswer, setTypedAnswer] = React.useState('');
@@ -240,7 +241,6 @@ export default function ParentZoneQuizPage({
   }, []);
 
   const resetQuiz = React.useCallback(() => {
-    setIsTestMode(false);
     setCurrentIndex(0);
     resetQuestionState();
 
@@ -492,21 +492,9 @@ export default function ParentZoneQuizPage({
             <p className="text-sm font-bold text-slate-900">
               Set Reward Rules (per {normalizedMilestoneSize} questions): 10/10 = 15 Gems, 9/10 = 10 Gems, 8/10 = 5 Gems, 1-7 = 2 Gems, 0 = 0 Gems.
             </p>
-            <label className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-black text-slate-800">
-              <span>Test Mode</span>
-              <input
-                type="checkbox"
-                checked={isTestMode}
-                onChange={(event) => {
-                  setIsTestMode(event.target.checked);
-                  setTypedInputError('');
-                }}
-                className="h-4 w-4 accent-slate-900"
-              />
-            </label>
           </div>
           <p className="mt-2 text-xs font-semibold text-slate-700">
-            OFF: Choose from 4 options | ON: Type the answer manually.
+            Test Mode is controlled from Parent Zone Dashboard: {isTestMode ? 'ON (Type answer manually)' : 'OFF (Choose from 4 options)'}.
           </p>
         </div>
 
