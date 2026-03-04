@@ -33,6 +33,7 @@ import ParentZoneJuniorLawPage from './components/parentZone/ParentZoneJuniorLaw
 import ParentZoneJuniorRightsPage from './components/parentZone/ParentZoneJuniorRightsPage';
 import ParentZoneSciencePage from './components/parentZone/ParentZoneSciencePage';
 import ParentZoneCalculatorPage from './components/parentZone/ParentZoneCalculatorPage';
+import ParentZoneCosmicJourneyPage from './components/parentZone/ParentZoneCosmicJourneyPage';
 import AikoBioPage from './components/pages/AikoBioPage';
 import NikoBioPage from './components/pages/NikoBioPage';
 import KinuBioPage from './components/pages/KinuBioPage';
@@ -985,6 +986,7 @@ function App() {
               <Route path="/parent-zone/science" element={<ParentZoneRouteGuard><ParentZoneSciencePage /></ParentZoneRouteGuard>} />
               <Route path="/parent-zone/junior-science" element={<ParentZoneRouteGuard><ParentZoneSciencePage /></ParentZoneRouteGuard>} />
               <Route path="/parent-zone/calculator" element={<ParentZoneRouteGuard><ParentZoneCalculatorPage /></ParentZoneRouteGuard>} />
+              <Route path="/parent-zone/cosmic-journey" element={<ParentZoneRouteGuard><ParentZoneCosmicJourneyPage /></ParentZoneRouteGuard>} />
             </Routes>
           </AuthModalProvider>
         </BrowserRouter>

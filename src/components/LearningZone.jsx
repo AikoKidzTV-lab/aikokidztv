@@ -13,7 +13,7 @@ const getUnlockStatusMessage = (unlockResult) => {
       return unlockResult.message || 'Not enough Gems to unlock this zone.';
     }
     if (isSchemaColumnError(unlockResult?.message)) {
-      return 'Profile sync updated. Please try unlocking again.';
+      return 'Profile data is syncing. Please try again in a moment.';
     }
     return 'Unable to unlock premium card right now.';
   }
@@ -130,7 +130,10 @@ export default function LearningZone({ onSelect }) {
         return;
       }
 
-      await fetchProfile?.(user.id);
+      await fetchProfile?.(user.id, { retryCount: 2, preferDirect: true });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('aiko:auth-refresh'));
+      }
       showStatus(`${box.title} unlocked permanently for ${box.unlockCost} 💎`);
     } catch (error) {
       console.error('[LearningZone] Premium unlock failed:', error);

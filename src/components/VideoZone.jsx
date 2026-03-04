@@ -26,6 +26,11 @@ const isMissingColumnError = (error, columnName) => {
   );
 };
 
+const isRlsDeniedError = (error) => {
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  return error?.code === '42501' || text.includes('row-level security');
+};
+
 const normalizeUnlockedFeatures = (value) => (
   Array.isArray(value)
     ? value
@@ -279,6 +284,10 @@ export default function VideoZone() {
         .eq('id', user.id);
 
       if (updateError) {
+        if (isRlsDeniedError(updateError)) {
+          showStatus('Profile update blocked by RLS policy. Please allow profile updates for the authenticated user.');
+          return;
+        }
         if (isMissingColumnError(updateError, 'unlocked_features')) {
           showStatus('Profile features are still syncing. Please try again in a minute.');
           return;

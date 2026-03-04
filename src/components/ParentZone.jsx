@@ -15,6 +15,7 @@ const PARENT_ZONE_ACTIVITY_ROUTES = [
   { id: 'junior-rights', label: 'Junior Rights', path: '/parent-zone/rights', emoji: '\u{1F6E1}\uFE0F' },
   { id: 'science', label: 'Science', path: '/parent-zone/junior-science', emoji: '\u{1F52C}' },
   { id: 'calculator', label: 'Calculator', path: '/parent-zone/calculator', emoji: '\u{1F9E0}' },
+  { id: 'cosmic-journey', label: 'Cosmic Journey', path: '/parent-zone/cosmic-journey', emoji: '\u{1F680}' },
 ];
 
 const mockRecentActivities = [
@@ -243,12 +244,20 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
             Secure Zone
           </span>
         </h1>
-        <button
-          onClick={onExit}
-          className="text-gray-500 hover:text-red-600 bg-gray-100 hover:bg-red-50 px-4 sm:px-6 py-2 rounded-xl font-bold transition-colors"
-        >
-          Exit to Kids Zone
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+          <Link
+            to="/parent-zone/cosmic-journey"
+            className="inline-flex items-center rounded-xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-4 py-2 text-sm font-black text-white shadow-[0_8px_22px_rgba(59,130,246,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(59,130,246,0.45)]"
+          >
+            🚀 Cosmic Journey
+          </Link>
+          <button
+            onClick={onExit}
+            className="text-gray-500 hover:text-red-600 bg-gray-100 hover:bg-red-50 px-4 sm:px-6 py-2 rounded-xl font-bold transition-colors"
+          >
+            Exit to Kids Zone
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-8 lg:p-10 flex flex-col">

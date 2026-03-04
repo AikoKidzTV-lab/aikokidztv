@@ -32,6 +32,11 @@ const isMissingColumnError = (error, columnName) => {
   );
 };
 
+const isRlsDeniedError = (error) => {
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  return error?.code === '42501' || text.includes('row-level security');
+};
+
 const markMagicArtUsesUnsupported = () => {
   supportsMagicArtUsesColumn = false;
 };
@@ -497,27 +502,93 @@ export const unlockZoneWithGems = async ({ userId, zoneId, costGems }) => {
     return { ok: false, code: 'invalid_cost', message: 'Invalid unlock cost.' };
   }
 
-  const current = await readEconomyState(userId);
-  if (!current.ok) return current;
+  // DB-first unlock flow:
+  // 1) always fetch the latest profile from Supabase
+  // 2) do a constrained update (id + exact gems + gte gems)
+  // 3) retry on race, so stale local state never causes persistent sync errors
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const current = await readEconomyState(userId);
+    if (!current.ok) return current;
 
-  const { profile } = current;
-  if (profile.unlocked_zones.includes(zoneId)) {
-    return { ok: true, alreadyUnlocked: true, profile };
-  }
-  if (profile.gems < spend) {
-    return {
-      ok: false,
-      code: 'insufficient_gems',
-      message: `You need ${spend} Gems but only have ${profile.gems}.`,
-      gems: profile.gems,
-      required: spend,
-    };
+    const profile = normalizeEconomyProfile(current.profile);
+    const currentGems = normalizeNumber(profile?.gems, 0);
+    const currentUnlockedZones = normalizeStringArray(profile?.unlocked_zones);
+
+    if (currentUnlockedZones.includes(zoneId)) {
+      return { ok: true, alreadyUnlocked: true, profile };
+    }
+
+    const nextUnlockedZones = [...new Set([...currentUnlockedZones, zoneId])];
+    const patch = stripUnsupportedColumnsFromPatch({
+      gems: Math.max(0, currentGems - spend),
+      unlocked_zones: nextUnlockedZones,
+    });
+
+    const runUpdate = (columns) => supabase
+      .from('profiles')
+      .update(patch)
+      .eq('id', userId)
+      .eq('gems', currentGems)
+      .gte('gems', spend)
+      .select(columns)
+      .maybeSingle();
+
+    let { data: updated, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS);
+
+    if (updateError && isMissingColumnError(updateError, 'magic_art_uses')) {
+      markMagicArtUsesUnsupported();
+      ({ data: updated, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK));
+    }
+
+    if (updateError && isMissingColumnError(updateError, 'unlocked_videos')) {
+      markUnlockedVideosUnsupported();
+      ({ data: updated, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS));
+    }
+
+    if (updateError) {
+      if (isRlsDeniedError(updateError)) {
+        return {
+          ok: false,
+          code: 'rls_update_denied',
+          message: 'Profile update blocked by Supabase RLS policy for the profiles table.',
+        };
+      }
+      return {
+        ok: false,
+        code: 'profile_update_error',
+        message: updateError.message || 'Failed to update profile.',
+      };
+    }
+
+    if (updated) {
+      return { ok: true, profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(updated)) };
+    }
+
+    const latest = await readEconomyState(userId);
+    if (!latest.ok) return latest;
+
+    const latestProfile = normalizeEconomyProfile(latest.profile);
+    if (normalizeStringArray(latestProfile?.unlocked_zones).includes(zoneId)) {
+      return { ok: true, alreadyUnlocked: true, profile: latestProfile };
+    }
+
+    const latestGems = normalizeNumber(latestProfile?.gems, 0);
+    if (latestGems < spend) {
+      return {
+        ok: false,
+        code: 'insufficient_gems',
+        message: `You need ${spend} Gems but only have ${latestGems}.`,
+        gems: latestGems,
+        required: spend,
+      };
+    }
   }
 
-  return persistEconomyState(userId, {
-    gems: profile.gems - spend,
-    unlocked_zones: [...profile.unlocked_zones, zoneId],
-  });
+  return {
+    ok: false,
+    code: 'profile_sync_conflict',
+    message: 'Profile was updated from another session. Please try again.',
+  };
 };
 
 export const unlockVideoWithGems = async ({ userId, videoId, costGems = PREMIUM_VIDEO_UNLOCK_COST_GEMS }) => {

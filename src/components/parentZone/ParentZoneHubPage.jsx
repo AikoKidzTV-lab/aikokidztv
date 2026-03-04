@@ -9,6 +9,7 @@ const PARENT_ZONE_ACTIVITIES = [
   { id: 'junior-rights', label: 'Junior Rights', emoji: '\u{1F6E1}\uFE0F', to: '/parent-zone/rights' },
   { id: 'science', label: 'Science', emoji: '\u{1F52C}', to: '/parent-zone/junior-science' },
   { id: 'calculator', label: 'Calculator', emoji: '\u{1F9E0}', to: '/parent-zone/calculator' },
+  { id: 'cosmic-journey', label: 'Cosmic Journey', emoji: '\u{1F680}', to: '/parent-zone/cosmic-journey' },
 ];
 
 export default function ParentZoneHubPage() {

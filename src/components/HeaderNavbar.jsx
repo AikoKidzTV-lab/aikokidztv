@@ -31,8 +31,6 @@ function ProfileDropdownMenu({
   onGoToAdmin,
   displayMode = 'light',
   onSetDisplayMode,
-  brightness = 100,
-  onBrightnessChange,
 }) {
   if (!open) return null;
 
@@ -136,22 +134,18 @@ function ProfileDropdownMenu({
           })}
         </div>
 
-        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-900/80">
-          <label className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Brightness</span>
-            <input
-              type="range"
-              min="50"
-              max="100"
-              step="1"
-              value={brightness}
-              onChange={(event) => onBrightnessChange?.(Number(event.target.value))}
-              className="w-full accent-sky-500"
-              aria-label="Brightness"
-            />
-            <span className="w-10 text-right text-xs font-bold text-slate-700 dark:text-slate-200">{brightness}%</span>
-          </label>
-        </div>
+        <button
+          type="button"
+          onClick={run(() => {
+            if (typeof window !== 'undefined') {
+              window.location.assign('/parent-zone/cosmic-journey');
+            }
+          })}
+          className="mt-3 w-full rounded-xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-3 py-2.5 text-left text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
+        >
+          🚀 Cosmic Journey
+          <span className="block text-xs font-semibold text-indigo-100">Open secure space exploration zone</span>
+        </button>
       </div>
     </div>
   );
