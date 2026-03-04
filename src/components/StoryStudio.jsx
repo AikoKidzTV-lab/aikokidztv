@@ -195,7 +195,6 @@ const StoryStudio = () => {
           confirmButton: 'rounded-xl px-5 py-2 text-sm'
         }
       });
-      document.getElementById('ai-studio')?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
 
@@ -535,3 +534,4 @@ const StoryStudio = () => {
 };
 
 export default StoryStudio;
+
