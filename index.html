@@ -11,6 +11,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.json" />
     <title>AikoKidzTV</title>
+    <script>
+      (function enforceTopOnHomeLoad() {
+        if (typeof window === 'undefined') return;
+        if ('scrollRestoration' in window.history) {
+          window.history.scrollRestoration = 'manual';
+        }
+        if (window.location.pathname === '/' && window.location.hash) {
+          window.history.replaceState(window.history.state, '', '/');
+        }
+        window.scrollTo(0, 0);
+      }());
+    </script>
   </head>
   <body>
     <div id="root"></div>

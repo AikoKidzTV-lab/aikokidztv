@@ -37,57 +37,92 @@ const loadRazorpayScript = () =>
     document.body.appendChild(script);
   });
 
-const HERO_BANNERS = [
-  {
-    id: 'banner-1',
-    title: 'Cloud Rainbow Race',
-    subtitle: 'Zoom through sky loops and collect shiny stars.',
-    gradient: 'from-pink-400 via-fuchsia-500 to-indigo-500',
-    emoji: '☁️🌈',
-  },
-  {
-    id: 'banner-2',
-    title: 'Jungle Jam',
-    subtitle: 'Dance with animal friends in a music forest.',
-    gradient: 'from-emerald-400 via-lime-400 to-green-600',
-    emoji: '🦁🎵',
-  },
-  {
-    id: 'banner-3',
-    title: 'Ocean Bubble Party',
-    subtitle: 'Splash through magical bubbles and hidden gems.',
-    gradient: 'from-cyan-400 via-sky-500 to-blue-600',
-    emoji: '🐬🫧',
-  },
-  {
-    id: 'banner-4',
-    title: 'Candy Castle Quest',
-    subtitle: 'Find sweet treasure in sparkly candy lands.',
-    gradient: 'from-rose-400 via-pink-500 to-orange-400',
-    emoji: '🍭🏰',
-  },
-  {
-    id: 'banner-5',
-    title: 'Space Mini Heroes',
-    subtitle: 'Hop between tiny planets and cosmic moons.',
-    gradient: 'from-indigo-500 via-violet-600 to-purple-700',
-    emoji: '🚀🪐',
-  },
-  {
-    id: 'banner-6',
-    title: 'Dino Discovery Trail',
-    subtitle: 'Track footprints and uncover ancient surprises.',
-    gradient: 'from-amber-400 via-orange-500 to-red-500',
-    emoji: '🦖🗺️',
-  },
-  {
-    id: 'banner-7',
-    title: 'Frozen Spark Garden',
-    subtitle: 'Skate through icy lights and crystal paths.',
-    gradient: 'from-sky-300 via-cyan-300 to-blue-500',
-    emoji: '❄️✨',
-  },
-];
+const HERO_BANNER_LIMIT = 5;
+const HERO_BANNER_FALLBACK_THUMBNAIL = '/logo.png.webp';
+
+const isMissingColumnError = (error, columnName) => {
+  if (!columnName) return false;
+  const source = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  return source.includes(String(columnName).toLowerCase()) && (
+    source.includes('column') ||
+    source.includes('schema cache') ||
+    error?.code === '42703' ||
+    error?.code === 'PGRST204'
+  );
+};
+
+const normalizeMovieBannerRow = (row) => {
+  const id = row?.id != null ? String(row.id).trim() : '';
+  const title = typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled Movie';
+  const description = typeof row?.description === 'string' ? row.description.trim() : '';
+  const thumbnailUrl =
+    typeof row?.thumbnail_url === 'string' && row.thumbnail_url.trim()
+      ? row.thumbnail_url.trim()
+      : HERO_BANNER_FALLBACK_THUMBNAIL;
+  const videoUrl = typeof row?.video_url === 'string' ? row.video_url.trim() : '';
+  const createdAt = typeof row?.created_at === 'string' ? row.created_at : '';
+
+  if (!id || !videoUrl) return null;
+
+  return {
+    id,
+    title,
+    subtitle: description || 'Tap to open this movie and start watching.',
+    thumbnailUrl,
+    videoUrl,
+    createdAt,
+  };
+};
+
+const fetchRecentMovieRowsFromTable = async (tableName) => {
+  const selectColumns = 'id, title, description, video_url, thumbnail_url, created_at';
+
+  let query = supabase
+    .from(tableName)
+    .select(selectColumns)
+    .order('created_at', { ascending: false })
+    .limit(HERO_BANNER_LIMIT);
+
+  let { data, error } = await query;
+
+  if (error && isMissingColumnError(error, 'created_at')) {
+    ({ data, error } = await supabase
+      .from(tableName)
+      .select('id, title, description, video_url, thumbnail_url')
+      .limit(HERO_BANNER_LIMIT));
+  }
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data) ? data : [];
+};
+
+const loadRecentMovieBanners = async () => {
+  const sources = ['movies', 'videos'];
+  let lastError = null;
+
+  for (const source of sources) {
+    try {
+      const rows = await fetchRecentMovieRowsFromTable(source);
+      const normalizedRows = rows
+        .map((row) => normalizeMovieBannerRow(row))
+        .filter(Boolean);
+
+      if (normalizedRows.length > 0) {
+        return normalizedRows
+          .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+          .slice(0, HERO_BANNER_LIMIT);
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) throw lastError;
+  return [];
+};
 
 const sanskariTasks = [
   "Drink a full glass of water 💧", "Say 'Thank You' to your mom or dad 🙏", "Organize your toys properly 🧸", "Take 5 deep breaths 🌬️", "Smile in the mirror 😊", "Wash your hands with soap 🧼", "Read one page of a book 📖", "Help set up the dining table 🍽️", "Hug your parents 🤗", "Say a positive morning prayer ☀️", "Stretch your body for 2 minutes 🤸", "Brush your teeth carefully 🪥", "Put your used plate in the sink 🍽️", "Share a toy or snack with someone 🤝", "Draw a happy face on paper 🖍️", "Eat a piece of fresh fruit 🍎", "Say 'Sorry' if you made a mistake 🕊️", "Pick up one piece of trash and throw it 🗑️", "Compliment someone today 💖", "Close your eyes and sit quietly for 1 min 🧘", "Water a plant in your house 🌱", "Fold your own blanket 🛏️", "Wipe a table clean 🧽", "Keep your shoes in the correct rack 👟", "Count from 1 to 50 slowly 🔢", "Listen to your elders without arguing 👂", "Feed a bird or an animal (with help) 🐦", "Say 'Please' when asking for something 🥺", "Turn off extra lights to save energy 💡", "Close the tap while brushing teeth 🚰", "Help fold dry clothes 👕", "Speak softly and politely today 🗣️", "Learn one new word today 📚", "Draw a picture for your grandparents 🎨", "Don't waste any food on your plate 🍛", "Chew your food 20 times 😋", "Arrange your books in the bag 🎒", "Do 10 jumping jacks 💪", "Sing a happy song 🎵", "Greet a neighbor with a smile 🙋‍♂️", "Help clean your room 🧹", "Write down one thing you are happy about 📝", "Wait for your turn patiently ⏳", "Cover your mouth when coughing 🤧", "Drink milk without complaining 🥛", "Put dirty clothes in the laundry basket 🧺", "Say goodnight to everyone before bed 🌙", "Think of 3 colors you saw today 🌈", "Clap for someone who did a good job 👏", "Promise to be a good kid today 😇"
@@ -133,6 +168,9 @@ export default function LandingPageHabitat({
   const [watchEarnMessage, setWatchEarnMessage] = React.useState('');
   const [paymentToast, setPaymentToast] = React.useState(null);
   const [heroSlideIndex, setHeroSlideIndex] = React.useState(0);
+  const [heroBanners, setHeroBanners] = React.useState([]);
+  const [heroBannersLoading, setHeroBannersLoading] = React.useState(true);
+  const [heroBannersError, setHeroBannersError] = React.useState('');
   const [activeTaskStart, setActiveTaskStart] = React.useState(0);
   const [taskQuestChecks, setTaskQuestChecks] = React.useState(() => Array(TASKS_PER_QUEST).fill(false));
   const [showTaskQuest, setShowTaskQuest] = React.useState(false);
@@ -152,6 +190,7 @@ export default function LandingPageHabitat({
   const taskQuestClaimed = claimedRewards.includes(TASK_QUEST_REWARD_KEY);
   const gemsBalance = Number(profile?.gems || 0);
   const canClaimYoutubeReward = hasClickedSubscribe && !freeGemsClaimed && !isClaimingYoutubeReward;
+  const heroBannerCount = heroBanners.length;
 
   const pushBellNotification = React.useCallback((message) => {
     if (typeof window === 'undefined') return;
@@ -198,14 +237,76 @@ export default function LandingPageHabitat({
   }, []);
 
   React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.pathname !== '/') return;
+
+    if (window.location.hash) {
+      window.history.replaceState(window.history.state, '', '/');
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, []);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    const loadBanners = async () => {
+      setHeroBannersLoading(true);
+      setHeroBannersError('');
+
+      try {
+        const latestBanners = await loadRecentMovieBanners();
+        if (!mounted) return;
+        setHeroBanners(latestBanners.slice(0, HERO_BANNER_LIMIT));
+        setHeroSlideIndex(0);
+      } catch (error) {
+        if (!mounted) return;
+        console.error('[LandingPageHabitat] Failed to load movie banners:', error);
+        setHeroBanners([]);
+        setHeroBannersError('Unable to load latest movies right now.');
+      } finally {
+        if (mounted) {
+          setHeroBannersLoading(false);
+        }
+      }
+    };
+
+    void loadBanners();
+    const refreshTimerId = typeof window === 'undefined'
+      ? null
+      : window.setInterval(() => {
+        void loadBanners();
+      }, 30000);
+
+    return () => {
+      mounted = false;
+      if (refreshTimerId) {
+        window.clearInterval(refreshTimerId);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (heroBannerCount <= 1) return undefined;
+
     const intervalId = window.setInterval(() => {
-      setHeroSlideIndex((current) => (current + 1) % HERO_BANNERS.length);
+      setHeroSlideIndex((current) => (current + 1) % heroBannerCount);
     }, 4000);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, []);
+  }, [heroBannerCount]);
+
+  React.useEffect(() => {
+    if (heroBannerCount === 0) {
+      setHeroSlideIndex(0);
+      return;
+    }
+
+    setHeroSlideIndex((current) => (current >= heroBannerCount ? 0 : current));
+  }, [heroBannerCount]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -225,11 +326,13 @@ export default function LandingPageHabitat({
   }, [activeTaskStart]);
 
   const goToPrevBanner = () => {
-    setHeroSlideIndex((current) => (current - 1 + HERO_BANNERS.length) % HERO_BANNERS.length);
+    if (heroBannerCount <= 1) return;
+    setHeroSlideIndex((current) => (current - 1 + heroBannerCount) % heroBannerCount);
   };
 
   const goToNextBanner = () => {
-    setHeroSlideIndex((current) => (current + 1) % HERO_BANNERS.length);
+    if (heroBannerCount <= 1) return;
+    setHeroSlideIndex((current) => (current + 1) % heroBannerCount);
   };
 
   const handleClaimFreeGems = async () => {
@@ -621,69 +724,106 @@ export default function LandingPageHabitat({
             <div className="min-w-0">
               <div className="mb-4 flex flex-wrap items-center">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-2 text-sm font-extrabold !text-sky-900 shadow-sm backdrop-blur">
-                  <span className="text-lg">🖼️</span>
-                  Featured Banner Slider
+                  <span className="text-lg">{"\u{1F3A5}"}</span>
+                  Latest Movies Slider
                 </div>
                 <span className="ml-3 text-sm italic !text-white/90 opacity-70">
-                  All movies belong to Blender Studio
+                  Auto-updated from Supabase movies table
                 </span>
               </div>
 
               <div className="w-full max-w-full overflow-hidden rounded-3xl border border-white/80 bg-white/20 shadow-[0_20px_55px_rgba(15,23,42,0.2)] backdrop-blur">
-                <div className="relative w-full max-w-full overflow-hidden">
-                  <div
-                    className="flex w-full max-w-full transition-transform duration-700 ease-out"
-                    style={{ transform: `translateX(-${heroSlideIndex * 100}%)` }}
-                  >
-                    {HERO_BANNERS.map((banner, index) => (
-                      <div key={banner.id} className="relative min-h-[260px] min-w-full cursor-default select-none sm:min-h-[320px]">
-                        <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient}`} />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.32),rgba(255,255,255,0)_55%)]" />
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.26),rgba(255,255,255,0)_60%)]" />
-                        <div className="relative flex h-full flex-col justify-between p-6 sm:p-8">
-                          <span className="inline-flex w-fit items-center rounded-full border border-white/70 bg-white/20 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white/95">
-                            Banner {index + 1} / {HERO_BANNERS.length}
-                          </span>
-                          <div>
-                            <p className="mb-2 text-4xl sm:text-5xl">{banner.emoji}</p>
-                            <h2 className="text-2xl font-black text-white sm:text-3xl">{banner.title}</h2>
-                            <p className="mt-2 max-w-xl text-sm font-semibold text-white/95 sm:text-base">
-                              {banner.subtitle}
-                            </p>
+                {heroBannersLoading ? (
+                  <div className="grid min-h-[260px] place-items-center px-6 py-10 text-center text-white sm:min-h-[320px]">
+                    <div>
+                      <p className="text-lg font-black">Loading latest movie banners...</p>
+                      <p className="mt-2 text-sm font-semibold text-white/80">Syncing your 5 newest uploads.</p>
+                    </div>
+                  </div>
+                ) : heroBannersError ? (
+                  <div className="grid min-h-[260px] place-items-center px-6 py-10 text-center text-white sm:min-h-[320px]">
+                    <div>
+                      <p className="text-lg font-black">{heroBannersError}</p>
+                      <p className="mt-2 text-sm font-semibold text-white/85">Please check Supabase connection and movies data.</p>
+                    </div>
+                  </div>
+                ) : heroBannerCount === 0 ? (
+                  <div className="grid min-h-[260px] place-items-center px-6 py-10 text-center text-white sm:min-h-[320px]">
+                    <div>
+                      <p className="text-lg font-black">No movies available yet.</p>
+                      <p className="mt-2 text-sm font-semibold text-white/80">Upload movies with thumbnails to populate this slider automatically.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative w-full max-w-full overflow-hidden">
+                    <div
+                      className="flex w-full max-w-full transition-transform duration-700 ease-out"
+                      style={{ transform: `translateX(-${heroSlideIndex * 100}%)` }}
+                    >
+                      {heroBanners.map((banner, index) => (
+                        <Link
+                          key={banner.id}
+                          to={`/videos?movie=${encodeURIComponent(banner.id)}`}
+                          className="relative block min-h-[260px] min-w-full select-none overflow-hidden sm:min-h-[320px]"
+                        >
+                          <img
+                            src={banner.thumbnailUrl}
+                            alt={`${banner.title} thumbnail`}
+                            loading="lazy"
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/35 to-transparent" />
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.22),rgba(255,255,255,0)_55%)]" />
+
+                          <div className="relative flex h-full flex-col justify-between p-6 sm:p-8">
+                            <span className="inline-flex w-fit items-center rounded-full border border-white/70 bg-black/35 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+                              Movie {index + 1} / {heroBannerCount}
+                            </span>
+                            <div className="space-y-2">
+                              <h2 className="text-2xl font-black text-white drop-shadow sm:text-3xl">{banner.title}</h2>
+                              <p className="max-w-xl text-sm font-semibold text-white/95 sm:text-base">
+                                {banner.subtitle}
+                              </p>
+                              <span className="inline-flex items-center rounded-full border border-cyan-200/80 bg-cyan-100/90 px-3 py-1 text-xs font-black text-cyan-900 shadow-sm">
+                                Open Movie Page
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        </Link>
+                      ))}
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={goToPrevBanner}
-                    aria-label="Previous banner"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/60 bg-white/30 px-3 py-2 text-lg font-black text-white shadow transition hover:bg-white/40"
-                  >
-                    ←
-                  </button>
-                  <button
-                    type="button"
-                    onClick={goToNextBanner}
-                    aria-label="Next banner"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/60 bg-white/30 px-3 py-2 text-lg font-black text-white shadow transition hover:bg-white/40"
-                  >
-                    →
-                  </button>
+                    <button
+                      type="button"
+                      onClick={goToPrevBanner}
+                      disabled={heroBannerCount <= 1}
+                      aria-label="Previous banner"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/60 bg-white/30 px-3 py-2 text-lg font-black text-white shadow transition hover:bg-white/40 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {'\u2190'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goToNextBanner}
+                      disabled={heroBannerCount <= 1}
+                      aria-label="Next banner"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/60 bg-white/30 px-3 py-2 text-lg font-black text-white shadow transition hover:bg-white/40 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {'\u2192'}
+                    </button>
 
-                  <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-                    {HERO_BANNERS.map((banner, index) => (
-                      <span
-                        key={banner.id}
-                        className={`h-1.5 rounded-full transition-all ${
-                          index === heroSlideIndex ? 'w-6 bg-white' : 'w-2 bg-white/60'
-                        }`}
-                      />
-                    ))}
+                    <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+                      {heroBanners.map((banner, index) => (
+                        <span
+                          key={banner.id}
+                          className={`h-1.5 rounded-full transition-all ${
+                            index === heroSlideIndex ? 'w-6 bg-white' : 'w-2 bg-white/60'
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -691,7 +831,7 @@ export default function LandingPageHabitat({
                   type="button"
                   className="cursor-default rounded-full border border-white/80 bg-white/55 px-4 py-1.5 text-xs font-black !text-slate-800 shadow-sm"
                 >
-                  7 Banners Ready
+                  {heroBannerCount} Banners Live
                 </button>
                 <button
                   type="button"
@@ -700,11 +840,10 @@ export default function LandingPageHabitat({
                   Auto Slide Every 4s
                 </button>
                 <span className="inline-flex items-center rounded-full border border-cyan-200/90 bg-cyan-50/95 px-4 py-1.5 text-xs font-black !text-cyan-900 shadow-sm">
-                  Coming Soon 🚀
+                  Click Banner to Open Movie
                 </span>
               </div>
             </div>
-
             <div className="relative">
               <div className="grid grid-cols-2 gap-4">
                 <button

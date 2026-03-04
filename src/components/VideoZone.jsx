@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -11,6 +12,7 @@ import {
 const UNKNOWN_CATEGORY = 'Uncategorized';
 const MOVIES_UNLOCK_COST_GEMS = 500;
 const MOVIES_FEATURE_KEY = 'movies';
+const MOVIE_TABLE_SOURCES = ['movies', 'videos'];
 const VIDEO_CLAY_THEME = {
   '--clay-surface-bg': '#ffffff',
   '--clay-surface-border': 'rgba(56, 189, 248, 0.36)',
@@ -48,6 +50,8 @@ const normalizeUnlockedFeatures = (value) => (
 const normalizeVideoRow = (row) => {
   const imageUrl = typeof row?.thumbnail_url === 'string' ? row.thumbnail_url.trim() : '';
   const videoUrl = typeof row?.video_url === 'string' ? row.video_url.trim() : '';
+  const description = typeof row?.description === 'string' ? row.description.trim() : '';
+  const createdAt = typeof row?.created_at === 'string' ? row.created_at : '';
 
   if (!videoUrl) return null;
 
@@ -56,17 +60,60 @@ const normalizeVideoRow = (row) => {
   return {
     id,
     title: typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled Movie',
+    description,
     category: UNKNOWN_CATEGORY,
     imageUrl,
     videoUrl,
     isPremium: false,
+    createdAt,
   };
 };
 
 const getWatchRewardKey = (videoId) => `watched_video_${videoId}`;
 
+const fetchMovieRowsFromTable = async (tableName) => {
+  let { data, error } = await supabase
+    .from(tableName)
+    .select('id, title, description, video_url, thumbnail_url, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error && isMissingColumnError(error, 'created_at')) {
+    ({ data, error } = await supabase
+      .from(tableName)
+      .select('id, title, description, video_url, thumbnail_url'));
+  }
+
+  if (error) {
+    throw new Error(error.message || `Failed to load movie rows from "${tableName}".`);
+  }
+
+  return Array.isArray(data) ? data : [];
+};
+
+const loadMovieRows = async () => {
+  let lastError = null;
+
+  for (const source of MOVIE_TABLE_SOURCES) {
+    try {
+      const rows = await fetchMovieRowsFromTable(source);
+      if (rows.length > 0) {
+        return rows;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  return [];
+};
+
 export default function VideoZone() {
   const { user, profile, fetchProfile } = useAuth();
+  const location = useLocation();
   const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -76,6 +123,15 @@ export default function VideoZone() {
   const [isMoviesUnlocked, setIsMoviesUnlocked] = useState(false);
   const [isCheckingUnlockState, setIsCheckingUnlockState] = useState(true);
   const [isUnlockingMovies, setIsUnlockingMovies] = useState(false);
+  const missingMovieStatusRef = useRef('');
+
+  const selectedMovieId = useMemo(() => {
+    const params = new URLSearchParams(location.search || '');
+    const fromMovie = params.get('movie');
+    const fromMovieId = params.get('movieId');
+    const rawId = fromMovie || fromMovieId || '';
+    return String(rawId).trim();
+  }, [location.search]);
 
   const claimedRewards = useMemo(
     () => (Array.isArray(profile?.claimed_rewards) ? profile.claimed_rewards : []),
@@ -178,17 +234,15 @@ export default function VideoZone() {
       setLoadError('');
 
       try {
-        const { data, error } = await supabase
-          .from('videos')
-          .select('id, title, video_url, thumbnail_url');
-
-        if (error) {
-          throw new Error(error.message);
-        }
+        const rows = await loadMovieRows();
 
         if (!mounted) return;
 
-        const normalized = (data || []).map(normalizeVideoRow).filter(Boolean);
+        const normalized = rows
+          .map(normalizeVideoRow)
+          .filter(Boolean)
+          .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+
         setVideos(normalized);
       } catch (err) {
         if (!mounted) return;
@@ -216,12 +270,38 @@ export default function VideoZone() {
     return videos.filter((video) => video.category === activeCategory);
   }, [activeCategory, videos]);
 
+  const selectedVideo = useMemo(() => {
+    if (!selectedMovieId) return null;
+    return videos.find((video) => String(video.id) === selectedMovieId) || null;
+  }, [selectedMovieId, videos]);
+
   useEffect(() => {
     if (activeCategory === 'All') return;
     if (!categoryOptions.includes(activeCategory)) {
       setActiveCategory('All');
     }
   }, [activeCategory, categoryOptions]);
+
+  useEffect(() => {
+    if (!selectedMovieId) {
+      missingMovieStatusRef.current = '';
+      return;
+    }
+    if (!isMoviesUnlocked || isLoading) return;
+
+    if (!selectedVideo) {
+      if (missingMovieStatusRef.current !== selectedMovieId) {
+        showStatus('Requested movie was not found. Showing all available movies.');
+        missingMovieStatusRef.current = selectedMovieId;
+      }
+      return;
+    }
+
+    missingMovieStatusRef.current = '';
+    if (selectedVideo.category && selectedVideo.category !== activeCategory) {
+      setActiveCategory(selectedVideo.category);
+    }
+  }, [activeCategory, isLoading, isMoviesUnlocked, selectedMovieId, selectedVideo]);
 
   const openVideoInNewTab = (videoUrl) => {
     if (typeof window === 'undefined') return;
@@ -383,6 +463,60 @@ export default function VideoZone() {
 
         {isMoviesUnlocked ? (
           <>
+            {selectedVideo && (
+              <div className="mb-6 overflow-hidden rounded-3xl border border-cyan-200 bg-white shadow-xl">
+                <div className="grid grid-cols-1 gap-0 md:grid-cols-[1.05fr_1fr]">
+                  <div className="relative">
+                    <img
+                      src={selectedVideo.imageUrl || '/logo.png.webp'}
+                      alt={`${selectedVideo.title} featured banner`}
+                      className="aspect-video h-full w-full object-cover"
+                      loading="eager"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-slate-900/10 to-transparent md:hidden" />
+                    <div className="absolute bottom-3 left-3 rounded-full border border-white/60 bg-black/45 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white md:hidden">
+                      Selected Movie
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col justify-between gap-4 p-5 sm:p-6">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-700">
+                        Selected Movie
+                      </p>
+                      <h2 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+                        {selectedVideo.title}
+                      </h2>
+                      <p className="mt-3 text-sm text-slate-700 sm:text-base">
+                        {selectedVideo.description || 'Play this movie now from your latest homepage banner selection.'}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleVideoAction(selectedVideo)}
+                        disabled={Boolean(actionVideoId)}
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
+                          actionVideoId === selectedVideo.id
+                            ? 'cursor-not-allowed bg-slate-600 text-slate-200'
+                            : 'bg-cyan-300 text-slate-950 hover:bg-cyan-200'
+                        } ${Boolean(actionVideoId) && actionVideoId !== selectedVideo.id ? 'opacity-60' : ''}`}
+                      >
+                        {actionVideoId === selectedVideo.id
+                          ? 'Processing...'
+                          : `Play Movie +${FREE_VIDEO_REWARD_GEMS} ${'\u{1F48E}'}`}
+                        {actionVideoId !== selectedVideo.id && <ExternalLink size={14} />}
+                      </button>
+                      <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-900">
+                        From homepage banner
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="mb-6 flex flex-wrap gap-3">
               {categoryOptions.map((category) => {
                 const active = activeCategory === category;
