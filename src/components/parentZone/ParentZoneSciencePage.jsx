@@ -9,7 +9,7 @@ export default function ParentZoneSciencePage() {
   return (
     <ParentZoneQuizPage
       title="Junior Science"
-      description="30-question interactive science quiz with instant feedback for curious kids."
+      description="100-question interactive science quiz with single-card flow, instant feedback, and milestone gems."
       quizEmoji="Science"
       variant="science"
       questions={JUNIOR_SCIENCE_QUIZ_QUESTIONS}
