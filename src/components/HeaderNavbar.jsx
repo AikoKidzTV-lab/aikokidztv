@@ -187,7 +187,7 @@ export default function HeaderNavbar({
   const navItems = [
     { label: 'Story Studio', target: 'story-studio' },
     { label: 'Magic Art', target: 'magic-art' },
-    { label: 'Poems', target: 'poems' },
+    { label: `Poems Coming Soon ${'\u{1F680}'}`, target: 'poems', disabled: true },
     { label: 'Learning Zone', target: 'learning-zone' },
   ];
   if (isAdmin) navItems.push({ label: 'Admin', target: 'admin' });
@@ -252,7 +252,9 @@ export default function HeaderNavbar({
             {navItems.map((item) => (
               <button
                 key={item.label}
+                disabled={Boolean(item.disabled)}
                 onClick={() => {
+                  if (item.disabled) return;
                   if (item.target === 'videos') {
                     onGoToVideos?.();
                     return;
@@ -267,7 +269,11 @@ export default function HeaderNavbar({
                   }
                   onNav?.(item.target);
                 }}
-                className="rounded-full px-3 py-1.5 text-sm font-semibold text-slate-800 transition hover:bg-pink-100/80 dark:text-slate-100 dark:hover:bg-slate-700"
+                className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                  item.disabled
+                    ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-500'
+                    : 'text-slate-800 hover:bg-pink-100/80 dark:text-slate-100 dark:hover:bg-slate-700'
+                }`}
               >
                 {item.label}
               </button>

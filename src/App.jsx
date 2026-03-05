@@ -18,7 +18,6 @@ import Settings from './components/Settings';
 import ErrorBoundary from './components/ErrorBoundary';
 import Projects from './components/Projects';
 import BlenderCredit from './components/pages/BlenderCredit';
-import PoemsPage from './components/PoemsPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { KidsModeProvider, useKidsMode } from './context/KidsModeContext';
 import { AuthModalProvider, useAuthModal } from './context/AuthModalContext';
@@ -872,6 +871,20 @@ function RouteScrollToTop() {
   return null;
 }
 
+function PoemsComingSoonPage() {
+  return (
+    <section className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-indigo-50 px-4 py-16">
+      <div className="mx-auto max-w-2xl rounded-[2rem] border border-white bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-indigo-600">Poems</p>
+        <h1 className="mt-2 text-3xl font-black text-slate-900">Coming Soon {'\u{1F680}'}</h1>
+        <p className="mt-3 text-sm font-semibold text-slate-700">
+          We are preparing an original poem experience for AikoKidzTV.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 const readParentZoneRouteUnlock = () => {
   if (typeof window === 'undefined') return false;
   try {
@@ -952,7 +965,7 @@ function App() {
                 <Route path="/" element={<HomeRoutePage />} />
                 <Route path="/admin" element={<AdminRoutePage />} />
                 <Route path="/videos" element={<VideoZone />} />
-                <Route path="/poems" element={<PoemsPage />} />
+                <Route path="/poems" element={<PoemsComingSoonPage />} />
                 <Route path="/story" element={<StoryReader />} />
                 <Route path="/coloring" element={<ColoringBook />} />
                 <Route path="/projects" element={<Projects />} />

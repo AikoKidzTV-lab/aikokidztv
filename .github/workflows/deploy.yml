@@ -62,6 +62,19 @@ jobs:
             exit 1
           fi
 
+          if [[ "${VITE_GEMINI_API_KEY}" != *"7edE" ]]; then
+            echo "::error::VITE_GEMINI_API_KEY must end with 7edE."
+            exit 1
+          fi
+
+      - name: Block hardcoded Gemini keys in source
+        shell: bash
+        run: |
+          if grep -RInE "AIza[0-9A-Za-z_-]{20,}" src .github db; then
+            echo "::error::Hardcoded Gemini API key pattern found. Use import.meta.env.VITE_GEMINI_API_KEY only."
+            exit 1
+          fi
+
       - name: Build
         run: npm run build
 

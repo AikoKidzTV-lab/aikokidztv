@@ -1,4 +1,6 @@
 export const NEW_USER_BONUS_GEMS = 50;
+export const UNIVERSAL_GEM_NAME = 'Alexandrite';
+export const UNIVERSAL_GEM_SYMBOL = '\u{1F48E}';
 
 export const MIN_SMALL_ITEM_COST_GEMS = 15;
 export const SMALL_ITEM_COST_INCREASE_GEMS = 8;
