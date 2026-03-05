@@ -141,7 +141,7 @@ export default function LearningZone({ onSelect }) {
         return;
       }
 
-      await fetchProfile?.(user.id, { retryCount: 1, preferDirect: true });
+      await fetchProfile?.(user.id);
       showStatus(`${box.title} unlocked permanently for ${box.unlockCost} 💎`);
     } catch (error) {
       console.error('[LearningZone] Premium unlock failed:', error);

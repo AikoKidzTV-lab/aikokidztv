@@ -220,11 +220,11 @@ export default function ParentZoneQuizPage({
   const syncProfileAfterReward = React.useCallback(
     async (userId) => {
       if (!userId) return;
-      await fetchProfile?.(userId, { retryCount: 2, preferDirect: true });
+      await fetchProfile?.(userId);
 
       if (typeof window !== 'undefined') {
         window.setTimeout(() => {
-          void fetchProfile?.(userId, { retryCount: 1, preferDirect: true });
+          void fetchProfile?.(userId);
         }, 200);
         window.dispatchEvent(new Event('aiko:auth-refresh'));
       }

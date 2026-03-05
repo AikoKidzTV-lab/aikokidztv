@@ -408,21 +408,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     root.classList.remove('colorblind-mode');
   }, [displayMode]);
 
-  useEffect(() => {
-    const tokens = themeTokens.light;
-    const root = document.documentElement;
-    root.setAttribute('data-theme', 'light');
-    root.style.setProperty('--bg-primary', tokens.bg);
-    root.style.setProperty('--surface', tokens.surface);
-    root.style.setProperty('--text-primary', tokens.text);
-    root.style.setProperty('--text-secondary', `${tokens.text}cc`);
-    root.style.removeProperty('--focus-ring');
-    root.style.removeProperty('--accent-safe');
-    if (typeof document !== 'undefined') {
-      document.body.style.backgroundColor = tokens.bg;
-      document.body.style.color = tokens.text;
-    }
-  }, [displayMode]);
+  // Keep base light mode from global CSS variables and avoid runtime theme mutation loops.
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;

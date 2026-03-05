@@ -355,7 +355,7 @@ export default function VideoZone() {
       }
 
       setIsMoviesUnlocked(true);
-      await fetchProfile?.(user.id, { retryCount: 2, preferDirect: true });
+      await fetchProfile?.(user.id);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('aiko:auth-refresh'));
       }

@@ -1,6 +1,4 @@
 export const NEW_USER_BONUS_GEMS = 50;
-export const UNIVERSAL_GEM_NAME = 'Alexandrite';
-export const UNIVERSAL_GEM_SYMBOL = '\u{1F48E}';
 
 export const MIN_SMALL_ITEM_COST_GEMS = 15;
 export const SMALL_ITEM_COST_INCREASE_GEMS = 8;
@@ -24,14 +22,8 @@ export const LEARNING_ZONE_PREMIUM_UNLOCKS = {
   animals: 49,
 };
 
-export const SUPPORT_REWARD_RATE = {
-  INR: 1.2,
-  USD: 95,
-};
-
-export const calculateDonationGems = (amount = 0, currency = 'INR') => {
+export const calculateDonationGems = (amount = 0) => {
   const safeAmount = Number(amount);
-  const rate = SUPPORT_REWARD_RATE[currency] ?? SUPPORT_REWARD_RATE.INR;
   if (!Number.isFinite(safeAmount) || safeAmount <= 0) return 0;
-  return Math.max(100, Math.round(safeAmount * rate));
+  return Math.max(100, Math.round(safeAmount));
 };

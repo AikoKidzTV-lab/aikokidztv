@@ -21,15 +21,6 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import { useKidsMode } from '../context/KidsModeContext';
 
 const GENERATION_COST_GEMS = 20;
-const PROFILE_SYNC_DEBOUNCE_MS = 5000;
-
-const getGeminiApiKey = () => {
-  const apiKey = String(import.meta.env.VITE_GEMINI_API_KEY || '').trim();
-  if (!apiKey || !apiKey.endsWith('7edE')) {
-    return '';
-  }
-  return apiKey;
-};
 
 const characters = [
   { name: 'AIKO', role: 'Energetic Leader', emoji: '\u{1F31F}' },
@@ -96,19 +87,6 @@ const StoryStudio = () => {
 
   const chatEndRef = useRef(null);
   const hasMountedChatRef = useRef(false);
-  const profileFetchUserRef = useRef('');
-  const profileSyncTimerRef = useRef(null);
-
-  const requestProfileSync = React.useCallback((userId, options = {}) => {
-    if (!userId || !fetchProfile || typeof window === 'undefined') return;
-    if (profileSyncTimerRef.current) {
-      return;
-    }
-    profileSyncTimerRef.current = window.setTimeout(() => {
-      profileSyncTimerRef.current = null;
-      void fetchProfile(userId, options);
-    }, PROFILE_SYNC_DEBOUNCE_MS);
-  }, [fetchProfile]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -121,23 +99,9 @@ const StoryStudio = () => {
   }, []);
 
   useEffect(() => {
-    const userId = String(user?.id || '').trim();
-    if (!userId || !fetchProfile) {
-      profileFetchUserRef.current = '';
-      return;
-    }
-
-    if (profileFetchUserRef.current === userId) return;
-    profileFetchUserRef.current = userId;
-    requestProfileSync(userId, { retryCount: 2, preferDirect: true });
-  }, [user?.id, requestProfileSync]);
-
-  useEffect(() => () => {
-    if (profileSyncTimerRef.current && typeof window !== 'undefined') {
-      window.clearTimeout(profileSyncTimerRef.current);
-      profileSyncTimerRef.current = null;
-    }
-  }, []);
+    if (!user?.id || !fetchProfile) return;
+    void fetchProfile(user.id);
+  }, [user?.id, fetchProfile]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -150,7 +114,7 @@ const StoryStudio = () => {
     }
 
     setError((current) => (/syncing your profile/i.test(current || '') ? '' : current));
-  }, [authLoading, user?.id, profile?.id, profile?.gems]);
+  }, [authLoading, user?.id]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -185,7 +149,7 @@ const StoryStudio = () => {
     setApiStatus('checking');
 
     try {
-      const apiKey = getGeminiApiKey();
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey) {
         throw new Error('Gemini API key not found in environment variables');
       }
@@ -240,11 +204,11 @@ const StoryStudio = () => {
 
     let activeProfile = profile;
     if (!activeProfile && fetchProfile) {
-      requestProfileSync(user.id, { retryCount: 2, preferDirect: true });
+      activeProfile = await fetchProfile(user.id);
     }
 
     if (!activeProfile) {
-      setError('Profile data is syncing. Please try again in a moment.');
+      setError('Syncing your profile. Please try again in a moment.');
       return;
     }
 
@@ -307,7 +271,7 @@ const StoryStudio = () => {
   };
 
   const generateWithGemini = async (userMsg, currentGems) => {
-    const apiKey = getGeminiApiKey();
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error('Gemini API key not found in environment variables');
     }
@@ -356,7 +320,9 @@ const StoryStudio = () => {
       throw updateError;
     }
 
-    requestProfileSync(user.id, { retryCount: 2, preferDirect: true });
+    if (fetchProfile) {
+      await fetchProfile(user.id);
+    }
 
     const aiMsg = {
       id: Date.now() + 1,

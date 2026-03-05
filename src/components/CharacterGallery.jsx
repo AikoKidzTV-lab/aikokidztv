@@ -2,33 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CHARACTER_PROFILES } from '../constants/characters';
-import { useAuth } from '../context/AuthContext';
-
-const readCharacterGemCount = (profile, characterKey) => {
-  const source = profile && typeof profile === 'object' ? profile : {};
-  const key = String(characterKey || '').trim().toLowerCase();
-  const candidates = [
-    `${key}_gems`,
-    `${key}_gem_count`,
-    `${key}_gem_total`,
-    `${key}_count`,
-    `gem_${key}`,
-    `gems_${key}`,
-  ];
-
-  for (const candidate of candidates) {
-    const value = Number(source?.[candidate] || 0);
-    if (Number.isFinite(value)) {
-      return Math.max(0, Math.floor(value));
-    }
-  }
-
-  return 0;
-};
 
 const CharacterGallery = () => {
-  const { profile } = useAuth();
-
   return (
     <section className="w-full mb-16">
       <div className="text-center mb-10">
@@ -57,13 +32,6 @@ const CharacterGallery = () => {
                 boxShadow: `16px 16px 32px ${char.card.shadowDark}, -16px -16px 32px ${char.card.shadowLight}, inset 4px 4px 8px ${char.card.innerLight}, inset -4px -4px 8px ${char.card.innerDark}`,
               }}
             >
-              <div
-                className="absolute right-4 top-4 z-20 rounded-full border border-white/80 bg-white/85 px-3 py-1 text-xs font-black text-slate-900 shadow-sm"
-                title={`${char.name} ${char.gemstone} gems`}
-              >
-                {'\u{1F48E}'} {readCharacterGemCount(profile, char.key) || 0}
-              </div>
-
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
@@ -101,7 +69,7 @@ const CharacterGallery = () => {
                   boxShadow: `inset 2px 2px 6px ${char.card.innerLight}, inset -2px -2px 6px ${char.card.innerDark}`,
                 }}
               >
-                {char.colorTheme} {'\u2022'} {char.gemstone}
+                {char.colorTheme}
               </div>
             </Link>
           </motion.div>

@@ -203,10 +203,10 @@ const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
             : 'Logged in successfully!'
         );
         if (userId) {
-          await fetchProfile?.(userId, { retryCount: 2, preferDirect: true });
+          await fetchProfile?.(userId);
           if (typeof window !== 'undefined') {
             window.setTimeout(() => {
-              void fetchProfile?.(userId, { retryCount: 1, preferDirect: true });
+              void fetchProfile?.(userId);
             }, 200);
           }
         }
@@ -237,7 +237,7 @@ const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id || null;
       if (userId) {
-        await fetchProfile?.(userId, { retryCount: 2, preferDirect: true });
+        await fetchProfile?.(userId);
       }
       if (onLoginSuccess) onLoginSuccess();
     } catch (err) {

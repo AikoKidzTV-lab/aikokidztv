@@ -261,7 +261,7 @@ const SafariModule = ({ onBack, onHome }) => {
 
   const syncProfile = useCallback(async () => {
     if (!user?.id) return;
-    await fetchProfile?.(user.id, { retryCount: 1, preferDirect: true });
+    await fetchProfile?.(user.id);
   }, [fetchProfile, user?.id]);
 
   const resetQuizQuestionState = useCallback(() => {
