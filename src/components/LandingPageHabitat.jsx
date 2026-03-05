@@ -570,14 +570,11 @@ export default function LandingPageHabitat({
                 to="/coloring"
                 className="rounded-2xl border border-fuchsia-300/80 bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-pink-300/60 transition hover:-translate-y-1 hover:from-fuchsia-600 hover:via-pink-600 hover:to-rose-600"
               >
-                🎨 Play Magic Art / Coloring Book
+                {'\u{1F3A8}'} Play Magic Art / Coloring Book
               </Link>
-              <Link
-                to="/poems"
-                className="rounded-2xl border border-violet-300/80 bg-gradient-to-r from-violet-500 to-indigo-600 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-violet-300/50 transition hover:-translate-y-1 hover:from-violet-600 hover:to-indigo-700"
-              >
-                🐦 Cute Poems
-              </Link>
+              <div className="rounded-2xl border border-white/70 bg-white/55 px-5 py-3 text-sm font-black !text-slate-800 shadow-[inset_8px_8px_16px_rgba(148,163,184,0.25),inset_-8px_-8px_16px_rgba(255,255,255,0.9),0_12px_24px_rgba(76,29,149,0.18)] backdrop-blur">
+                Poems: Coming Soon {'\u{1F680}'}
+              </div>
               <button
                 onClick={() => go('learning-zone')}
                 className="rounded-2xl border border-cyan-200/80 bg-cyan-50/95 px-5 py-3 text-sm font-black !text-cyan-900 shadow-lg shadow-cyan-900/10 transition hover:-translate-y-1 hover:bg-cyan-100"

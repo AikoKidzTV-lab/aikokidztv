@@ -548,11 +548,6 @@ const SafariModule = ({ onBack, onHome }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8">
           {filteredAnimals.map((animal) => {
             const isFlipped = !!flippedCards[animal.id];
-            const poemConfig = animalPoemConfigs[animal.id] || null;
-            const poemText = String(poemConfig?.poem || '').trim();
-            const poemCoverImageUrl = String(poemConfig?.coverImageUrl || '').trim();
-            const shouldShowPoemCoverImage =
-              Boolean(poemConfig?.showCoverImageForPoem) && Boolean(poemCoverImageUrl);
             return (
               <div
                 key={animal.id}
@@ -598,21 +593,12 @@ const SafariModule = ({ onBack, onHome }) => {
                           "{animal.bio}"
                         </p>
 
-                        {poemText ? (
-                          <div className="mt-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-3 text-left">
-                            <p className="text-[11px] font-bold uppercase tracking-wide text-indigo-600">Poem</p>
-                            <p className="mt-1 whitespace-pre-line text-sm font-medium text-slate-700">
-                              {poemText}
-                            </p>
-                            {shouldShowPoemCoverImage ? (
-                              <img
-                                src={poemCoverImageUrl}
-                                alt={`${animal.name} poem cover`}
-                                className="mt-3 h-24 w-full rounded-xl border border-indigo-100 object-cover"
-                              />
-                            ) : null}
-                          </div>
-                        ) : null}
+                        <div className="mt-3 rounded-2xl border border-white/75 bg-white/70 p-3 text-left shadow-[inset_8px_8px_14px_rgba(148,163,184,0.25),inset_-8px_-8px_14px_rgba(255,255,255,0.95),0_8px_18px_rgba(79,70,229,0.15)]">
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-indigo-600">Poems</p>
+                          <p className="mt-1 text-sm font-black text-slate-700">
+                            Coming Soon {'\u{1F680}'}
+                          </p>
+                        </div>
                       </div>
 
                       <button
@@ -851,4 +837,5 @@ const SafariModule = ({ onBack, onHome }) => {
 };
 
 export default SafariModule;
+
 
