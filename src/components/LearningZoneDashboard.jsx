@@ -54,8 +54,8 @@ const LEARNING_MODULES = [
   },
   {
     id: 'language_explorer',
-    title: 'Language Explorer',
-    desc: 'Learn words in English, Hindi, Spanish, French & more!',
+    title: 'English Explorer',
+    desc: 'Learn words in English only!',
     icon: '🌍',
     bg: 'bg-rose-100',
     border: 'border-rose-200',

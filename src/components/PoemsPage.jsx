@@ -209,6 +209,9 @@ export default function PoemsPage() {
               <h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">
                 Cute Galaxy Poems {'\u{1F426}\u{1F43C}\u{1F338}'}
               </h1>
+              <div className="mt-2 inline-flex items-center rounded-full border border-amber-200/70 bg-amber-100/90 px-3 py-1 text-xs font-black uppercase tracking-[0.15em] text-amber-900">
+                Coming Soon {'\u{1F680}'}
+              </div>
               <p className="mt-2 max-w-3xl text-sm text-cyan-50/90 sm:text-base">
                 First 5 poems are free. Remaining poems cost {POEM_UNLOCK_COST_GEMS} gems each.
                 Complete a poem to earn +{POEM_COMPLETION_REWARD_GEMS} gems.

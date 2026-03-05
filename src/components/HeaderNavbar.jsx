@@ -47,7 +47,7 @@ function ProfileDropdownMenu({
 
   return (
     <div className="absolute right-0 top-full mt-3 w-[24rem] max-w-[96vw] rounded-[1.5rem] border border-white/85 bg-white p-3 shadow-[0_20px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl z-50 animate-[fadeIn_0.18s_ease-out]">
-      <div className="rounded-2xl border border-white bg-white p-3 shadow-[inset_8px_8px_16px_rgba(148,163,184,0.22),inset_-8px_-8px_16px_rgba(255,255,255,0.95),0_12px_22px_rgba(15,23,42,0.1)]">
+      <div className="rounded-2xl border border-white/90 bg-white p-3 shadow-[14px_14px_28px_rgba(148,163,184,0.25),-10px_-10px_24px_rgba(255,255,255,0.95),inset_2px_2px_6px_rgba(255,255,255,0.85),inset_-3px_-3px_8px_rgba(148,163,184,0.22)]">
         <div className="grid grid-cols-[1fr_1fr] gap-3">
           <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3">
             <div className="mb-2 grid h-10 w-10 place-items-center rounded-full border border-slate-300 bg-white font-black text-black">
@@ -61,7 +61,7 @@ function ProfileDropdownMenu({
             <p className="text-xs font-black text-black">Level: {level}</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-3 text-right">
-            <h2 className="text-2xl font-black tracking-tight text-black [text-shadow:1px_1px_0_rgba(148,163,184,0.35)]">
+            <h2 className="text-3xl font-black tracking-tight text-black">
               BLENDER STUDIO
             </h2>
             <p className="mt-2 text-[11px] leading-relaxed font-semibold text-black">
@@ -78,7 +78,7 @@ function ProfileDropdownMenu({
         {isAdmin && canSeeAdminPanel && (
           <button
             onClick={run(onGoToAdmin)}
-            className="w-full rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-left font-bold text-violet-800 shadow-sm transition hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/20 dark:text-violet-200 dark:hover:bg-violet-900/30"
+            className="w-full rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-left font-bold text-violet-800 shadow-sm transition hover:bg-violet-100"
           >
             Admin Panel
             <span className="block text-xs font-semibold opacity-80">Manage dashboard & content</span>
@@ -86,7 +86,7 @@ function ProfileDropdownMenu({
         )}
         <button
           onClick={run(onOpenParentZone)}
-          className="w-full rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-100 to-sky-100 px-4 py-3 text-left font-bold text-indigo-900 shadow-sm transition hover:-translate-y-0.5 dark:border-indigo-800 dark:from-indigo-900/30 dark:to-sky-900/20 dark:text-indigo-100"
+          className="w-full rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-100 to-sky-100 px-4 py-3 text-left font-bold text-indigo-900 shadow-sm transition hover:-translate-y-0.5"
         >
           Parent Zone
           <span className="block text-xs font-semibold opacity-80">Protected by 4-digit PIN (resettable)</span>
@@ -95,14 +95,14 @@ function ProfileDropdownMenu({
           <>
             <button
               onClick={run(onOpenLogin)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left font-bold text-slate-800 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left font-bold text-slate-800 shadow-sm transition hover:bg-slate-50"
             >
               Login
               <span className="block text-xs font-semibold opacity-80">Open authentication modal</span>
             </button>
             <button
               onClick={run(onOpenSignup)}
-              className="w-full rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-4 py-3 text-left font-bold text-pink-900 shadow-sm transition hover:brightness-105 dark:border-pink-900/50 dark:from-pink-900/30 dark:to-amber-900/20 dark:text-pink-100"
+              className="w-full rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-4 py-3 text-left font-bold text-pink-900 shadow-sm transition hover:brightness-105"
             >
               Sign Up / Create Account
               <span className="block text-xs font-semibold opacity-80">Start with email, password, or OTP</span>
@@ -111,7 +111,7 @@ function ProfileDropdownMenu({
         )}
       </div>
 
-      <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-800/80">
+      <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-3">
         <button
           type="button"
           onClick={run(onOpenCosmicJourney)}
@@ -142,6 +142,7 @@ export default function HeaderNavbar({
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [openProfile, setOpenProfile] = useState(false);
+  const [showPoemsComingSoonBadge, setShowPoemsComingSoonBadge] = useState(false);
 
   const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
   const networkLabel = isForcedOffline ? 'Offline' : 'Online';
@@ -184,10 +185,20 @@ export default function HeaderNavbar({
     }
   };
 
+  useEffect(() => {
+    if (!showPoemsComingSoonBadge || typeof window === 'undefined') return undefined;
+    const timerId = window.setTimeout(() => {
+      setShowPoemsComingSoonBadge(false);
+    }, 2800);
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [showPoemsComingSoonBadge]);
+
   const navItems = [
     { label: 'Story Studio', target: 'story-studio' },
     { label: 'Magic Art', target: 'magic-art' },
-    { label: `Poems Coming Soon ${'\u{1F680}'}`, target: 'poems', disabled: true },
+    { label: 'Poems', target: 'poems' },
     { label: 'Learning Zone', target: 'learning-zone' },
   ];
   if (isAdmin) navItems.push({ label: 'Admin', target: 'admin' });
@@ -252,15 +263,13 @@ export default function HeaderNavbar({
             {navItems.map((item) => (
               <button
                 key={item.label}
-                disabled={Boolean(item.disabled)}
                 onClick={() => {
-                  if (item.disabled) return;
                   if (item.target === 'videos') {
                     onGoToVideos?.();
                     return;
                   }
                   if (item.target === 'poems') {
-                    onGoToPoems?.();
+                    setShowPoemsComingSoonBadge(true);
                     return;
                   }
                   if (item.target === 'admin') {
@@ -269,13 +278,14 @@ export default function HeaderNavbar({
                   }
                   onNav?.(item.target);
                 }}
-                className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
-                  item.disabled
-                    ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-500'
-                    : 'text-slate-800 hover:bg-pink-100/80 dark:text-slate-100 dark:hover:bg-slate-700'
-                }`}
+                className="rounded-full px-3 py-1.5 text-sm font-semibold transition text-slate-800 hover:bg-pink-100/80 dark:text-slate-100 dark:hover:bg-slate-700"
               >
-                {item.label}
+                <span>{item.label}</span>
+                {item.target === 'poems' && showPoemsComingSoonBadge ? (
+                  <span className="ml-1 inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-900">
+                    Coming Soon {'\u{1F680}'}
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>

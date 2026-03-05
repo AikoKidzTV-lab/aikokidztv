@@ -19,9 +19,9 @@ const isNetworkError = (error) => {
 
 const AUTH_TIMEOUT_MS = 20000;
 const PROFILE_FALLBACK_COLUMNS =
-  'id, role, gems, aiko_gems, niko_gems, kinu_gems, mimi_gems, miko_gems, chiko_gems, unlocked_cards, unlocked_zones, unlocked_features, unlocked_videos, unlocked_items, claimed_rewards';
+  'id, role, gems, unlocked_zones, unlocked_features, unlocked_videos, unlocked_items, claimed_rewards';
 const PROFILE_FALLBACK_COLUMNS_NO_UNLOCKED_VIDEOS =
-  'id, role, gems, aiko_gems, niko_gems, kinu_gems, mimi_gems, miko_gems, chiko_gems, unlocked_cards, unlocked_zones, unlocked_features, unlocked_items, claimed_rewards';
+  'id, role, gems, unlocked_zones, unlocked_features, unlocked_items, claimed_rewards';
 const PROFILE_SYNC_DEBOUNCE_MS = 5000;
 
 const isMissingColumnError = (error, columnName) => {
@@ -68,6 +68,7 @@ export const AuthProvider = ({ children }) => {
   const isMountedRef = useRef(false);
   const profileFetchInFlightRef = useRef(new Map());
   const profileSyncDebounceTimerRef = useRef(null);
+  const authRefreshDebounceTimerRef = useRef(null);
 
   const normalizeFallbackProfile = useCallback((rawProfile = null) => {
     if (!rawProfile) return null;
@@ -76,13 +77,6 @@ export const AuthProvider = ({ children }) => {
     return {
       ...rawProfile,
       gems: Number.isFinite(gems) ? Math.max(0, Math.floor(gems)) : 0,
-      aiko_gems: Number.isFinite(Number(rawProfile.aiko_gems)) ? Math.max(0, Math.floor(Number(rawProfile.aiko_gems))) : 0,
-      niko_gems: Number.isFinite(Number(rawProfile.niko_gems)) ? Math.max(0, Math.floor(Number(rawProfile.niko_gems))) : 0,
-      kinu_gems: Number.isFinite(Number(rawProfile.kinu_gems)) ? Math.max(0, Math.floor(Number(rawProfile.kinu_gems))) : 0,
-      mimi_gems: Number.isFinite(Number(rawProfile.mimi_gems)) ? Math.max(0, Math.floor(Number(rawProfile.mimi_gems))) : 0,
-      miko_gems: Number.isFinite(Number(rawProfile.miko_gems)) ? Math.max(0, Math.floor(Number(rawProfile.miko_gems))) : 0,
-      chiko_gems: Number.isFinite(Number(rawProfile.chiko_gems)) ? Math.max(0, Math.floor(Number(rawProfile.chiko_gems))) : 0,
-      unlocked_cards: toStringArray(rawProfile.unlocked_cards),
       unlocked_zones: toStringArray(rawProfile.unlocked_zones),
       unlocked_features: toStringArray(rawProfile.unlocked_features),
       unlocked_videos: toStringArray(rawProfile.unlocked_videos),
@@ -138,13 +132,6 @@ export const AuthProvider = ({ children }) => {
             const seedPayload = {
               id: userId,
               gems: 0,
-              aiko_gems: 0,
-              niko_gems: 0,
-              kinu_gems: 0,
-              mimi_gems: 0,
-              miko_gems: 0,
-              chiko_gems: 0,
-              unlocked_cards: [],
               unlocked_zones: [],
               unlocked_features: [],
               unlocked_items: [],
@@ -333,13 +320,7 @@ export const AuthProvider = ({ children }) => {
       );
 
       await fetchProfile(nextUser.id, { retryCount: 2, preferDirect: true });
-
-      if (typeof window !== 'undefined') {
-        window.setTimeout(() => {
-          if (!isMountedRef.current || !isActive) return;
-          void fetchProfile(nextUser.id, { retryCount: 0, preferDirect: true });
-        }, 250);
-      }
+      scheduleDebouncedProfileSync(nextUser.id, { retryCount: 0, preferDirect: true });
     };
 
     const safelyApplySession = (session, eventLabel = 'unknown') => {
@@ -481,8 +462,24 @@ export const AuthProvider = ({ children }) => {
       if (!isMountedRef.current || !isActive) {
         return;
       }
-      setLoading(true);
-      void initializeAuth();
+
+      if (typeof window === 'undefined') {
+        setLoading(true);
+        void initializeAuth();
+        return;
+      }
+
+      if (authRefreshDebounceTimerRef.current) {
+        window.clearTimeout(authRefreshDebounceTimerRef.current);
+      }
+
+      authRefreshDebounceTimerRef.current = window.setTimeout(() => {
+        if (!isMountedRef.current || !isActive) {
+          return;
+        }
+        setLoading(true);
+        void initializeAuth();
+      }, PROFILE_SYNC_DEBOUNCE_MS);
     };
 
     if (typeof window !== 'undefined') {
@@ -500,6 +497,9 @@ export const AuthProvider = ({ children }) => {
         window.removeEventListener('offline', handleOffline);
         window.removeEventListener('online', handleOnline);
         window.removeEventListener('aiko:auth-refresh', handleAuthRefresh);
+        if (authRefreshDebounceTimerRef.current) {
+          window.clearTimeout(authRefreshDebounceTimerRef.current);
+        }
       }
     };
   }, [fetchProfile, scheduleDebouncedProfileSync]);

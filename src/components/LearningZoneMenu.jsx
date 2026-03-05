@@ -44,11 +44,11 @@ export default function LearningZoneMenu({ onSelect }) {
     },
     {
       id: 'language',
-      title: 'Language Explorer',
+      title: 'English Explorer',
       icon: '🌍',
       bg: 'bg-rose-100',
       text: 'text-rose-900',
-      desc: 'Learn words in many languages!',
+      desc: 'Learn new English words!',
     },
   ];
 

@@ -7,12 +7,10 @@ const MISSING_MAGIC_ART_USES_FALLBACK = 0;
 
 const ECONOMY_SELECT_COLUMNS = '*';
 const ECONOMY_SELECT_COLUMNS_FALLBACK =
-  'id, role, gems, aiko_gems, niko_gems, kinu_gems, mimi_gems, miko_gems, chiko_gems, unlocked_cards, unlocked_zones, unlocked_features, unlocked_videos, unlocked_items, claimed_rewards, created_at, updated_at';
+  'id, role, gems, unlocked_zones, unlocked_features, unlocked_videos, unlocked_items, claimed_rewards, created_at, updated_at';
 const ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS =
-  'id, role, gems, aiko_gems, niko_gems, kinu_gems, mimi_gems, miko_gems, chiko_gems, unlocked_cards, unlocked_zones, unlocked_features, unlocked_items, claimed_rewards, created_at, updated_at';
+  'id, role, gems, unlocked_zones, unlocked_features, unlocked_items, claimed_rewards, created_at, updated_at';
 const LOCAL_MAGIC_ART_USES_PREFIX = 'aiko_magic_art_uses_v1_';
-const UNIVERSAL_TO_CHARACTER_GEM_COST = 50;
-const CHARACTER_GEM_REWARD = 10;
 
 let supportsMagicArtUsesColumn = true;
 let supportsUnlockedVideosColumn = true;
@@ -147,14 +145,7 @@ export const normalizeEconomyProfile = (profile = null) => {
   return {
     ...profile,
     gems: normalizeNumber(profile.gems, 0),
-    aiko_gems: normalizeNumber(profile.aiko_gems, 0),
-    niko_gems: normalizeNumber(profile.niko_gems, 0),
-    kinu_gems: normalizeNumber(profile.kinu_gems, 0),
-    mimi_gems: normalizeNumber(profile.mimi_gems, 0),
-    miko_gems: normalizeNumber(profile.miko_gems, 0),
-    chiko_gems: normalizeNumber(profile.chiko_gems, 0),
     magic_art_uses: normalizeNumber(profile.magic_art_uses, magicArtFallback),
-    unlocked_cards: normalizeStringArray(profile.unlocked_cards),
     unlocked_zones: normalizeStringArray(profile.unlocked_zones),
     unlocked_features: normalizeStringArray(profile.unlocked_features),
     unlocked_videos: supportsUnlockedVideosColumn
@@ -181,13 +172,6 @@ const applyMagicUsesFallback = (userId, profile) => {
 
 const getEconomyDefaults = () => ({
   gems: 0,
-  aiko_gems: 0,
-  niko_gems: 0,
-  kinu_gems: 0,
-  mimi_gems: 0,
-  miko_gems: 0,
-  chiko_gems: 0,
-  unlocked_cards: [],
   unlocked_zones: [],
   unlocked_features: [],
   ...(supportsUnlockedVideosColumn ? { unlocked_videos: [] } : {}),
@@ -222,9 +206,6 @@ const buildEconomyBackfill = (profile = null) => {
   }
   if (hasOwn(profile, 'unlocked_items') && !Array.isArray(profile?.unlocked_items)) {
     patch.unlocked_items = [];
-  }
-  if (hasOwn(profile, 'unlocked_cards') && !Array.isArray(profile?.unlocked_cards)) {
-    patch.unlocked_cards = [];
   }
   if (hasOwn(profile, 'claimed_rewards') && !Array.isArray(profile?.claimed_rewards)) {
     patch.claimed_rewards = [];
@@ -973,104 +954,6 @@ export const unlockFeatureWithGems = async ({ userId, featureId, costGems }) => 
     ok: false,
     code: 'profile_update_error',
     message: 'Profile unlock is busy right now. Please try again.',
-  };
-};
-
-const CHARACTER_GEM_FIELD_BY_KEY = {
-  aiko: 'aiko_gems',
-  niko: 'niko_gems',
-  kinu: 'kinu_gems',
-  mimi: 'mimi_gems',
-  miko: 'miko_gems',
-  chiko: 'chiko_gems',
-};
-
-export const convertUniversalToCharacterGems = async ({ userId, characterKey }) => {
-  if (!userId) return { ok: false, code: 'auth_required', message: 'Please log in first.' };
-
-  const normalizedCharacterKey = String(characterKey || '').trim().toLowerCase();
-  const characterGemField = CHARACTER_GEM_FIELD_BY_KEY[normalizedCharacterKey];
-  if (!characterGemField) {
-    return { ok: false, code: 'invalid_character_key', message: 'Invalid character key.' };
-  }
-
-  const { data: latestProfileRaw, error: latestProfileError } = await readProfileRowById({
-    userId,
-    maybeSingle: false,
-  });
-
-  if (latestProfileError) {
-    return {
-      ok: false,
-      code: 'profile_fetch_error',
-      message: latestProfileError.message || 'Failed to load profile before gem conversion.',
-    };
-  }
-
-  const latestProfile = normalizeEconomyProfile(latestProfileRaw);
-  const currentUniversalGems = normalizeNumber(latestProfile?.gems, 0);
-  if (currentUniversalGems < UNIVERSAL_TO_CHARACTER_GEM_COST) {
-    return {
-      ok: false,
-      code: 'insufficient_gems',
-      message: `You need ${UNIVERSAL_TO_CHARACTER_GEM_COST} Gems but only have ${currentUniversalGems}.`,
-      gems: currentUniversalGems,
-      required: UNIVERSAL_TO_CHARACTER_GEM_COST,
-    };
-  }
-
-  const currentCharacterGems = normalizeNumber(latestProfile?.[characterGemField], 0);
-  const patch = {
-    gems: Math.max(0, currentUniversalGems - UNIVERSAL_TO_CHARACTER_GEM_COST),
-    [characterGemField]: currentCharacterGems + CHARACTER_GEM_REWARD,
-  };
-
-  const runUpdate = (columns) =>
-    supabase
-      .from('profiles')
-      .update(patch)
-      .eq('id', userId)
-      .eq('gems', currentUniversalGems)
-      .gte('gems', UNIVERSAL_TO_CHARACTER_GEM_COST)
-      .select(columns)
-      .maybeSingle();
-
-  let { data: updatedProfile, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS);
-
-  if (updateError && isMissingColumnError(updateError, 'magic_art_uses')) {
-    markMagicArtUsesUnsupported();
-    ({ data: updatedProfile, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK));
-  }
-
-  if (updateError && isMissingColumnError(updateError, 'unlocked_videos')) {
-    markUnlockedVideosUnsupported();
-    ({ data: updatedProfile, error: updateError } = await runUpdate(ECONOMY_SELECT_COLUMNS_FALLBACK_NO_UNLOCKED_VIDEOS));
-  }
-
-  if (updateError) {
-    return {
-      ok: false,
-      code: 'profile_update_error',
-      message: updateError.message || 'Failed to convert universal gems.',
-    };
-  }
-
-  if (!updatedProfile) {
-    return {
-      ok: false,
-      code: 'profile_update_error',
-      message: 'Conversion could not be confirmed. Please try again.',
-    };
-  }
-
-  return {
-    ok: true,
-    profile: applyMagicUsesFallback(userId, normalizeEconomyProfile(updatedProfile)),
-    conversion: {
-      spentUniversalGems: UNIVERSAL_TO_CHARACTER_GEM_COST,
-      gainedCharacterGems: CHARACTER_GEM_REWARD,
-      characterKey: normalizedCharacterKey,
-    },
   };
 };
 

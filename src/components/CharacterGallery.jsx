@@ -4,6 +4,28 @@ import { motion } from 'framer-motion';
 import { CHARACTER_PROFILES } from '../constants/characters';
 import { useAuth } from '../context/AuthContext';
 
+const readCharacterGemCount = (profile, characterKey) => {
+  const source = profile && typeof profile === 'object' ? profile : {};
+  const key = String(characterKey || '').trim().toLowerCase();
+  const candidates = [
+    `${key}_gems`,
+    `${key}_gem_count`,
+    `${key}_gem_total`,
+    `${key}_count`,
+    `gem_${key}`,
+    `gems_${key}`,
+  ];
+
+  for (const candidate of candidates) {
+    const value = Number(source?.[candidate] || 0);
+    if (Number.isFinite(value)) {
+      return Math.max(0, Math.floor(value));
+    }
+  }
+
+  return 0;
+};
+
 const CharacterGallery = () => {
   const { profile } = useAuth();
 
@@ -39,7 +61,7 @@ const CharacterGallery = () => {
                 className="absolute right-4 top-4 z-20 rounded-full border border-white/80 bg-white/85 px-3 py-1 text-xs font-black text-slate-900 shadow-sm"
                 title={`${char.name} ${char.gemstone} gems`}
               >
-                {'\u{1F48E}'} {Number(profile?.[char.profileGemField] || 0)}
+                {'\u{1F48E}'} {readCharacterGemCount(profile, char.key) || 0}
               </div>
 
               <div

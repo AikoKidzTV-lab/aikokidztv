@@ -593,12 +593,6 @@ const SafariModule = ({ onBack, onHome }) => {
                           "{animal.bio}"
                         </p>
 
-                        <div className="mt-3 rounded-2xl border border-white/75 bg-white/70 p-3 text-left shadow-[inset_8px_8px_14px_rgba(148,163,184,0.25),inset_-8px_-8px_14px_rgba(255,255,255,0.95),0_8px_18px_rgba(79,70,229,0.15)]">
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-indigo-600">Poems</p>
-                          <p className="mt-1 text-sm font-black text-slate-700">
-                            Coming Soon {'\u{1F680}'}
-                          </p>
-                        </div>
                       </div>
 
                       <button

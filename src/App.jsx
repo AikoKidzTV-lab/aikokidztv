@@ -12,6 +12,7 @@ import MagicArt from './components/MagicArt';
 import ColoringBook from './components/ColoringBook';
 import ParentZone from './components/ParentZone';
 import VideoZone from './components/VideoZone';
+import PoemsPage from './components/PoemsPage';
 import StoryReader from './components/StoryReader';
 import ParentPinGateModal from './components/ParentPinGateModal';
 import Settings from './components/Settings';
@@ -427,7 +428,17 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     if (typeof window === 'undefined') return undefined;
 
     const syncFromStorage = () => {
-      setWellbeingUsage(readWellbeingUsage());
+      const nextUsage = readWellbeingUsage();
+      setWellbeingUsage((currentUsage) => {
+        if (
+          currentUsage?.date === nextUsage?.date &&
+          Number(currentUsage?.minutesUsed || 0) === Number(nextUsage?.minutesUsed || 0) &&
+          Boolean(currentUsage?.limitEnabled) === Boolean(nextUsage?.limitEnabled)
+        ) {
+          return currentUsage;
+        }
+        return nextUsage;
+      });
     };
 
     window.addEventListener('storage', syncFromStorage);
@@ -697,7 +708,7 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
       junior_law: <ComingSoon title="Junior Law" emoji={'\u2696\uFE0F'} />,
       science: <ComingSoon title="Science Lab" emoji={'\u{1F52C}'} />,
       math: <ComingSoon title="Math Magic" emoji={'\u{1F9EE}'} />,
-      language: <ComingSoon title="Language Explorer" emoji={'\u{1F30D}'} />,
+      language: <ComingSoon title="English Explorer" emoji={'\u{1F30D}'} />,
     };
     return map[learningModule] || null;
   }
@@ -840,7 +851,10 @@ function RouteScrollToTop() {
   React.useLayoutEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
-    const scrollTopNow = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const scrollTopNow = () => {
+      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    };
 
     // Always force each route to open from the top, never from a preserved section offset.
     scrollTopNow();
@@ -869,20 +883,6 @@ function RouteScrollToTop() {
   }, []);
 
   return null;
-}
-
-function PoemsComingSoonPage() {
-  return (
-    <section className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-indigo-50 px-4 py-16">
-      <div className="mx-auto max-w-2xl rounded-[2rem] border border-white bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-indigo-600">Poems</p>
-        <h1 className="mt-2 text-3xl font-black text-slate-900">Coming Soon {'\u{1F680}'}</h1>
-        <p className="mt-3 text-sm font-semibold text-slate-700">
-          We are preparing an original poem experience for AikoKidzTV.
-        </p>
-      </div>
-    </section>
-  );
 }
 
 const readParentZoneRouteUnlock = () => {
@@ -965,7 +965,7 @@ function App() {
                 <Route path="/" element={<HomeRoutePage />} />
                 <Route path="/admin" element={<AdminRoutePage />} />
                 <Route path="/videos" element={<VideoZone />} />
-                <Route path="/poems" element={<PoemsComingSoonPage />} />
+                <Route path="/poems" element={<PoemsPage />} />
                 <Route path="/story" element={<StoryReader />} />
                 <Route path="/coloring" element={<ColoringBook />} />
                 <Route path="/projects" element={<Projects />} />

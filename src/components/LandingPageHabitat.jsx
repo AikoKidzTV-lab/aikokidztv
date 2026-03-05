@@ -39,6 +39,17 @@ const loadRazorpayScript = () =>
 
 const HERO_BANNER_LIMIT = 5;
 const HERO_BANNER_FALLBACK_THUMBNAIL = '/logo.png.webp';
+const MOVIE_BANNER_SOURCES = ['movies', 'videos'];
+const MOVIE_BANNER_SELECT_ATTEMPTS = [
+  'id, title, description, video_url, thumbnail_url, created_at',
+  'id, title, description, movie_url, thumbnail_url, created_at',
+  'id, title, description, video_url, image_url, created_at',
+  'id, title, description, movie_url, image_url, created_at',
+  'id, title, description, video_url, thumbnail_url',
+  'id, title, description, movie_url, thumbnail_url',
+  'id, title, description, video_url, image_url',
+  'id, title, description, movie_url, image_url',
+];
 
 const isMissingColumnError = (error, columnName) => {
   if (!columnName) return false;
@@ -51,16 +62,31 @@ const isMissingColumnError = (error, columnName) => {
   );
 };
 
+const readFirstNonEmptyString = (row, keys = [], fallback = '') => {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return fallback;
+};
+
 const normalizeMovieBannerRow = (row) => {
-  const id = row?.id != null ? String(row.id).trim() : '';
-  const title = typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled Movie';
-  const description = typeof row?.description === 'string' ? row.description.trim() : '';
-  const thumbnailUrl =
-    typeof row?.thumbnail_url === 'string' && row.thumbnail_url.trim()
-      ? row.thumbnail_url.trim()
-      : HERO_BANNER_FALLBACK_THUMBNAIL;
-  const videoUrl = typeof row?.video_url === 'string' ? row.video_url.trim() : '';
-  const createdAt = typeof row?.created_at === 'string' ? row.created_at : '';
+  const title = readFirstNonEmptyString(row, ['title', 'name'], 'Untitled Movie');
+  const description = readFirstNonEmptyString(row, ['description', 'subtitle', 'summary'], '');
+  const videoUrl = readFirstNonEmptyString(
+    row,
+    ['video_url', 'movie_url', 'url', 'youtube_url', 'source_url'],
+    ''
+  );
+  const thumbnailUrl = readFirstNonEmptyString(
+    row,
+    ['thumbnail_url', 'image_url', 'poster_url', 'cover_url'],
+    HERO_BANNER_FALLBACK_THUMBNAIL
+  );
+  const id = String(row?.id ?? row?.movie_id ?? row?.slug ?? videoUrl ?? '').trim();
+  const createdAt = readFirstNonEmptyString(row, ['created_at', 'createdAt'], '');
 
   if (!id || !videoUrl) return null;
 
@@ -75,35 +101,37 @@ const normalizeMovieBannerRow = (row) => {
 };
 
 const fetchRecentMovieRowsFromTable = async (tableName) => {
-  const selectColumns = 'id, title, description, video_url, thumbnail_url, created_at';
+  for (const selectColumns of MOVIE_BANNER_SELECT_ATTEMPTS) {
+    let query = supabase.from(tableName).select(selectColumns).limit(HERO_BANNER_LIMIT);
+    if (selectColumns.includes('created_at')) {
+      query = query.order('created_at', { ascending: false });
+    }
 
-  let query = supabase
-    .from(tableName)
-    .select(selectColumns)
-    .order('created_at', { ascending: false })
-    .limit(HERO_BANNER_LIMIT);
+    const { data, error } = await query;
+    if (!error) {
+      return Array.isArray(data) ? data : [];
+    }
 
-  let { data, error } = await query;
+    const missingAnyAttemptColumn = [
+      'video_url',
+      'movie_url',
+      'thumbnail_url',
+      'image_url',
+      'created_at',
+    ].some((columnName) => isMissingColumnError(error, columnName));
 
-  if (error && isMissingColumnError(error, 'created_at')) {
-    ({ data, error } = await supabase
-      .from(tableName)
-      .select('id, title, description, video_url, thumbnail_url')
-      .limit(HERO_BANNER_LIMIT));
+    if (!missingAnyAttemptColumn) {
+      throw error;
+    }
   }
 
-  if (error) {
-    throw error;
-  }
-
-  return Array.isArray(data) ? data : [];
+  return [];
 };
 
 const loadRecentMovieBanners = async () => {
-  const sources = ['movies', 'videos'];
   let lastError = null;
 
-  for (const source of sources) {
+  for (const source of MOVIE_BANNER_SOURCES) {
     try {
       const rows = await fetchRecentMovieRowsFromTable(source);
       const normalizedRows = rows
@@ -272,17 +300,9 @@ export default function LandingPageHabitat({
     };
 
     void loadBanners();
-    const refreshTimerId = typeof window === 'undefined'
-      ? null
-      : window.setInterval(() => {
-        void loadBanners();
-      }, 30000);
 
     return () => {
       mounted = false;
-      if (refreshTimerId) {
-        window.clearInterval(refreshTimerId);
-      }
     };
   }, []);
 
@@ -572,9 +592,12 @@ export default function LandingPageHabitat({
               >
                 {'\u{1F3A8}'} Play Magic Art / Coloring Book
               </Link>
-              <div className="rounded-2xl border border-white/70 bg-white/55 px-5 py-3 text-sm font-black !text-slate-800 shadow-[inset_8px_8px_16px_rgba(148,163,184,0.25),inset_-8px_-8px_16px_rgba(255,255,255,0.9),0_12px_24px_rgba(76,29,149,0.18)] backdrop-blur">
-                Poems: Coming Soon {'\u{1F680}'}
-              </div>
+              <Link
+                to="/poems"
+                className="rounded-2xl border border-indigo-300/80 bg-indigo-50 px-5 py-3 text-sm font-black !text-indigo-900 shadow-lg shadow-indigo-900/10 transition hover:-translate-y-1 hover:bg-indigo-100"
+              >
+                {'\u{1F4DC}'} Poems
+              </Link>
               <button
                 onClick={() => go('learning-zone')}
                 className="rounded-2xl border border-cyan-200/80 bg-cyan-50/95 px-5 py-3 text-sm font-black !text-cyan-900 shadow-lg shadow-cyan-900/10 transition hover:-translate-y-1 hover:bg-cyan-100"

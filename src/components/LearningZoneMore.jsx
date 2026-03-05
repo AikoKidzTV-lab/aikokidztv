@@ -27,11 +27,11 @@ const MORE_ZONES = [
   },
   {
     id: 'language_explorer',
-    title: 'Languages',
+    title: 'English Explorer',
     icon: '🌍',
     bg: 'bg-rose-100',
     text: 'text-rose-900',
-    desc: 'Learn words in Hindi, English, Spanish & more!',
+    desc: 'Learn words in English only!',
   },
 ];
 

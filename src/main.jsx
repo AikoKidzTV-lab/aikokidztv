@@ -6,6 +6,7 @@ import './index.css'
 
 if (typeof window !== 'undefined') {
   const root = document.documentElement;
+  root.setAttribute('lang', 'en');
   root.classList.remove('dark');
   root.setAttribute('data-theme', 'light');
 
