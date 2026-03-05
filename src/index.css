@@ -49,6 +49,27 @@ body {
   overflow-x: hidden;
   background-color: var(--bg-color);
   color: var(--text-color);
+  filter: none !important;
+  opacity: 1 !important;
+  color-scheme: light !important;
+}
+
+html, #root {
+  background: #ffffff !important;
+  filter: none !important;
+  color-scheme: light !important;
+}
+
+.bg-black\/10,
+.bg-black\/20,
+.bg-black\/30,
+.bg-black\/40,
+.bg-black\/50,
+.bg-black\/60,
+.bg-black\/70,
+.bg-black\/80,
+.bg-black\/90 {
+  background-color: rgba(255, 255, 255, 0.82) !important;
 }
 
 h1, h2, h3, h4, h5, h6, label {

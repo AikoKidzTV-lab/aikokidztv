@@ -8,13 +8,13 @@ const INITIAL_NOTIFICATIONS = [
   {
     id: 'notif-easter-egg-hint',
     title: 'New Hint',
-    message: '🥚 Hint: read carefully in the site to find the Easter Egg and get a surprise gift!',
+    message: `${'\u{1F95A}'} Hint: read carefully on the site to find the Easter Egg and get a surprise gift!`,
     unread: true,
   },
   {
     id: 'notif-task-quest-update',
     title: 'Quest Update',
-    message: '🌟 Quest Update: Tick all 5 daily habit boxes to unlock your 2 Free Gems!',
+    message: `${'\u{1F31F}'} Quest Update: Tick all 5 daily habit boxes to unlock your 2 free Gems!`,
     unread: true,
   },
 ];
@@ -35,6 +35,8 @@ function ProfileDropdownMenu({
 
   const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
   const isLoggedIn = Boolean(user);
+  const gemsBalance = Number(profile?.gems || 0);
+  const level = Math.max(1, Math.floor(gemsBalance / 100) + 1);
   const canSeeAdminPanel =
     user?.email === ADMIN_EMAIL || String(profile?.role || '').toLowerCase() === 'admin';
 
@@ -44,22 +46,27 @@ function ProfileDropdownMenu({
   };
 
   return (
-    <div className="absolute right-0 top-full mt-3 w-[20rem] max-w-[92vw] rounded-[1.5rem] border border-white/70 bg-white/95 p-3 shadow-[0_20px_60px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95 z-50 animate-[fadeIn_0.18s_ease-out]">
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 to-cyan-50 p-3 dark:border-slate-700 dark:from-slate-800 dark:to-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-full border border-pink-200 bg-pink-100 font-black text-pink-600 dark:border-slate-600 dark:bg-slate-700 dark:text-pink-200">
-            {avatarLetter}
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {isLoggedIn ? 'Profile' : 'Guest Mode'}
+    <div className="absolute right-0 top-full mt-3 w-[24rem] max-w-[96vw] rounded-[1.5rem] border border-white/85 bg-white p-3 shadow-[0_20px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl z-50 animate-[fadeIn_0.18s_ease-out]">
+      <div className="rounded-2xl border border-white bg-white p-3 shadow-[inset_8px_8px_16px_rgba(148,163,184,0.22),inset_-8px_-8px_16px_rgba(255,255,255,0.95),0_12px_22px_rgba(15,23,42,0.1)]">
+        <div className="grid grid-cols-[1fr_1fr] gap-3">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="mb-2 grid h-10 w-10 place-items-center rounded-full border border-slate-300 bg-white font-black text-black">
+              {avatarLetter}
+            </div>
+            <p className="text-[11px] font-black uppercase tracking-wider text-black">
+              {isLoggedIn ? 'Profile' : 'Guest'}
             </p>
-            <p className="truncate text-sm font-bold text-slate-900 dark:text-white">
-              {user?.email || 'Login / Profile'}
-            </p>
+            <p className="truncate text-sm font-black text-black">{user?.email || 'Login / Profile'}</p>
+            <p className="mt-2 text-xs font-black text-black">Gems: {gemsBalance}</p>
+            <p className="text-xs font-black text-black">Level: {level}</p>
           </div>
-          <div className="ml-auto rounded-full border border-cyan-200 bg-white/80 px-2.5 py-1 text-xs font-bold text-cyan-700 dark:border-slate-700 dark:bg-slate-900 dark:text-cyan-300">
-            Gems: {profile?.gems ?? 0}
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 text-right">
+            <h2 className="text-2xl font-black tracking-tight text-black [text-shadow:1px_1px_0_rgba(148,163,184,0.35)]">
+              BLENDER STUDIO
+            </h2>
+            <p className="mt-2 text-[11px] leading-relaxed font-semibold text-black">
+              Note: The movies listed above are general kids&apos; movies. AikoKidzTV will soon bring its own original movies!
+            </p>
           </div>
         </div>
       </div>

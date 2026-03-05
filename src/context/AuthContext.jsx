@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }) => {
   const [isOffline, setIsOffline] = useState(false);
   const [authError, setAuthError] = useState(null);
   const isMountedRef = useRef(false);
+  const profileFetchInFlightRef = useRef(new Map());
 
   const normalizeFallbackProfile = useCallback((rawProfile = null) => {
     if (!rawProfile) return null;
@@ -89,148 +90,194 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
 
-    const retryCount = Number.isFinite(Number(options?.retryCount))
-      ? Math.max(0, Math.floor(Number(options.retryCount)))
-      : 0;
-    const preferDirect = Boolean(options?.preferDirect);
+    const inFlightKey = String(userId);
+    if (profileFetchInFlightRef.current.has(inFlightKey)) {
+      return profileFetchInFlightRef.current.get(inFlightKey);
+    }
 
-    if (preferDirect) {
+    const fetchPromise = (async () => {
+      const retryCount = Number.isFinite(Number(options?.retryCount))
+        ? Math.max(0, Math.floor(Number(options.retryCount)))
+        : 0;
+      const preferDirect = Boolean(options?.preferDirect);
+
+      if (preferDirect) {
+        try {
+          let { data: directProfile, error: directError } = await withTimeout(
+            supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+            AUTH_TIMEOUT_MS,
+            'Profile direct fetch'
+          );
+
+          if (directError && isMissingColumnError(directError, 'unlocked_videos')) {
+            ({ data: directProfile, error: directError } = await withTimeout(
+              supabase
+                .from('profiles')
+                .select(PROFILE_FALLBACK_COLUMNS_NO_UNLOCKED_VIDEOS)
+                .eq('id', userId)
+                .maybeSingle(),
+              AUTH_TIMEOUT_MS,
+              'Profile direct fetch without unlocked_videos'
+            ));
+          }
+
+          if (directError) {
+            throw directError;
+          }
+
+          if (!directProfile) {
+            const seedPayload = {
+              id: userId,
+              gems: 0,
+              unlocked_zones: [],
+              unlocked_features: [],
+              unlocked_items: [],
+              claimed_rewards: [],
+            };
+
+            const { error: upsertError } = await withTimeout(
+              supabase.from('profiles').upsert(seedPayload, { onConflict: 'id' }),
+              AUTH_TIMEOUT_MS,
+              'Profile atomic upsert'
+            );
+
+            if (upsertError && !isMissingColumnError(upsertError, 'unlocked_videos')) {
+              throw upsertError;
+            }
+
+            ({ data: directProfile, error: directError } = await withTimeout(
+              supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
+              AUTH_TIMEOUT_MS,
+              'Profile direct fetch after upsert'
+            ));
+
+            if (directError) {
+              throw directError;
+            }
+          }
+
+          const normalizedDirectProfile = normalizeFallbackProfile(directProfile);
+          if (isMountedRef.current) {
+            setProfile(normalizedDirectProfile);
+            setIsOffline(false);
+            setAuthError(null);
+          }
+
+          console.info('[AuthContext] Direct profile sync succeeded:', {
+            userId,
+            role: normalizedDirectProfile?.role || null,
+            gems: Number(normalizedDirectProfile?.gems || 0),
+          });
+
+          return normalizedDirectProfile;
+        } catch (directFetchError) {
+          console.warn('[AuthContext] Direct profile fetch failed. Falling back to economy profile flow.', {
+            userId,
+            message: directFetchError?.message || 'Unknown error',
+          });
+        }
+      }
+
       try {
-        let { data: directProfile, error: directError } = await withTimeout(
-          supabase.from('profiles').select('*').eq('id', userId).single(),
+        const profileResult = await withTimeout(
+          readEconomyState(userId),
           AUTH_TIMEOUT_MS,
-          'Profile direct fetch'
+          'Profile fetch'
         );
 
-        if (directError && isMissingColumnError(directError, 'unlocked_videos')) {
-          ({ data: directProfile, error: directError } = await withTimeout(
-            supabase
-              .from('profiles')
-              .select(PROFILE_FALLBACK_COLUMNS_NO_UNLOCKED_VIDEOS)
-              .eq('id', userId)
-              .single(),
-            AUTH_TIMEOUT_MS,
-            'Profile direct fetch without unlocked_videos'
-          ));
+        if (!profileResult?.ok) {
+          throw new Error(profileResult?.message || 'Failed to load profile.');
         }
 
-        if (directError) {
-          throw directError;
-        }
-
-        const normalizedDirectProfile = normalizeFallbackProfile(directProfile);
         if (isMountedRef.current) {
-          setProfile(normalizedDirectProfile);
+          setProfile(profileResult.profile ?? null);
           setIsOffline(false);
           setAuthError(null);
         }
 
-        console.info('[AuthContext] Direct profile sync succeeded:', {
-          userId,
-          role: normalizedDirectProfile?.role || null,
-          gems: Number(normalizedDirectProfile?.gems || 0),
-        });
+        if (profileResult?.profile) {
+          console.info('[AuthContext] Profile synced after auth/session event:', {
+            userId,
+            role: profileResult.profile.role || null,
+            gems: Number(profileResult.profile.gems || 0),
+          });
+        }
 
-        return normalizedDirectProfile;
-      } catch (directFetchError) {
-        console.warn('[AuthContext] Direct profile fetch failed. Falling back to economy profile flow.', {
-          userId,
-          message: directFetchError?.message || 'Unknown error',
-        });
-      }
-    }
+        return profileResult.profile ?? null;
+      } catch (error) {
+        console.error('[AuthContext] Failed to fetch profile:', error);
 
-    try {
-      const profileResult = await withTimeout(
-        readEconomyState(userId),
-        AUTH_TIMEOUT_MS,
-        'Profile fetch'
-      );
+        if (!isMountedRef.current) {
+          return null;
+        }
 
-      if (!profileResult?.ok) {
-        throw new Error(profileResult?.message || 'Failed to load profile.');
-      }
+        if (retryCount > 0) {
+          await new Promise((resolve) => {
+            if (typeof window !== 'undefined') {
+              window.setTimeout(resolve, 450);
+            } else {
+              setTimeout(resolve, 450);
+            }
+          });
 
-      if (isMountedRef.current) {
-        setProfile(profileResult.profile ?? null);
-        setIsOffline(false);
-        setAuthError(null);
-      }
+          profileFetchInFlightRef.current.delete(inFlightKey);
+          return fetchProfile(userId, { retryCount: retryCount - 1, preferDirect });
+        }
 
-      if (profileResult?.profile) {
-        console.info('[AuthContext] Profile synced after auth/session event:', {
-          userId,
-          role: profileResult.profile.role || null,
-          gems: Number(profileResult.profile.gems || 0),
-        });
-      }
-
-      return profileResult.profile ?? null;
-    } catch (error) {
-      console.error('[AuthContext] Failed to fetch profile:', error);
-
-      if (!isMountedRef.current) {
-        return null;
-      }
-
-      if (retryCount > 0) {
-        await new Promise((resolve) => {
-          if (typeof window !== 'undefined') {
-            window.setTimeout(resolve, 450);
-          } else {
-            setTimeout(resolve, 450);
-          }
-        });
-
-        return fetchProfile(userId, { retryCount: retryCount - 1, preferDirect });
-      }
-
-      try {
-        let { data: fallbackProfile, error: fallbackError } = await withTimeout(
-          supabase
-            .from('profiles')
-            .select(PROFILE_FALLBACK_COLUMNS)
-            .eq('id', userId)
-            .maybeSingle(),
-          AUTH_TIMEOUT_MS,
-          'Profile fallback fetch'
-        );
-
-        if (fallbackError && isMissingColumnError(fallbackError, 'unlocked_videos')) {
-          ({ data: fallbackProfile, error: fallbackError } = await withTimeout(
+        try {
+          let { data: fallbackProfile, error: fallbackError } = await withTimeout(
             supabase
               .from('profiles')
-              .select(PROFILE_FALLBACK_COLUMNS_NO_UNLOCKED_VIDEOS)
+              .select(PROFILE_FALLBACK_COLUMNS)
               .eq('id', userId)
               .maybeSingle(),
             AUTH_TIMEOUT_MS,
-            'Profile fallback fetch without unlocked_videos'
-          ));
+            'Profile fallback fetch'
+          );
+
+          if (fallbackError && isMissingColumnError(fallbackError, 'unlocked_videos')) {
+            ({ data: fallbackProfile, error: fallbackError } = await withTimeout(
+              supabase
+                .from('profiles')
+                .select(PROFILE_FALLBACK_COLUMNS_NO_UNLOCKED_VIDEOS)
+                .eq('id', userId)
+                .maybeSingle(),
+              AUTH_TIMEOUT_MS,
+              'Profile fallback fetch without unlocked_videos'
+            ));
+          }
+
+          if (!fallbackError && fallbackProfile) {
+            const normalizedFallback = normalizeFallbackProfile(fallbackProfile);
+            setProfile(normalizedFallback);
+            setAuthError(null);
+            setIsOffline(false);
+            console.info('[AuthContext] Fallback profile sync succeeded:', {
+              userId,
+              role: normalizedFallback?.role || null,
+              gems: Number(normalizedFallback?.gems || 0),
+            });
+            return normalizedFallback;
+          }
+        } catch (fallbackFetchError) {
+          console.error('[AuthContext] Fallback profile fetch failed:', fallbackFetchError);
         }
 
-        if (!fallbackError && fallbackProfile) {
-          const normalizedFallback = normalizeFallbackProfile(fallbackProfile);
-          setProfile(normalizedFallback);
-          setAuthError(null);
-          setIsOffline(false);
-          console.info('[AuthContext] Fallback profile sync succeeded:', {
-            userId,
-            role: normalizedFallback?.role || null,
-            gems: Number(normalizedFallback?.gems || 0),
-          });
-          return normalizedFallback;
+        setAuthError(error ?? null);
+        if (isNetworkError(error)) {
+          setIsOffline(true);
         }
-      } catch (fallbackFetchError) {
-        console.error('[AuthContext] Fallback profile fetch failed:', fallbackFetchError);
-      }
 
-      setAuthError(error ?? null);
-      if (isNetworkError(error)) {
-        setIsOffline(true);
+        return null;
       }
+    })();
 
-      return null;
-    }
+    profileFetchInFlightRef.current.set(inFlightKey, fetchPromise);
+    fetchPromise.finally(() => {
+      profileFetchInFlightRef.current.delete(inFlightKey);
+    });
+
+    return fetchPromise;
   }, [normalizeFallbackProfile]);
 
   useEffect(() => {

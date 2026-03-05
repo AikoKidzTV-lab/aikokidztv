@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { unlockItemWithGems } from '../utils/profileEconomy';
@@ -87,6 +88,7 @@ const isLinePixel = (r, g, b, a) => {
 };
 
 export default function ColoringBook({ onBack }) {
+  const navigate = useNavigate();
   const { user, profile, fetchProfile } = useAuth();
   const canvasRef = useRef(null);
   const imageLayerRef = useRef(null);
@@ -595,7 +597,7 @@ export default function ColoringBook({ onBack }) {
       return;
     }
 
-    window.history.back();
+    navigate('/');
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 

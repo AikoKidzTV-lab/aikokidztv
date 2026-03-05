@@ -720,11 +720,11 @@ export default function LandingPageHabitat({
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div className="min-w-0">
               <div className="mb-4 flex flex-wrap items-center">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-2 text-sm font-extrabold !text-sky-900 shadow-sm backdrop-blur">
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-black !text-slate-900 shadow-sm">
                   <span className="text-lg">{"\u{1F3A5}"}</span>
                   Latest Movies Slider
                 </div>
-                <span className="ml-3 text-sm italic !text-white/90 opacity-70">
+                <span className="ml-3 text-sm font-bold !text-slate-900">
                   Auto-updated from Supabase movies table
                 </span>
               </div>
