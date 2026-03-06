@@ -15,7 +15,6 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { isAdminEmail } from '../utils/admin';
-import ANIMALS_DATA from './modules/animalsData';
 
 const VIDEO_STORAGE_BUCKET = 'videos';
 const THUMBNAIL_STORAGE_BUCKET = 'thumbnails';
@@ -167,6 +166,7 @@ const uploadPublicFile = async ({
 
 const fetchRowsWithFallbackOrder = async (tableName) => {
   const ordered = await supabase.from(tableName).select('*').order('created_at', { ascending: false });
+  if (ordered.error && isMissingTableError(ordered.error)) return [];
   if (!ordered.error) return ordered.data || [];
 
   if (!/created_at/i.test(ordered.error.message || '')) {
@@ -174,6 +174,7 @@ const fetchRowsWithFallbackOrder = async (tableName) => {
   }
 
   const fallback = await supabase.from(tableName).select('*');
+  if (fallback.error && isMissingTableError(fallback.error)) return [];
   if (fallback.error) throw new Error(fallback.error.message);
   return fallback.data || [];
 };
@@ -184,6 +185,7 @@ const fetchTableCount = async (tableName) => {
     .select('*', { count: 'exact', head: true });
 
   if (error) {
+    if (isMissingTableError(error)) return 0;
     throw new Error(error.message);
   }
 
@@ -221,24 +223,6 @@ const POEM_CATEGORY_OPTIONS = [
   'Galaxies & Space',
 ];
 
-const POEM_ANIMAL_SAFARI_CATEGORY = 'Animal Safari';
-
-const POEM_ANIMAL_OPTIONS = ANIMALS_DATA
-  .map((animal) => {
-    const value = String(animal?.id || '').trim();
-    const name = String(animal?.name || '').trim();
-    const animalCategory = String(animal?.category || '').trim();
-
-    if (!value || !name) return null;
-    return {
-      value,
-      name,
-      label: animalCategory ? `${name} (${animalCategory})` : name,
-    };
-  })
-  .filter(Boolean)
-  .sort((a, b) => a.label.localeCompare(b.label));
-
 const getMissingColumnName = (message = '') => {
   const patterns = [
     /column ["']?([a-zA-Z0-9_]+)["']? does not exist/i,
@@ -251,6 +235,20 @@ const getMissingColumnName = (message = '') => {
     if (match?.[1]) return match[1];
   }
   return '';
+};
+
+const isMissingTableError = (errorLike = null) => {
+  const text = typeof errorLike === 'string'
+    ? errorLike
+    : `${errorLike?.message || ''} ${errorLike?.details || ''} ${errorLike?.hint || ''}`;
+
+  return (
+    String(errorLike?.code || '').toUpperCase() === '42P01' ||
+    String(errorLike?.code || '').toUpperCase() === 'PGRST205' ||
+    /relation\s+["']?[a-z0-9_.-]+["']?\s+does not exist/i.test(text) ||
+    /could not find the table/i.test(text) ||
+    /table\s+["']?[a-z0-9_.-]+["']?\s+does not exist/i.test(text)
+  );
 };
 
 const runMutationWithMissingColumnFallback = async ({ payload, requiredColumns = [], mutate }) => {
@@ -1873,7 +1871,7 @@ const AdminDashboard = ({ onBackToSite }) => {
             <CrudMediaSection
               isActive
               sectionTitle="Manage Poems"
-              sectionDescription="Full poems CRUD with title/content/image, category mapping, and a `Free` boolean toggle."
+              sectionDescription="Full poems CRUD with title/content/image and unified category management in one section."
               tableName="poems"
               bucketName={POEM_STORAGE_BUCKET}
               titleColumn="title"
@@ -1890,14 +1888,6 @@ const AdminDashboard = ({ onBackToSite }) => {
               categoryHeading="Category"
               categoryOptions={POEM_CATEGORY_OPTIONS}
               categoryRequired
-              childCategory={{
-                matchValue: POEM_ANIMAL_SAFARI_CATEGORY,
-                label: 'Select Animal',
-                options: POEM_ANIMAL_OPTIONS,
-                idColumn: 'animal_id',
-                nameColumn: 'animal_name',
-                displayColumn: 'subcategory',
-              }}
             />
           )}
         </div>
