@@ -5,42 +5,12 @@ import LearningZone from './LearningZone';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
-const RAZORPAY_SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
-const RAZORPAY_KEY_ID = String(import.meta.env.VITE_RAZORPAY_KEY_ID || '').trim();
-
-const loadRazorpayScript = () =>
-  new Promise((resolve) => {
-    if (typeof window === 'undefined') {
-      resolve(false);
-      return;
-    }
-
-    if (window.Razorpay) {
-      resolve(true);
-      return;
-    }
-
-    const existingScript = document.querySelector(`script[src="${RAZORPAY_SCRIPT_SRC}"]`);
-    if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(true), { once: true });
-      existingScript.addEventListener('error', () => resolve(false), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = RAZORPAY_SCRIPT_SRC;
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-
 const HERO_BANNER_LIMIT = 5;
 const HERO_BANNER_FALLBACK_THUMBNAIL = '/logo.png.webp';
 
-const normalizeMovieBannerRow = (row) => {
+const normalizeVideoBannerRow = (row) => {
   const id = row?.id != null ? String(row.id).trim() : '';
-  const title = typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled Movie';
+  const title = typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled Video';
   const description = typeof row?.description === 'string' ? row.description.trim() : '';
   const thumbnailUrl =
     typeof row?.thumbnail_url === 'string' && row.thumbnail_url.trim()
@@ -54,14 +24,14 @@ const normalizeMovieBannerRow = (row) => {
   return {
     id,
     title,
-    subtitle: description || 'Tap to open this movie and start watching.',
+    subtitle: description || 'Tap to open this video and start watching.',
     thumbnailUrl,
     videoUrl,
     createdAt,
   };
 };
 
-const loadRecentMovieBanners = async () => {
+const loadRecentVideoBanners = async () => {
   const { data, error } = await supabase
     .from('videos')
     .select('id, title, description, video_url, thumbnail_url, created_at')
@@ -72,9 +42,19 @@ const loadRecentMovieBanners = async () => {
 
   const rows = Array.isArray(data) ? data : [];
   return rows
-    .map((row) => normalizeMovieBannerRow(row))
+    .map((row) => normalizeVideoBannerRow(row))
     .filter(Boolean)
     .slice(0, HERO_BANNER_LIMIT);
+};
+
+const isMissingColumnError = (error, columnName) => {
+  if (!columnName) return false;
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  const normalizedColumn = String(columnName).toLowerCase();
+  return (
+    text.includes(normalizedColumn) &&
+    (text.includes('column') || text.includes('schema cache') || error?.code === '42703' || error?.code === 'PGRST204')
+  );
 };
 
 const sanskariTasks = [
@@ -179,6 +159,120 @@ export default function LandingPageHabitat({
     }, 4500);
   }, []);
 
+  const claimRewardGems = React.useCallback(async ({
+    rewardKey,
+    gemAmount,
+    startClaim,
+    endClaim,
+    successMessage,
+    alreadyClaimedMessage,
+  }) => {
+    if (startClaim) startClaim();
+
+    try {
+      if (!user?.id) {
+        showPaymentToast('info', 'Please log in to claim rewards.');
+        onOpenLogin?.();
+        return false;
+      }
+
+      if (claimedRewards.includes(rewardKey)) {
+        showPaymentToast('info', alreadyClaimedMessage);
+        return false;
+      }
+
+      const currentGems = Number(profile?.gems || 0);
+      const nextClaimedRewards = Array.from(new Set([...claimedRewards, rewardKey]));
+
+      let { error } = await supabase
+        .from('profiles')
+        .update({
+          gems: currentGems + gemAmount,
+          claimed_rewards: nextClaimedRewards,
+        })
+        .eq('id', user.id);
+
+      if (error && isMissingColumnError(error, 'claimed_rewards')) {
+        ({ error } = await supabase
+          .from('profiles')
+          .update({ gems: currentGems + gemAmount })
+          .eq('id', user.id));
+      }
+
+      if (error) {
+        throw error;
+      }
+
+      await fetchProfile?.(user.id);
+      showPaymentToast('success', successMessage);
+      return true;
+    } catch (error) {
+      showPaymentToast('error', error?.message || 'Failed to claim reward. Please try again.');
+      return false;
+    } finally {
+      if (endClaim) endClaim();
+    }
+  }, [
+    claimedRewards,
+    fetchProfile,
+    onOpenLogin,
+    profile?.gems,
+    showPaymentToast,
+    user?.id,
+  ]);
+
+  const handleToggleTaskQuestCheck = React.useCallback((index) => {
+    setTaskQuestChecks((current) => current.map((value, itemIndex) => (itemIndex === index ? !value : value)));
+  }, []);
+
+  const handleSubscribeClick = React.useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY, 'true');
+    }
+    setHasClickedSubscribe(true);
+    setWatchEarnMessage('Channel opened! Come back and claim your 50 Gems.');
+  }, []);
+
+  const handleClaimFreeGems = React.useCallback(async () => {
+    if (!hasClickedSubscribe) {
+      showPaymentToast('info', 'Subscribe first to unlock your 50 free Gems.');
+      return;
+    }
+
+    const claimed = await claimRewardGems({
+      rewardKey: YOUTUBE_SUBSCRIBE_REWARD_KEY,
+      gemAmount: YOUTUBE_SUBSCRIBE_REWARD_GEMS,
+      startClaim: () => setIsClaimingYoutubeReward(true),
+      endClaim: () => setIsClaimingYoutubeReward(false),
+      successMessage: `Claimed ${YOUTUBE_SUBSCRIBE_REWARD_GEMS} Gems successfully!`,
+      alreadyClaimedMessage: 'You already claimed this reward.',
+    });
+
+    if (claimed) {
+      setWatchEarnMessage(`Nice! ${YOUTUBE_SUBSCRIBE_REWARD_GEMS} Gems added to your wallet.`);
+    }
+  }, [claimRewardGems, hasClickedSubscribe, showPaymentToast]);
+
+  const handleTaskQuestReward = React.useCallback(async () => {
+    if (!allTaskHabitsChecked) {
+      showPaymentToast('info', 'Complete all 5 habits before claiming this reward.');
+      return;
+    }
+
+    const claimed = await claimRewardGems({
+      rewardKey: TASK_QUEST_REWARD_KEY,
+      gemAmount: TASK_QUEST_REWARD_GEMS,
+      startClaim: () => setIsClaimingTaskQuestReward(true),
+      endClaim: () => setIsClaimingTaskQuestReward(false),
+      successMessage: `Task Quest completed! +${TASK_QUEST_REWARD_GEMS} Gems.`,
+      alreadyClaimedMessage: 'Task Quest reward already claimed.',
+    });
+
+    if (claimed) {
+      pushBellNotification(`Task Quest reward claimed: +${TASK_QUEST_REWARD_GEMS} Gems.`);
+    }
+  }, [allTaskHabitsChecked, claimRewardGems, pushBellNotification, showPaymentToast]);
+
   React.useEffect(() => () => {
     if (paymentToastTimerRef.current) {
       clearTimeout(paymentToastTimerRef.current);
@@ -204,15 +298,15 @@ export default function LandingPageHabitat({
       setHeroBannersError('');
 
       try {
-        const latestBanners = await loadRecentMovieBanners();
+        const latestBanners = await loadRecentVideoBanners();
         if (!mounted) return;
         setHeroBanners(latestBanners.slice(0, HERO_BANNER_LIMIT));
         setHeroSlideIndex(0);
       } catch (error) {
         if (!mounted) return;
-        console.error('[LandingPageHabitat] Failed to load movie banners:', error);
+        console.error('[LandingPageHabitat] Failed to load video banners:', error);
         setHeroBanners([]);
-        setHeroBannersError('Unable to load latest movies right now.');
+        setHeroBannersError('Unable to load latest videos right now.');
       } finally {
         if (mounted) {
           setHeroBannersLoading(false);
@@ -332,7 +426,7 @@ export default function LandingPageHabitat({
                 to="/videos"
                 className="rounded-2xl border border-purple-500 bg-purple-600 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-purple-400/40 transition hover:-translate-y-1 hover:bg-purple-700"
               >
-                🎬 Movies
+                🎬 Videos
               </Link>
               <Link
                 to="/coloring"
@@ -405,8 +499,6 @@ export default function LandingPageHabitat({
         </div>
 
         <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
-          <GemPacksPricing />
-
           <div className="mt-14 space-y-10">
             <div
               id="ai-studio"
@@ -486,10 +578,10 @@ export default function LandingPageHabitat({
               <div className="mb-4 flex flex-wrap items-center">
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-black !text-slate-900 shadow-sm">
                   <span className="text-lg">{"\u{1F3A5}"}</span>
-                  Latest Movies Slider
+                  Latest Videos Slider
                 </div>
                 <span className="ml-3 text-sm font-bold !text-slate-900">
-                  Auto-updated from Supabase movies table
+                  Auto-updated from Supabase videos table
                 </span>
               </div>
 
@@ -497,7 +589,7 @@ export default function LandingPageHabitat({
                 {heroBannersLoading ? (
                   <div className="grid min-h-[260px] place-items-center px-6 py-10 text-center text-white sm:min-h-[320px]">
                     <div>
-                      <p className="text-lg font-black">Loading latest movie banners...</p>
+                      <p className="text-lg font-black">Loading latest video banners...</p>
                       <p className="mt-2 text-sm font-semibold text-white/80">Syncing your 5 newest uploads.</p>
                     </div>
                   </div>
@@ -505,14 +597,14 @@ export default function LandingPageHabitat({
                   <div className="grid min-h-[260px] place-items-center px-6 py-10 text-center text-white sm:min-h-[320px]">
                     <div>
                       <p className="text-lg font-black">{heroBannersError}</p>
-                      <p className="mt-2 text-sm font-semibold text-white/85">Please check Supabase connection and movies data.</p>
+                      <p className="mt-2 text-sm font-semibold text-white/85">Please check Supabase connection and videos data.</p>
                     </div>
                   </div>
                 ) : heroBannerCount === 0 ? (
                   <div className="grid min-h-[260px] place-items-center px-6 py-10 text-center text-white sm:min-h-[320px]">
                     <div>
-                      <p className="text-lg font-black">No movies available yet.</p>
-                      <p className="mt-2 text-sm font-semibold text-white/80">Upload movies with thumbnails to populate this slider automatically.</p>
+                      <p className="text-lg font-black">No videos available yet.</p>
+                      <p className="mt-2 text-sm font-semibold text-white/80">Upload videos with thumbnails to populate this slider automatically.</p>
                     </div>
                   </div>
                 ) : (
@@ -524,7 +616,7 @@ export default function LandingPageHabitat({
                       {heroBanners.map((banner, index) => (
                         <Link
                           key={banner.id}
-                          to={`/videos?movie=${encodeURIComponent(banner.id)}`}
+                          to={`/videos?video=${encodeURIComponent(banner.id)}`}
                           className="relative block min-h-[260px] min-w-full select-none overflow-hidden sm:min-h-[320px]"
                         >
                           <img
@@ -538,7 +630,7 @@ export default function LandingPageHabitat({
 
                           <div className="relative flex h-full flex-col justify-between p-6 sm:p-8">
                             <span className="inline-flex w-fit items-center rounded-full border border-white/70 bg-black/35 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
-                              Movie {index + 1} / {heroBannerCount}
+                              Video {index + 1} / {heroBannerCount}
                             </span>
                             <div className="space-y-2">
                               <h2 className="text-2xl font-black text-white drop-shadow sm:text-3xl">{banner.title}</h2>
@@ -546,7 +638,7 @@ export default function LandingPageHabitat({
                                 {banner.subtitle}
                               </p>
                               <span className="inline-flex items-center rounded-full border border-cyan-200/80 bg-cyan-100/90 px-3 py-1 text-xs font-black text-cyan-900 shadow-sm">
-                                Open Movie Page
+                                Open Video Page
                               </span>
                             </div>
                           </div>
@@ -601,7 +693,7 @@ export default function LandingPageHabitat({
                   Auto Slide Every 4s
                 </button>
                 <span className="inline-flex items-center rounded-full border border-cyan-200/90 bg-cyan-50/95 px-4 py-1.5 text-xs font-black !text-cyan-900 shadow-sm">
-                  Click Banner to Open Movie
+                  Click Banner to Open Video
                 </span>
               </div>
             </div>

@@ -582,7 +582,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
 
                   <div className="grid grid-cols-1 gap-4">
                     <label className="flex flex-col gap-2">
-                      <span className="text-sm font-bold text-slate-700">Height (cm)</span>
+                      <span className="text-sm font-bold text-slate-700">Child&apos;s Height (cm)</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -595,7 +595,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                     </label>
 
                     <label className="flex flex-col gap-2">
-                      <span className="text-sm font-bold text-slate-700">Weight (kg)</span>
+                      <span className="text-sm font-bold text-slate-700">Child&apos;s Weight (kg)</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -608,7 +608,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                     </label>
 
                     <label className="flex flex-col gap-2">
-                      <span className="text-sm font-bold text-slate-700">Birthdate (YYYY-MM-DD)</span>
+                      <span className="text-sm font-bold text-slate-700">Child&apos;s Birthdate</span>
                       <input
                         type="date"
                         value={childDetails.childBirthdate}

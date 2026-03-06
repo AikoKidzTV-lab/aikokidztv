@@ -38,7 +38,7 @@ const normalizeVideoRow = (row) => {
 
   return {
     id,
-    title: typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled Movie',
+    title: typeof row?.title === 'string' && row.title.trim() ? row.title.trim() : 'Untitled Video',
     description,
     category: UNKNOWN_CATEGORY,
     imageUrl,
@@ -92,13 +92,13 @@ export default function VideoZone() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [actionVideoId, setActionVideoId] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
-  const missingMovieStatusRef = useRef('');
+  const missingVideoStatusRef = useRef('');
 
-  const selectedMovieId = useMemo(() => {
+  const selectedVideoId = useMemo(() => {
     const params = new URLSearchParams(location.search || '');
-    const fromMovie = params.get('movie');
-    const fromMovieId = params.get('movieId');
-    const rawId = fromMovie || fromMovieId || '';
+    const fromVideo = params.get('video');
+    const fromVideoId = params.get('videoId');
+    const rawId = fromVideo || fromVideoId || '';
     return String(rawId).trim();
   }, [location.search]);
 
@@ -151,9 +151,9 @@ export default function VideoZone() {
   }, [activeCategory, videos]);
 
   const selectedVideo = useMemo(() => {
-    if (!selectedMovieId) return null;
-    return videos.find((video) => String(video.id) === selectedMovieId) || null;
-  }, [selectedMovieId, videos]);
+    if (!selectedVideoId) return null;
+    return videos.find((video) => String(video.id) === selectedVideoId) || null;
+  }, [selectedVideoId, videos]);
 
   useEffect(() => {
     if (activeCategory === 'All') return;
@@ -163,25 +163,25 @@ export default function VideoZone() {
   }, [activeCategory, categoryOptions]);
 
   useEffect(() => {
-    if (!selectedMovieId) {
-      missingMovieStatusRef.current = '';
+    if (!selectedVideoId) {
+      missingVideoStatusRef.current = '';
       return;
     }
     if (isLoading) return;
 
     if (!selectedVideo) {
-      if (missingMovieStatusRef.current !== selectedMovieId) {
+      if (missingVideoStatusRef.current !== selectedVideoId) {
         showStatus('Requested video was not found. Showing all available videos.');
-        missingMovieStatusRef.current = selectedMovieId;
+        missingVideoStatusRef.current = selectedVideoId;
       }
       return;
     }
 
-    missingMovieStatusRef.current = '';
+    missingVideoStatusRef.current = '';
     if (selectedVideo.category && selectedVideo.category !== activeCategory) {
       setActiveCategory(selectedVideo.category);
     }
-  }, [activeCategory, isLoading, selectedMovieId, selectedVideo]);
+  }, [activeCategory, isLoading, selectedVideoId, selectedVideo]);
 
   const openVideoInNewTab = (videoUrl) => {
     if (typeof window === 'undefined') return;
