@@ -1,14 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
-import { claimRewardOnce, unlockItemWithGems } from '../utils/profileEconomy';
-
-const FREE_POEM_COUNT = 5;
-const POEM_UNLOCK_COST_GEMS = 10;
-const POEM_COMPLETION_REWARD_GEMS = 5;
-const POEM_UNLOCK_PREFIX = 'poem_unlock:';
-const POEM_COMPLETE_PREFIX = 'poem_complete:';
 
 const readPoemText = (row) =>
   (row?.content ||
@@ -28,14 +20,10 @@ const readPoemSubcategory = (row) =>
   (row?.subcategory || row?.animal_name || '').toString().trim();
 
 export default function PoemsPage() {
-  const { user, profile, fetchProfile } = useAuth();
   const [poems, setPoems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
   const [selectedPoemId, setSelectedPoemId] = useState('');
-  const [unlockingPoemId, setUnlockingPoemId] = useState('');
-  const [completingPoemId, setCompletingPoemId] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -59,11 +47,9 @@ export default function PoemsPage() {
             content: readPoemText(row),
             imageUrl:
               (row?.image_url || row?.cover_url || row?.thumbnail_url || '').toString().trim() || '',
-            isFree: Boolean(row?.is_free),
             category: readPoemCategory(row),
             subcategory: readPoemSubcategory(row),
             createdAt: row?.created_at || null,
-            raw: row,
           }))
           .filter((row) => row.content);
 
@@ -86,113 +72,10 @@ export default function PoemsPage() {
     };
   }, []);
 
-  const unlockedItems = useMemo(
-    () => (Array.isArray(profile?.unlocked_items) ? profile.unlocked_items : []),
-    [profile?.unlocked_items]
+  const selectedPoem = useMemo(
+    () => poems.find((poem) => poem.id === selectedPoemId) || null,
+    [poems, selectedPoemId]
   );
-  const claimedRewards = useMemo(
-    () => (Array.isArray(profile?.claimed_rewards) ? profile.claimed_rewards : []),
-    [profile?.claimed_rewards]
-  );
-  const currentGems = Number(profile?.gems || 0);
-
-  const isPoemUnlocked = (poem, index) => {
-    const freeByIndex = index < FREE_POEM_COUNT;
-    const freeByFlag = Boolean(poem?.isFree);
-    const unlockKey = `${POEM_UNLOCK_PREFIX}${poem?.id}`;
-    return freeByIndex || freeByFlag || unlockedItems.includes(unlockKey);
-  };
-
-  const selectedPoem = poems.find((poem) => poem.id === selectedPoemId) || null;
-  const selectedPoemIndex = poems.findIndex((poem) => poem.id === selectedPoemId);
-  const selectedPoemUnlocked =
-    selectedPoem && selectedPoemIndex >= 0 ? isPoemUnlocked(selectedPoem, selectedPoemIndex) : false;
-
-  const showStatus = (message) => {
-    setStatusMessage(message);
-    window.setTimeout(() => setStatusMessage(''), 2800);
-  };
-
-  const handleOpenPoem = async (poem, index) => {
-    if (!poem?.id) return;
-
-    if (isPoemUnlocked(poem, index)) {
-      setSelectedPoemId(poem.id);
-      return;
-    }
-
-    if (!user?.id) {
-      showStatus('Please log in to unlock more poems.');
-      return;
-    }
-
-    if (unlockingPoemId) return;
-    setUnlockingPoemId(poem.id);
-
-    try {
-      const unlockResult = await unlockItemWithGems({
-        userId: user.id,
-        itemKey: `${POEM_UNLOCK_PREFIX}${poem.id}`,
-        costGems: POEM_UNLOCK_COST_GEMS,
-      });
-
-      if (!unlockResult.ok) {
-        showStatus(unlockResult.message || 'Unable to unlock poem right now.');
-        return;
-      }
-
-      await fetchProfile?.(user.id);
-      setSelectedPoemId(poem.id);
-      showStatus(
-        unlockResult.alreadyUnlocked
-          ? 'Poem already unlocked.'
-          : `Poem unlocked for ${POEM_UNLOCK_COST_GEMS} gems.`
-      );
-    } catch (error) {
-      showStatus(error?.message || 'Unlock failed.');
-    } finally {
-      setUnlockingPoemId('');
-    }
-  };
-
-  const handleCompletePoem = async () => {
-    if (!selectedPoem?.id) return;
-    if (!user?.id) {
-      showStatus('Please log in to claim poem rewards.');
-      return;
-    }
-
-    if (completingPoemId) return;
-    setCompletingPoemId(selectedPoem.id);
-
-    try {
-      const rewardResult = await claimRewardOnce({
-        userId: user.id,
-        rewardKey: `${POEM_COMPLETE_PREFIX}${selectedPoem.id}`,
-        gemReward: POEM_COMPLETION_REWARD_GEMS,
-      });
-
-      if (!rewardResult.ok) {
-        showStatus(rewardResult.message || 'Could not grant completion reward.');
-        return;
-      }
-
-      await fetchProfile?.(user.id);
-      showStatus(
-        rewardResult.alreadyClaimed
-          ? 'Completion reward already claimed for this poem.'
-          : `Great job! +${POEM_COMPLETION_REWARD_GEMS} free gems added.`
-      );
-    } catch (error) {
-      showStatus(error?.message || 'Completion reward failed.');
-    } finally {
-      setCompletingPoemId('');
-    }
-  };
-
-  const selectedPoemRewardClaimed = selectedPoem
-    ? claimedRewards.includes(`${POEM_COMPLETE_PREFIX}${selectedPoem.id}`)
-    : false;
 
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-to-b from-indigo-950 via-sky-900 to-cyan-800 px-4 py-8 text-white sm:px-6 lg:px-10">
@@ -215,16 +98,12 @@ export default function PoemsPage() {
               <h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">
                 Cute Galaxy Poems {'\u{1F426}\u{1F43C}\u{1F338}'}
               </h1>
-              <div className="mt-2 inline-flex items-center rounded-full border border-amber-200/70 bg-amber-100/90 px-3 py-1 text-xs font-black uppercase tracking-[0.15em] text-amber-900">
-                Coming Soon {'\u{1F680}'}
-              </div>
               <p className="mt-2 max-w-3xl text-sm text-cyan-50/90 sm:text-base">
-                First 5 poems are free. Remaining poems cost {POEM_UNLOCK_COST_GEMS} gems each.
-                Complete a poem to earn +{POEM_COMPLETION_REWARD_GEMS} gems.
+                Browse and read all available poems.
               </p>
             </div>
             <div className="inline-flex items-center gap-3 rounded-full border border-cyan-200/30 bg-slate-900/50 px-4 py-2 text-sm font-bold">
-              <span>Current Gems: {currentGems}</span>
+              <span>{poems.length} poems</span>
               <Link
                 to="/"
                 onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
@@ -258,46 +137,27 @@ export default function PoemsPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {poems.map((poem, index) => {
-                  const unlocked = isPoemUnlocked(poem, index);
+                {poems.map((poem) => {
                   const isActive = selectedPoemId === poem.id;
 
                   return (
                     <button
                       key={poem.id}
                       type="button"
-                      onClick={() => void handleOpenPoem(poem, index)}
-                      disabled={Boolean(unlockingPoemId)}
+                      onClick={() => setSelectedPoemId(poem.id)}
                       className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
                         isActive
                           ? 'border-fuchsia-200/70 bg-fuchsia-400/20'
                           : 'border-white/20 bg-white/10 hover:bg-white/20'
-                      } ${Boolean(unlockingPoemId) && unlockingPoemId !== poem.id ? 'opacity-70' : ''}`}
+                      }`}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-base font-black text-white">{poem.title}</p>
-                          {poem.category ? (
-                            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-fuchsia-100/85">
-                              {poem.subcategory ? `${poem.category} - ${poem.subcategory}` : poem.category}
-                            </p>
-                          ) : null}
-                          <p className="mt-1 text-xs font-semibold text-cyan-100/80">
-                            {unlocked
-                              ? 'Open poem'
-                              : unlockingPoemId === poem.id
-                                ? 'Unlocking...'
-                                : `Locked - ${POEM_UNLOCK_COST_GEMS} gems`}
-                          </p>
-                        </div>
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-[11px] font-black uppercase ${
-                            unlocked ? 'bg-emerald-300/30 text-emerald-100' : 'bg-amber-300/30 text-amber-100'
-                          }`}
-                        >
-                          {index < FREE_POEM_COUNT || poem.isFree ? 'Free' : unlocked ? 'Unlocked' : 'Locked'}
-                        </span>
-                      </div>
+                      <p className="text-base font-black text-white">{poem.title}</p>
+                      {poem.category ? (
+                        <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-fuchsia-100/85">
+                          {poem.subcategory ? `${poem.category} - ${poem.subcategory}` : poem.category}
+                        </p>
+                      ) : null}
+                      <p className="mt-1 text-xs font-semibold text-cyan-100/80">Open poem</p>
                     </button>
                   );
                 })}
@@ -313,16 +173,6 @@ export default function PoemsPage() {
                   <p className="text-lg font-black text-white">Select a poem to start reading.</p>
                 </div>
               </div>
-            ) : !selectedPoemUnlocked ? (
-              <div className="grid min-h-[320px] place-items-center text-center">
-                <div>
-                  <div className="mb-3 text-5xl">{'\u{1F512}'}</div>
-                  <p className="text-lg font-black text-white">This poem is locked.</p>
-                  <p className="mt-1 text-sm text-cyan-100/85">
-                    Unlock for {POEM_UNLOCK_COST_GEMS} gems to read this poem.
-                  </p>
-                </div>
-              </div>
             ) : (
               <article>
                 <h2 className="text-2xl font-black text-white sm:text-3xl">{selectedPoem.title}</h2>
@@ -336,39 +186,11 @@ export default function PoemsPage() {
                 <div className="mt-4 whitespace-pre-wrap rounded-2xl border border-white/20 bg-slate-900/40 p-4 text-sm leading-relaxed text-cyan-50 sm:text-base">
                   {selectedPoem.content}
                 </div>
-
-                <div className="mt-5 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => void handleCompletePoem()}
-                    disabled={selectedPoemRewardClaimed || completingPoemId === selectedPoem.id}
-                    className={`rounded-xl px-4 py-2 text-sm font-black transition ${
-                      selectedPoemRewardClaimed || completingPoemId === selectedPoem.id
-                        ? 'cursor-not-allowed border border-white/20 bg-white/10 text-cyan-100/80'
-                        : 'border border-emerald-200/60 bg-emerald-400/30 text-emerald-50 hover:bg-emerald-400/40'
-                    }`}
-                  >
-                    {selectedPoemRewardClaimed
-                      ? 'Reward Claimed'
-                      : completingPoemId === selectedPoem.id
-                        ? 'Completing...'
-                        : `Complete Poem (+${POEM_COMPLETION_REWARD_GEMS} gems)`}
-                  </button>
-                  <span className="text-xs font-semibold text-cyan-100/85">
-                    Completion reward can be claimed once per poem.
-                  </span>
-                </div>
               </article>
             )}
           </div>
         </div>
       </div>
-
-      {statusMessage && (
-        <div className="fixed bottom-6 right-4 z-50 rounded-2xl border border-cyan-200/40 bg-cyan-400/20 px-5 py-3 text-sm font-bold text-cyan-50 shadow-lg backdrop-blur">
-          {statusMessage}
-        </div>
-      )}
     </section>
   );
 }

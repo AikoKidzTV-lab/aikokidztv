@@ -1,62 +1,6 @@
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
-import { claimRewardOnce } from '../utils/profileEconomy';
-
-const FOUNDER_STORY_REWARD_GEMS = 10;
-const FOUNDER_STORY_REWARD_KEY = 'founder_story_reward_10';
 
 export default function StoryReader() {
-  const { user, profile, fetchProfile } = useAuth();
-  const [isClaiming, setIsClaiming] = React.useState(false);
-  const [notice, setNotice] = React.useState(null);
-  const claimedRewards = React.useMemo(
-    () => (Array.isArray(profile?.claimed_rewards) ? profile.claimed_rewards : []),
-    [profile?.claimed_rewards]
-  );
-  const hasClaimedReward = claimedRewards.includes(FOUNDER_STORY_REWARD_KEY);
-
-  const showNotice = React.useCallback((type, message) => {
-    setNotice({ type, message });
-    window.setTimeout(() => setNotice(null), 2800);
-  }, []);
-
-  const handleClaimReward = async () => {
-    if (hasClaimedReward || isClaiming) return;
-
-    if (!user?.id) {
-      showNotice('error', 'Please log in to claim your 10 Gems reward.');
-      return;
-    }
-
-    setIsClaiming(true);
-
-    try {
-      const result = await claimRewardOnce({
-        userId: user.id,
-        rewardKey: FOUNDER_STORY_REWARD_KEY,
-        gemReward: FOUNDER_STORY_REWARD_GEMS,
-      });
-
-      if (!result.ok) {
-        showNotice('error', result.message || 'Unable to claim reward right now.');
-        return;
-      }
-
-      await fetchProfile?.(user.id);
-      showNotice(
-        'success',
-        result.alreadyClaimed
-          ? 'Reward already claimed.'
-          : `Reward claimed! +${FOUNDER_STORY_REWARD_GEMS} Gems added.`
-      );
-    } catch (error) {
-      console.error('[StoryReader] Reward claim failed:', error);
-      showNotice('error', 'Something went wrong while claiming your reward.');
-    } finally {
-      setIsClaiming(false);
-    }
-  };
-
   return (
     <section className="min-h-screen bg-[radial-gradient(circle_at_top,_#fef3c7_0%,_#fde68a_22%,_#fbcfe8_52%,_#bfdbfe_100%)] px-4 py-10 text-slate-900 sm:py-14">
       <div className="mx-auto max-w-3xl">
@@ -122,44 +66,8 @@ export default function StoryReader() {
               the elegant styling, and pure AI magic for rapid coding and generation.
             </p>
           </article>
-
-          <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-            <p className="text-sm font-bold text-amber-900">
-              Easter Egg Reward: Claim your bonus after reading this Founder Story.
-            </p>
-            <button
-              type="button"
-              onClick={handleClaimReward}
-              disabled={hasClaimedReward || isClaiming}
-              className={`mt-4 w-full rounded-full px-6 py-2.5 text-sm font-black transition sm:w-auto ${
-                hasClaimedReward || isClaiming
-                  ? 'cursor-not-allowed bg-slate-300 text-slate-600'
-                  : 'bg-slate-900 text-white hover:bg-slate-800'
-              }`}
-            >
-              {hasClaimedReward
-                ? 'Reward Claimed'
-                : isClaiming
-                  ? 'Claiming...'
-                  : 'Claim 10 Gems'}
-            </button>
-          </div>
         </div>
       </div>
-
-      {notice && (
-        <div
-          role="status"
-          aria-live="polite"
-          className={`fixed bottom-6 right-4 z-50 rounded-2xl border px-5 py-3 text-sm font-bold shadow-[0_14px_30px_rgba(15,23,42,0.25)] ${
-            notice.type === 'success'
-              ? 'border-emerald-300 bg-emerald-100 text-emerald-900'
-              : 'border-rose-300 bg-rose-100 text-rose-900'
-          }`}
-        >
-          {notice.type === 'success' ? 'Success:' : 'Warning:'} {notice.message}
-        </div>
-      )}
     </section>
   );
 }

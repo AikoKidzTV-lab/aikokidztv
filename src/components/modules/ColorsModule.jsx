@@ -5,7 +5,6 @@ import COLOR_PALETTE from './colorPalette';
 import MixAndMatchLab from './MixAndMatchLab';
 import ShapesSection from './ShapesSection';
 import { useAuth } from '../../context/AuthContext';
-import { unlockItemWithGems } from '../../utils/profileEconomy';
 
 const COLOR_UNLOCK_PREFIX = 'color:';
 
@@ -27,7 +26,7 @@ const getContrast = (hex) => {
 };
 
 const ColorsModule = ({ onBack, onHome }) => {
-  const { user, profile, fetchProfile } = useAuth();
+  const { user, profile } = useAuth();
   const [selectedColor, setSelectedColor] = useState(null);
   const [fills, setFills] = useState({});
   const [activeShape, setActiveShape] = useState(null);
@@ -82,35 +81,14 @@ const ColorsModule = ({ onBack, onHome }) => {
     setUnlockingColorId(color.id);
 
     try {
-      const unlockKey = `${COLOR_UNLOCK_PREFIX}${color.id}`;
-      const unlockResult = await unlockItemWithGems({
-        userId: user.id,
-        itemKey: unlockKey,
-        costGems: color.unlockCost,
-      });
-
-      if (!unlockResult.ok) {
-        Swal.fire({
-          title: unlockResult.code === 'insufficient_gems' ? 'Not enough Gems' : 'Unlock failed',
-          text: unlockResult.message || 'Could not unlock this color right now.',
-          icon: unlockResult.code === 'insufficient_gems' ? 'warning' : 'error',
-          confirmButtonColor: unlockResult.code === 'insufficient_gems' ? '#f59e0b' : '#ef4444',
-        });
-        return;
-      }
-
       setUnlockedColorIds((prev) => (prev.includes(color.id) ? prev : [...prev, color.id]));
       setSelectedColor(color);
       speak(color.name);
       confetti({ particleCount: 90, spread: 55, origin: { y: 0.65 } });
 
-      await fetchProfile?.(user.id);
-
       Swal.fire({
-        title: unlockResult.alreadyUnlocked ? 'Already unlocked' : 'Unlocked!',
-        text: unlockResult.alreadyUnlocked
-          ? `${color.name} is already unlocked.`
-          : `${color.name} unlocked permanently for ${color.unlockCost} Gems.`,
+        title: 'Unlocked!',
+        text: `${color.name} unlocked.`,
         icon: 'success',
         confirmButtonColor: '#10b981',
       });

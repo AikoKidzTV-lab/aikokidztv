@@ -1,5 +1,6 @@
 import React from 'react';
-import { calculateDonationGems } from '../constants/gemEconomy';
+
+const calculateDonationGems = () => 0;
 
 const gemPacks = [
   {

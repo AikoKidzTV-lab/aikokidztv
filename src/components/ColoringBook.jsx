@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { unlockItemWithGems } from '../utils/profileEconomy';
 
 const PREMIUM_UNLOCK_COST = 49;
 const COLORING_PAGE_UNLOCK_PREFIX = 'coloring:';
@@ -89,7 +88,7 @@ const isLinePixel = (r, g, b, a) => {
 
 export default function ColoringBook({ onBack }) {
   const navigate = useNavigate();
-  const { user, profile, fetchProfile } = useAuth();
+  const { user, profile } = useAuth();
   const canvasRef = useRef(null);
   const imageLayerRef = useRef(null);
   const canvasContainerRef = useRef(null);
@@ -491,36 +490,15 @@ export default function ColoringBook({ onBack }) {
 
   const confirmUnlock = async () => {
     if (!pendingUnlockPage || unlockingPageId) return;
-    if (!user?.id) {
-      showStatus('Please log in to unlock premium coloring pages.');
-      return;
-    }
 
     const pageId = String(pendingUnlockPage.id);
-    const itemKey = `${COLORING_PAGE_UNLOCK_PREFIX}${pageId}`;
 
     setUnlockingPageId(pageId);
 
     try {
-      const unlockResult = await unlockItemWithGems({
-        userId: user.id,
-        itemKey,
-        costGems: PREMIUM_UNLOCK_COST,
-      });
-
-      if (!unlockResult.ok) {
-        showStatus(unlockResult.message || 'Unable to unlock this page right now.');
-        return;
-      }
-
       setUnlockedPremiumPages((prev) => (prev.includes(pageId) ? prev : [...prev, pageId]));
-      await fetchProfile?.(user.id);
 
-      showStatus(
-        unlockResult.alreadyUnlocked
-          ? 'This page is already unlocked.'
-          : `Page unlocked permanently for ${PREMIUM_UNLOCK_COST} Gems.`
-      );
+      showStatus('Page unlocked successfully.');
 
       const unlockedPage = pendingUnlockPage;
       setPendingUnlockPage(null);
