@@ -1,6 +1,22 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useKidsMode } from '../context/KidsModeContext';
+import { LEARNING_ZONE_PREMIUM_UNLOCKS } from '../constants/gemEconomy';
+import { unlockZoneWithGems } from '../utils/profileEconomy';
+
+const getUnlockStatusMessage = (result) => {
+  if (!result) return 'Unlock failed. Please try again.';
+  if (result.message) return String(result.message);
+
+  switch (result.code) {
+    case 'auth_required':
+      return 'Please log in to unlock this zone.';
+    case 'insufficient_gems':
+      return 'Not enough Gems. Please recharge and try again.';
+    default:
+      return 'Unlock failed. Please try again.';
+  }
+};
 
 const learningBoxes = [
   {
@@ -42,7 +58,7 @@ const learningBoxes = [
 ];
 
 export default function LearningZone({ onSelect }) {
-  const { user, profile } = useAuth();
+  const { user, profile, fetchProfile } = useAuth();
   const { isKidsModeOn } = useKidsMode();
   const [statusMessage, setStatusMessage] = React.useState('');
   const [processingAction, setProcessingAction] = React.useState('');

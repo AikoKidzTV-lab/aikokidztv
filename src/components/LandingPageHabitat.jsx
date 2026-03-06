@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import AIStudio from './AIStudio';
+import GemPacksPricing from './GemPacksPricing';
 import LearningZone from './LearningZone';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
@@ -499,6 +500,8 @@ export default function LandingPageHabitat({
         </div>
 
         <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
+          <GemPacksPricing />
+
           <div className="mt-14 space-y-10">
             <div
               id="ai-studio"
