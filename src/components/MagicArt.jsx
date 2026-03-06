@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { MAGIC_ART_PACK_COST_GEMS, MAGIC_ART_PACK_USES } from '../constants/gemEconomy';
-import { DEFAULT_MAGIC_ART_USES, buyMagicArtPack, consumeMagicArtUse } from '../utils/profileEconomy';
+import * as gemEconomy from '../constants/gemEconomy';
+import * as profileEconomy from '../utils/profileEconomy';
 
 const PRESET_COLORS = [
   '#FF4136',
@@ -57,6 +57,10 @@ const STAMPS = [
   { id: 'crown', icon: '\u{1F451}' },
   { id: 'heart', icon: '\u{1F496}' },
 ];
+
+const DEFAULT_MAGIC_ART_USES = Number(profileEconomy?.DEFAULT_MAGIC_ART_USES ?? 999);
+const MAGIC_ART_PACK_COST_GEMS = Number(gemEconomy?.MAGIC_ART_PACK_COST_GEMS ?? 0);
+const MAGIC_ART_PACK_USES = Number(gemEconomy?.MAGIC_ART_PACK_USES ?? DEFAULT_MAGIC_ART_USES);
 
 const toSafeUses = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -167,15 +171,22 @@ const MagicArt = ({ onBack }) => {
       return;
     }
 
+    const buyPackFn = profileEconomy?.buyMagicArtPack;
+    if (typeof buyPackFn !== 'function') {
+      setRemainingUses(DEFAULT_MAGIC_ART_USES);
+      showStatus('Cloud pack sync unavailable. You can still draw freely.');
+      return;
+    }
+
     setPackLoading(true);
     try {
-      const purchaseResult = await buyMagicArtPack({
-        userId: user.id,
+      const purchaseResult = await buyPackFn({
+        userId: user?.id,
         costGems: MAGIC_ART_PACK_COST_GEMS,
         packUses: MAGIC_ART_PACK_USES,
       });
 
-      if (!purchaseResult.ok) {
+      if (!purchaseResult || purchaseResult.ok === false) {
         showStatus(purchaseResult.message || 'Unable to buy Magic Art pack right now.');
         return;
       }
@@ -186,7 +197,9 @@ const MagicArt = ({ onBack }) => {
           remainingUses
         )
       );
-      await fetchProfile?.(user.id);
+      if (user?.id) {
+        await fetchProfile?.(user?.id);
+      }
       showStatus(`Unlocked ${MAGIC_ART_PACK_USES} uses for ${MAGIC_ART_PACK_COST_GEMS} gems`);
     } catch (error) {
       console.error('[MagicArt] Pack purchase failed:', error);
@@ -279,14 +292,21 @@ const MagicArt = ({ onBack }) => {
       return;
     }
 
+    const consumeUseFn = profileEconomy?.consumeMagicArtUse;
+    if (typeof consumeUseFn !== 'function') {
+      downloadLocally();
+      showStatus('Saved locally. Cloud usage sync unavailable.');
+      return;
+    }
+
     try {
-      const consumeResult = await consumeMagicArtUse({
-        userId: user.id,
+      const consumeResult = await consumeUseFn({
+        userId: user?.id,
         amount: 1,
       });
 
-      if (!consumeResult.ok) {
-        showStatus(consumeResult.message || 'Could not use Magic Art right now.');
+      if (!consumeResult || consumeResult.ok === false) {
+        showStatus(consumeResult?.message || 'Could not use Magic Art right now.');
         return;
       }
 
@@ -297,7 +317,9 @@ const MagicArt = ({ onBack }) => {
           remainingUses
         )
       );
-      await fetchProfile?.(user.id);
+      if (user?.id) {
+        await fetchProfile?.(user?.id);
+      }
     } catch (error) {
       console.error('[MagicArt] Failed to consume use:', error);
       downloadLocally();
