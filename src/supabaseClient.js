@@ -80,6 +80,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    multiTab: false, // Prevent LockManager contention in PWA/mobile restarts
     flowType: 'pkce',
     storageKey: 'aikokidztv.auth.session',
     storage: browserLocalStorage,
