@@ -23,6 +23,10 @@ const readPoemText = (row) =>
 const readPoemTitle = (row, fallbackIndex) =>
   (row?.title || row?.name || `Poem ${fallbackIndex + 1}`).toString().trim();
 
+const readPoemCategory = (row) => (row?.category || '').toString().trim();
+const readPoemSubcategory = (row) =>
+  (row?.subcategory || row?.animal_name || '').toString().trim();
+
 export default function PoemsPage() {
   const { user, profile, fetchProfile } = useAuth();
   const [poems, setPoems] = useState([]);
@@ -56,6 +60,8 @@ export default function PoemsPage() {
             imageUrl:
               (row?.image_url || row?.cover_url || row?.thumbnail_url || '').toString().trim() || '',
             isFree: Boolean(row?.is_free),
+            category: readPoemCategory(row),
+            subcategory: readPoemSubcategory(row),
             createdAt: row?.created_at || null,
             raw: row,
           }))
@@ -271,6 +277,11 @@ export default function PoemsPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-base font-black text-white">{poem.title}</p>
+                          {poem.category ? (
+                            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-fuchsia-100/85">
+                              {poem.subcategory ? `${poem.category} - ${poem.subcategory}` : poem.category}
+                            </p>
+                          ) : null}
                           <p className="mt-1 text-xs font-semibold text-cyan-100/80">
                             {unlocked
                               ? 'Open poem'
@@ -315,6 +326,13 @@ export default function PoemsPage() {
             ) : (
               <article>
                 <h2 className="text-2xl font-black text-white sm:text-3xl">{selectedPoem.title}</h2>
+                {selectedPoem.category ? (
+                  <p className="mt-2 text-xs font-black uppercase tracking-[0.15em] text-fuchsia-100/85">
+                    {selectedPoem.subcategory
+                      ? `${selectedPoem.category} - ${selectedPoem.subcategory}`
+                      : selectedPoem.category}
+                  </p>
+                ) : null}
                 <div className="mt-4 whitespace-pre-wrap rounded-2xl border border-white/20 bg-slate-900/40 p-4 text-sm leading-relaxed text-cyan-50 sm:text-base">
                   {selectedPoem.content}
                 </div>
