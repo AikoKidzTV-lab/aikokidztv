@@ -283,6 +283,8 @@ const Navbar = ({
           <div className="relative">
             <button
               onClick={toggleDropdown}
+              aria-expanded={open}
+              aria-label="User menu"
               className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 hover:bg-pink-50/80 dark:hover:bg-slate-700 px-2 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 transition-all kid-3d"
             >
               <div className="w-8 h-8 rounded-full bg-pink-100 border border-pink-200 text-pink-600 font-bold grid place-items-center dark:bg-slate-700 dark:border-slate-600 dark:text-pink-200">
@@ -491,10 +493,12 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     // Defer scroll until after any state-driven view change
     setTimeout(() => {
       if (id === 'top') {
-        if (typeof window !== 'undefined' && window.location.hash) {
-          window.history.replaceState(window.history.state, '', '/');
+        if (typeof window !== 'undefined') {
+          if (window.location.hash) {
+            window.history.replaceState(window.history.state, '', '/');
+          }
+          window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
         }
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
         return;
       }
       const element = document.getElementById(id);

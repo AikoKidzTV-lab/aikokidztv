@@ -1,5 +1,4 @@
 import { supabase } from '../supabaseClient';
-import { ensureEconomyProfile } from './profileEconomy';
 
 const normalizeGems = (value) => {
   const parsed = Number(value);
@@ -11,15 +10,6 @@ export const getCurrentUserGems = async (userId) => {
     return { ok: false, code: 'auth_required', message: 'Please log in to manage gems.' };
   }
 
-  const ensureResult = await ensureEconomyProfile(userId);
-  if (!ensureResult.ok) {
-    return {
-      ok: false,
-      code: ensureResult.code || 'profile_error',
-      message: ensureResult.message || 'Failed to initialize profile.',
-    };
-  }
-
   const { data, error } = await supabase
     .from('profiles')
     .select('gems')
@@ -27,6 +17,10 @@ export const getCurrentUserGems = async (userId) => {
     .single();
 
   if (error) {
+    // If profile doesn't exist, we can treat it as 0 gems or let the caller handle initialization
+    if (error.code === 'PGRST116') {
+       return { ok: true, gems: 0 };
+    }
     return { ok: false, code: 'profile_error', message: error.message || 'Failed to load gem balance.' };
   }
 
