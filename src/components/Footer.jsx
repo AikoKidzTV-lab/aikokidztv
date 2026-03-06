@@ -53,6 +53,15 @@ const Footer = () => {
 
   const openModal = (modalName) => setActiveModal(modalName);
   const closeModal = () => setActiveModal(null);
+  const plainFooterButtonStyle = {
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 0,
+    boxShadow: 'none',
+    padding: 0,
+    margin: 0,
+    transform: 'none',
+  };
 
   return (
     <footer className="py-12 border-t border-white/10 mt-auto bg-white/10 dark:bg-black/20 backdrop-blur-md text-gray-200">
@@ -103,7 +112,8 @@ const Footer = () => {
               <li>
                 <button
                   onClick={() => openModal('privacy')}
-                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                  className="hover:text-accent transition-colors text-left no-underline"
+                  style={plainFooterButtonStyle}
                 >
                   Privacy Policy
                 </button>
@@ -111,7 +121,8 @@ const Footer = () => {
               <li>
                 <button
                   onClick={() => openModal('terms')}
-                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                  className="hover:text-accent transition-colors text-left no-underline"
+                  style={plainFooterButtonStyle}
                 >
                   Terms of Service
                 </button>
@@ -119,7 +130,8 @@ const Footer = () => {
               <li>
                 <button
                   onClick={() => openModal('refund')}
-                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                  className="hover:text-accent transition-colors text-left no-underline"
+                  style={plainFooterButtonStyle}
                 >
                   Refund Policy
                 </button>
@@ -127,7 +139,8 @@ const Footer = () => {
               <li>
                 <button
                   onClick={() => openModal('pricing')}
-                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                  className="hover:text-accent transition-colors text-left no-underline"
+                  style={plainFooterButtonStyle}
                 >
                   Pricing & Gem Economy
                 </button>
@@ -143,7 +156,8 @@ const Footer = () => {
                 <Mail size={16} className="text-gray-400" />
                 <button
                   onClick={() => openModal('contact')}
-                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                  className="hover:text-accent transition-colors text-left no-underline"
+                  style={plainFooterButtonStyle}
                 >
                   support@aikokidztv.com
                 </button>

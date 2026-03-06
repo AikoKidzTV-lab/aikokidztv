@@ -13,20 +13,6 @@ const projects = [
       { label: "YouTube", icon: Youtube, url: "#" },
       { label: "Instagram", icon: Instagram, url: "#" }
     ]
-  },
-  {
-    title: "AikoKidz",
-    category: "Coming Soon",
-    description: "A holistic learning ecosystem designed to nurture creativity and curiosity in children.",
-    color: "from-blue-500 to-cyan-500",
-    badges: []
-  },
-  {
-    title: "AikoTeenz",
-    category: "Coming Soon",
-    description: "Future-ready innovation hub for teenagers, focusing on tech, law, and life skills.",
-    color: "from-emerald-500 to-green-500",
-    badges: []
   }
 ];
 
@@ -46,7 +32,7 @@ const Projects = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="mx-auto max-w-3xl grid grid-cols-1 gap-8">
           {projects.map((project, index) => (
             <motion.div
               key={index}
@@ -89,60 +75,6 @@ const Projects = () => {
               </div>
             </motion.div>
           ))}
-        </div>
-
-        <div className="mt-16">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-8 text-center"
-          >
-            <h3 className="text-2xl md:text-3xl font-bold text-slate-900">Upcoming Adventures</h3>
-            <p className="mt-2 text-slate-700">
-              A quick look at the next chapter of the Aiko universe.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.05 }}
-              className="rounded-2xl border border-white/20 bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-fuchsia-500/20 p-6 shadow-lg transition-transform duration-300 hover:-translate-y-1"
-            >
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-700">Future Roadmap</p>
-              <h4 className="mt-2 text-2xl font-bold text-slate-900">AikoKidz</h4>
-              <p className="mt-3 text-slate-800">
-                The ultimate upcoming ecosystem for children&apos;s learning, premium toys, and interactive growth.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.12 }}
-              className="rounded-2xl border border-white/20 bg-gradient-to-br from-violet-500/20 via-indigo-500/20 to-cyan-500/20 p-6 shadow-lg transition-transform duration-300 hover:-translate-y-1"
-            >
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-700">Future Roadmap</p>
-              <h4 className="mt-2 text-2xl font-bold text-slate-900">AikoTeenz</h4>
-              <p className="mt-3 text-slate-800">
-                Coming Soon! A safe, engaging, and creative digital space designed specifically for teenagers to explore, learn, and express themselves.
-              </p>
-            </motion.div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.08 }}
-            className="mt-8 rounded-2xl border border-amber-300/30 bg-amber-400/10 p-5 text-sm leading-relaxed text-slate-800 shadow-md"
-          >
-            (C) Official Notice: AikoKidz, AikoKidzTV, and AikoTeenz are exclusive trademarks and fully copyrighted properties. All original brand concepts, names, and ecosystem designs belong entirely to our brand. All rights reserved.
-          </motion.div>
         </div>
       </div>
     </section>
