@@ -99,24 +99,36 @@ const Footer = () => {
           {/* Column 3: Legal */}
           <div>
             <h4 className="font-semibold mb-4 uppercase text-sm tracking-wider">Legal</h4>
-            <ul className="space-y-2 text-sm cursor-pointer">
+            <ul className="space-y-2 text-sm">
               <li>
-                <button onClick={() => openModal('privacy')} className="hover:text-accent transition-colors text-left">
+                <button
+                  onClick={() => openModal('privacy')}
+                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                >
                   Privacy Policy
                 </button>
               </li>
               <li>
-                <button onClick={() => openModal('terms')} className="hover:text-accent transition-colors text-left">
+                <button
+                  onClick={() => openModal('terms')}
+                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                >
                   Terms of Service
                 </button>
               </li>
               <li>
-                <button onClick={() => openModal('refund')} className="hover:text-accent transition-colors text-left">
+                <button
+                  onClick={() => openModal('refund')}
+                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                >
                   Refund Policy
                 </button>
               </li>
               <li>
-                <button onClick={() => openModal('pricing')} className="hover:text-accent transition-colors text-left">
+                <button
+                  onClick={() => openModal('pricing')}
+                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                >
                   Pricing & Gem Economy
                 </button>
               </li>
@@ -126,16 +138,19 @@ const Footer = () => {
           {/* Column 4: Contact */}
           <div>
             <h4 className="font-semibold mb-4 uppercase text-sm tracking-wider">Contact Us</h4>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
-                <Mail size={16} className="text-accent" />
-                <button onClick={() => openModal('contact')} className="hover:text-accent transition-colors">
+                <Mail size={16} className="text-gray-400" />
+                <button
+                  onClick={() => openModal('contact')}
+                  className="hover:text-accent transition-colors bg-transparent p-0 text-left"
+                >
                   support@aikokidztv.com
                 </button>
               </li>
               <li className="flex items-start gap-2">
-                <MapPin size={16} className="text-accent mt-1" />
-                <span>Gohana, Haryana, India</span>
+                <MapPin size={16} className="text-gray-400 mt-1" />
+                <span className="hover:text-accent transition-colors">Gohana, Haryana, India</span>
               </li>
             </ul>
           </div>
@@ -314,4 +329,3 @@ const Footer = () => {
 };
 
 export default Footer;
-
