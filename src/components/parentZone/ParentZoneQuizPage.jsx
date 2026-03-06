@@ -3,7 +3,6 @@ import ParentZoneRouteLayout from './ParentZoneRouteLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useAuthModal } from '../../context/AuthModalContext';
 import { useParentControls } from '../../context/ParentControlsContext';
-import { addUserGems } from '../../utils/gemWallet';
 
 const DEFAULT_MILESTONE_SIZE = 10;
 const DEFAULT_PASS_THRESHOLD = 80;
@@ -287,13 +286,7 @@ export default function ParentZoneQuizPage({
     async (milestoneIndex, rewardGems) => {
       if (rewardGems <= 0) {
         setMilestoneRewardStatus('none');
-        setMilestoneRewardMessage('No Gems for this set. Keep trying.');
-        return;
-      }
-
-      if (!user?.id) {
-        setMilestoneRewardStatus('auth_required');
-        setMilestoneRewardMessage(`Log in to claim +${rewardGems} Gems for this set.`);
+        setMilestoneRewardMessage('Set completed. Keep trying.');
         return;
       }
 
@@ -304,33 +297,16 @@ export default function ParentZoneQuizPage({
       }
 
       setMilestoneRewardStatus('claiming');
-      setMilestoneRewardMessage('Adding milestone reward to your account...');
+      setMilestoneRewardMessage('Recording milestone progress...');
 
-      try {
-        const result = await addUserGems({
-          userId: user.id,
-          amount: rewardGems,
-        });
+      awardedMilestonesRef.current.add(milestoneIndex);
+      setMilestonesAwardedCount((prev) => prev + 1);
+      setMilestoneGemsAwarded((prev) => prev + rewardGems);
 
-        if (!result?.ok) {
-          setMilestoneRewardStatus('error');
-          setMilestoneRewardMessage(result?.message || 'Could not add milestone Gems.');
-          return;
-        }
+      await syncProfileAfterReward(user?.id);
 
-        awardedMilestonesRef.current.add(milestoneIndex);
-        setMilestonesAwardedCount((prev) => prev + 1);
-        setMilestoneGemsAwarded((prev) => prev + rewardGems);
-
-        await syncProfileAfterReward(user.id);
-
-        setMilestoneRewardStatus('claimed');
-        setMilestoneRewardMessage(`Milestone ${milestoneIndex}: +${rewardGems} Gems added.`);
-      } catch (error) {
-        console.error('[ParentZoneQuizPage] Milestone reward failed:', error);
-        setMilestoneRewardStatus('error');
-        setMilestoneRewardMessage('Milestone reward update failed. Please retry.');
-      }
+      setMilestoneRewardStatus('claimed');
+      setMilestoneRewardMessage(`Milestone ${milestoneIndex} completed.`);
     },
     [syncProfileAfterReward, user?.id]
   );
@@ -338,13 +314,7 @@ export default function ParentZoneQuizPage({
   const claimFinalReward = React.useCallback(async () => {
     if (finalRewardAmount <= 0) {
       setFinalRewardStatus('claimed');
-      setFinalRewardMessage('Final reward is 0 Gems for this attempt.');
-      return;
-    }
-
-    if (!user?.id) {
-      setFinalRewardStatus('auth_required');
-      setFinalRewardMessage(`Log in to claim final +${finalRewardAmount} Gems.`);
+      setFinalRewardMessage('Final test run completed.');
       return;
     }
 
@@ -355,35 +325,18 @@ export default function ParentZoneQuizPage({
     }
 
     setFinalRewardStatus('claiming');
-    setFinalRewardMessage('Adding final test reward...');
+    setFinalRewardMessage('Recording final result...');
 
-    try {
-      const result = await addUserGems({
-        userId: user.id,
-        amount: finalRewardAmount,
-      });
+    finalRewardClaimedRef.current = true;
+    setFinalRewardGemsAwarded(finalRewardAmount);
+    await syncProfileAfterReward(user?.id);
 
-      if (!result?.ok) {
-        setFinalRewardStatus('error');
-        setFinalRewardMessage(result?.message || 'Could not add final reward Gems.');
-        return;
-      }
-
-      finalRewardClaimedRef.current = true;
-      setFinalRewardGemsAwarded(finalRewardAmount);
-      await syncProfileAfterReward(user.id);
-
-      setFinalRewardStatus('claimed');
-      setFinalRewardMessage(
-        isPass
-          ? `Final Result: Pass. +${finalRewardAmount} Gems added.`
-          : `Final Result: Keep practicing. +${finalRewardAmount} Gems added.`
-      );
-    } catch (error) {
-      console.error('[ParentZoneQuizPage] Final reward failed:', error);
-      setFinalRewardStatus('error');
-      setFinalRewardMessage('Final reward update failed. Please retry.');
-    }
+    setFinalRewardStatus('claimed');
+    setFinalRewardMessage(
+      isPass
+        ? 'Final Result: Pass.'
+        : 'Final Result: Keep practicing and try again.'
+    );
   }, [finalRewardAmount, isPass, syncProfileAfterReward, user?.id]);
 
   React.useEffect(() => {

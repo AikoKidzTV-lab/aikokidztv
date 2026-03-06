@@ -409,15 +409,8 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const closeSettingsModal = React.useCallback(() => setShowSettings(false), []);
 
   useEffect(() => {
-    const root = document.documentElement;
-    const isDarkMode = displayMode === 'dark';
-    root.classList.toggle('dark', isDarkMode);
-    root.classList.remove('colorblind-mode');
-    root.setAttribute('data-theme', displayMode);
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DISPLAY_MODE_STORAGE_KEY, displayMode);
-    }
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(DISPLAY_MODE_STORAGE_KEY, displayMode);
   }, [displayMode]);
 
   useEffect(() => {
@@ -614,17 +607,16 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
     return (
       <>
         <style>{`
-          [data-theme] body,
-          [data-theme] .app-shell {
+          .app-shell {
             background-color: var(--bg-primary);
             color: var(--text-primary);
           }
-          [data-theme] .app-shell .text-muted {
+          .app-shell .text-muted {
             color: var(--text-secondary) !important;
           }
         `}</style>
         <div
-          className={`app-shell min-h-screen selection:bg-pink-200 selection:text-slate-900 transition-colors duration-300 ${isKidsModeOn ? 'kids-mode-on' : ''}`}
+          className={`app-shell min-h-screen selection:bg-pink-200 selection:text-slate-900 transition-colors duration-300 ${displayMode === 'dark' ? 'dark' : ''} ${isKidsModeOn ? 'kids-mode-on' : ''}`}
           style={appShellStyle}
         >
           <TimeUpOverlay
@@ -717,17 +709,16 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   return (
     <>
       <style>{`
-        [data-theme] body,
-        [data-theme] .app-shell {
+        .app-shell {
           background-color: var(--bg-primary);
           color: var(--text-primary);
         }
-        [data-theme] .app-shell .text-muted {
+        .app-shell .text-muted {
           color: var(--text-secondary) !important;
         }
       `}</style>
       <div
-        className={`app-shell min-h-screen selection:bg-pink-200 selection:text-slate-900 transition-colors duration-300 ${isKidsModeOn ? 'kids-mode-on' : ''}`}
+        className={`app-shell min-h-screen selection:bg-pink-200 selection:text-slate-900 transition-colors duration-300 ${displayMode === 'dark' ? 'dark' : ''} ${isKidsModeOn ? 'kids-mode-on' : ''}`}
         style={appShellStyle}
       >
       <HeaderNavbar

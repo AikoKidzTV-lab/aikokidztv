@@ -7,7 +7,6 @@ import ANIMALS_DATA, {
 import { useAuth } from '../../context/AuthContext';
 import { useAuthModal } from '../../context/AuthModalContext';
 import { useParentControls } from '../../context/ParentControlsContext';
-import { addUserGems } from '../../utils/gemWallet';
 
 const CATEGORY_NAV = [
   { id: 'All', label: '\uD83C\uDF0D All' },
@@ -179,13 +178,7 @@ const SafariModule = ({ onBack, onHome }) => {
     async (setIndex, rewardGems) => {
       if (rewardGems <= 0) {
         setQuizMilestoneStatus('none');
-        setQuizMilestoneMessage('No Gems for this set. Keep exploring and try the next set!');
-        return;
-      }
-
-      if (!user?.id) {
-        setQuizMilestoneStatus('auth_required');
-        setQuizMilestoneMessage(`Log in to claim +${rewardGems} Gems for this set.`);
+        setQuizMilestoneMessage('Set completed. Keep exploring and try the next set!');
         return;
       }
 
@@ -196,14 +189,7 @@ const SafariModule = ({ onBack, onHome }) => {
       }
 
       setQuizMilestoneStatus('claiming');
-      setQuizMilestoneMessage('Adding set reward to your Gems...');
-
-      const result = await addUserGems({ userId: user.id, amount: rewardGems });
-      if (!result?.ok) {
-        setQuizMilestoneStatus('error');
-        setQuizMilestoneMessage(result?.message || 'Could not add set reward Gems right now.');
-        return;
-      }
+      setQuizMilestoneMessage('Recording set progress...');
 
       milestoneRewardedRef.current.add(setIndex);
       setQuizMilestonesAwarded((prev) => prev + 1);
@@ -211,21 +197,15 @@ const SafariModule = ({ onBack, onHome }) => {
       await syncProfile();
 
       setQuizMilestoneStatus('claimed');
-      setQuizMilestoneMessage(`Set ${setIndex}: +${rewardGems} Gems added.`);
+      setQuizMilestoneMessage(`Set ${setIndex} completed.`);
     },
-    [syncProfile, user?.id]
+    [syncProfile]
   );
 
   const claimFinalReward = useCallback(async () => {
     if (quizFinalReward <= 0) {
       setQuizFinalRewardStatus('claimed');
-      setQuizFinalRewardMessage('Final reward is 0 Gems for this run.');
-      return;
-    }
-
-    if (!user?.id) {
-      setQuizFinalRewardStatus('auth_required');
-      setQuizFinalRewardMessage(`Log in to claim final +${quizFinalReward} Gems.`);
+      setQuizFinalRewardMessage('Safari Master run completed.');
       return;
     }
 
@@ -236,14 +216,7 @@ const SafariModule = ({ onBack, onHome }) => {
     }
 
     setQuizFinalRewardStatus('claiming');
-    setQuizFinalRewardMessage('Adding final Safari Master reward...');
-
-    const result = await addUserGems({ userId: user.id, amount: quizFinalReward });
-    if (!result?.ok) {
-      setQuizFinalRewardStatus('error');
-      setQuizFinalRewardMessage(result?.message || 'Could not add final reward Gems right now.');
-      return;
-    }
+    setQuizFinalRewardMessage('Recording final result...');
 
     finalRewardClaimedRef.current = true;
     setQuizFinalGemsAwarded(quizFinalReward);
@@ -252,10 +225,10 @@ const SafariModule = ({ onBack, onHome }) => {
     setQuizFinalRewardStatus('claimed');
     setQuizFinalRewardMessage(
       quizPassed
-        ? `Safari Master Passed! +${quizFinalReward} Gems added.`
-        : `Safari Master complete. Encouragement +${quizFinalReward} Gems added.`
+        ? 'Safari Master passed successfully.'
+        : 'Safari Master completed. Keep practicing and try again.'
     );
-  }, [quizFinalReward, quizPassed, syncProfile, user?.id]);
+  }, [quizFinalReward, quizPassed, syncProfile]);
 
   useEffect(() => {
     if (!quizCompleted) return;
