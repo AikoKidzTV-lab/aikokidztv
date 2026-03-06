@@ -4,6 +4,46 @@ import { useKidsMode } from '../context/KidsModeContext';
 import { LEARNING_ZONE_PREMIUM_UNLOCKS } from '../constants/gemEconomy';
 import { unlockZoneWithGems } from '../utils/profileEconomy';
 
+const GUEST_PREMIUM_UNLOCKS = {
+  colors: 50,
+  animals: 60,
+};
+
+const GUEST_GEMS_STORAGE_KEY = 'aiko_guest_gems_v1';
+const GUEST_UNLOCKED_ZONES_STORAGE_KEY = 'aiko_guest_learning_unlocks_v1';
+
+const readGuestGems = () => {
+  if (typeof window === 'undefined') return 0;
+  const raw = window.localStorage.getItem(GUEST_GEMS_STORAGE_KEY);
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
+};
+
+const writeGuestGems = (value) => {
+  if (typeof window === 'undefined') return;
+  const safeValue = Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;
+  window.localStorage.setItem(GUEST_GEMS_STORAGE_KEY, String(safeValue));
+};
+
+const readGuestUnlockedZones = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(GUEST_UNLOCKED_ZONES_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map((value) => String(value || '').trim()).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeGuestUnlockedZones = (zones) => {
+  if (typeof window === 'undefined') return;
+  const safeZones = Array.isArray(zones)
+    ? [...new Set(zones.map((value) => String(value || '').trim()).filter(Boolean))]
+    : [];
+  window.localStorage.setItem(GUEST_UNLOCKED_ZONES_STORAGE_KEY, JSON.stringify(safeZones));
+};
+
 const getUnlockStatusMessage = (result) => {
   if (!result) return 'Unlock failed. Please try again.';
   if (result.message) return String(result.message);
@@ -22,7 +62,7 @@ const learningBoxes = [
   {
     id: 'alphabets',
     title: 'A to Z Letters',
-    icon: '🔤',
+    icon: '\u{1F524}',
     bg: 'bg-blue-100',
     text: 'text-blue-800',
     desc: 'Learn your ABCs fun way!',
@@ -31,7 +71,7 @@ const learningBoxes = [
   {
     id: 'numbers',
     title: '1 to 100 Numbers',
-    icon: '🔢',
+    icon: '\u{1F522}',
     bg: 'bg-orange-100',
     text: 'text-orange-800',
     desc: 'Count all the way to 100!',
@@ -40,20 +80,24 @@ const learningBoxes = [
   {
     id: 'colors',
     title: 'Colors & Shapes',
-    icon: '🎨',
+    icon: '\u{1F3A8}',
     bg: 'bg-pink-100',
     text: 'text-pink-800',
     desc: 'Mix colors & learn shapes!',
-    tier: 'core',
+    tier: 'premium',
+    unlockCost: LEARNING_ZONE_PREMIUM_UNLOCKS.colors,
+    guestUnlockCost: GUEST_PREMIUM_UNLOCKS.colors,
   },
   {
     id: 'animals',
     title: 'Animal Safari',
-    icon: '🦓',
+    icon: '\u{1F993}',
     bg: 'bg-green-100',
     text: 'text-green-800',
     desc: 'Meet animals & hear sounds!',
-    tier: 'core',
+    tier: 'premium',
+    unlockCost: LEARNING_ZONE_PREMIUM_UNLOCKS.animals,
+    guestUnlockCost: GUEST_PREMIUM_UNLOCKS.animals,
   },
 ];
 
@@ -62,6 +106,8 @@ export default function LearningZone({ onSelect }) {
   const { isKidsModeOn } = useKidsMode();
   const [statusMessage, setStatusMessage] = React.useState('');
   const [processingAction, setProcessingAction] = React.useState('');
+  const [guestGems, setGuestGems] = React.useState(() => readGuestGems());
+  const [guestUnlockedZones, setGuestUnlockedZones] = React.useState(() => readGuestUnlockedZones());
   const statusTimeoutRef = React.useRef(null);
 
   const unlockedZones = React.useMemo(() => {
@@ -70,10 +116,27 @@ export default function LearningZone({ onSelect }) {
     return [...new Set([...zones, ...features].map((value) => String(value || '').trim()).filter(Boolean))];
   }, [profile?.unlocked_features, profile?.unlocked_zones]);
 
+  const premiumUnlocks = user?.id ? LEARNING_ZONE_PREMIUM_UNLOCKS : GUEST_PREMIUM_UNLOCKS;
+  const currentDisplayedGems = user?.id ? Number(profile?.gems || 0) : guestGems;
+
   React.useEffect(() => () => {
     if (statusTimeoutRef.current) {
       window.clearTimeout(statusTimeoutRef.current);
     }
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const syncGuestState = () => {
+      setGuestGems(readGuestGems());
+      setGuestUnlockedZones(readGuestUnlockedZones());
+    };
+
+    window.addEventListener('storage', syncGuestState);
+    return () => {
+      window.removeEventListener('storage', syncGuestState);
+    };
   }, []);
 
   const showStatus = React.useCallback((message) => {
@@ -87,9 +150,10 @@ export default function LearningZone({ onSelect }) {
   const canAccessCard = React.useCallback(
     (box) => {
       if (box.tier === 'core') return true;
-      return unlockedZones.includes(box.id);
+      if (user?.id) return unlockedZones.includes(box.id);
+      return guestUnlockedZones.includes(box.id);
     },
-    [unlockedZones]
+    [guestUnlockedZones, unlockedZones, user?.id]
   );
 
   const visibleCards = React.useMemo(() => {
@@ -118,27 +182,45 @@ export default function LearningZone({ onSelect }) {
 
   const handleUnlockPremiumCard = async (box) => {
     if (!box?.id || box.tier !== 'premium' || processingAction) return;
-    if (unlockedZones.includes(box.id)) return;
-    if (!user?.id) {
-      showStatus('Please log in to unlock paid zones.');
+    if (canAccessCard(box)) return;
+
+    const unlockCost = user?.id ? Number(box.unlockCost || 0) : Number(box.guestUnlockCost || 0);
+    if (!Number.isFinite(unlockCost) || unlockCost <= 0) {
+      showStatus('Unlock configuration is unavailable. Please try again.');
       return;
     }
 
     setProcessingAction(box.id);
     try {
-      const unlockResult = await unlockZoneWithGems({
-        userId: user.id,
-        zoneId: box.id,
-        costGems: box.unlockCost,
-      });
+      if (user?.id) {
+        const unlockResult = await unlockZoneWithGems({
+          userId: user.id,
+          zoneId: box.id,
+          costGems: unlockCost,
+        });
 
-      if (!unlockResult.ok) {
-        showStatus(getUnlockStatusMessage(unlockResult));
+        if (!unlockResult.ok) {
+          showStatus(getUnlockStatusMessage(unlockResult));
+          return;
+        }
+
+        await fetchProfile?.(user.id);
+        showStatus(`${box.title} unlocked permanently for ${unlockCost} \u{1F48E}`);
         return;
       }
 
-      await fetchProfile?.(user.id);
-      showStatus(`${box.title} unlocked permanently for ${box.unlockCost} 💎`);
+      if (guestGems < unlockCost) {
+        showStatus(`Not enough Gems. ${box.title} needs ${unlockCost} \u{1F48E}.`);
+        return;
+      }
+
+      const nextGuestGems = guestGems - unlockCost;
+      const nextGuestUnlocks = [...new Set([...guestUnlockedZones, box.id])];
+      setGuestGems(nextGuestGems);
+      setGuestUnlockedZones(nextGuestUnlocks);
+      writeGuestGems(nextGuestGems);
+      writeGuestUnlockedZones(nextGuestUnlocks);
+      showStatus(`${box.title} unlocked for ${unlockCost} \u{1F48E} (guest wallet).`);
     } catch (error) {
       console.error('[LearningZone] Premium unlock failed:', error);
       showStatus('Unlock failed. Please try again.');
@@ -151,7 +233,7 @@ export default function LearningZone({ onSelect }) {
     <section id="learning-zone" className="max-w-7xl mx-auto p-6 mt-8 font-sans">
       <div className="text-center mb-10">
         <h1 className="text-4xl sm:text-5xl font-extrabold text-indigo-900 mb-4 tracking-tight">
-          Welcome to the Learning Zone! 🚀
+          Welcome to the Learning Zone! {'\u{1F680}'}
         </h1>
         <p className="text-gray-500 font-medium text-lg max-w-3xl mx-auto">
           A to Z Letters and 1 to 100 Numbers are always free.
@@ -162,10 +244,10 @@ export default function LearningZone({ onSelect }) {
       <div className="mb-8 rounded-3xl border border-indigo-200 bg-indigo-50 p-5 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-base font-bold text-indigo-900">
-            Current Gems: <span className="font-black">{Number(profile?.gems || 0)} 💎</span>
+            Current Gems: <span className="font-black">{currentDisplayedGems} {'\u{1F48E}'}</span>
           </p>
           <p className="text-sm font-semibold text-indigo-700">
-            Premium unlocks: Colors & Shapes ({LEARNING_ZONE_PREMIUM_UNLOCKS.colors} 💎), Animal Safari ({LEARNING_ZONE_PREMIUM_UNLOCKS.animals} 💎)
+            Premium unlocks: Colors & Shapes ({premiumUnlocks.colors} {'\u{1F48E}'}), Animal Safari ({premiumUnlocks.animals} {'\u{1F48E}'})
           </p>
         </div>
       </div>
@@ -190,7 +272,7 @@ export default function LearningZone({ onSelect }) {
             >
               {premiumLocked && (
                 <div className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-black text-slate-700">
-                  🔒 Locked
+                  {'\u{1F512}'} Locked
                 </div>
               )}
 
@@ -216,7 +298,7 @@ export default function LearningZone({ onSelect }) {
                   >
                     {processingAction === box.id
                       ? 'Unlocking...'
-                      : `Unlock for ${box.unlockCost} 💎`}
+                      : `Unlock for ${user?.id ? box.unlockCost : box.guestUnlockCost} \u{1F48E}`}
                   </button>
                 )}
               </div>

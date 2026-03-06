@@ -31,7 +31,7 @@ const LegalModal = ({ isOpen, onClose, title, children }) => {
               <X size={20} className="text-gray-400" />
             </button>
           </div>
-          <div className="p-6 overflow-y-auto text-gray-300 space-y-4 leading-relaxed">
+          <div className="p-6 overflow-y-auto text-gray-200 space-y-4 leading-relaxed [&_p]:text-gray-200 [&_li]:text-gray-200">
             {children}
           </div>
           <div className="p-4 border-t border-white/10 bg-gray-900/50 flex justify-end">
@@ -55,7 +55,7 @@ const Footer = () => {
   const closeModal = () => setActiveModal(null);
 
   return (
-    <footer className="py-12 border-t border-white/10 mt-auto bg-white/10 dark:bg-black/20 backdrop-blur-md text-[var(--text-primary)]">
+    <footer className="py-12 border-t border-white/10 mt-auto bg-white/10 dark:bg-black/20 backdrop-blur-md text-gray-200">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 gap-8 mb-8 md:grid-cols-2 lg:grid-cols-5">
           
@@ -64,7 +64,7 @@ const Footer = () => {
             <h3 className="text-xl font-bold mb-4 tracking-tight">
               AikoKidzTV
             </h3>
-            <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm leading-relaxed mb-4 text-gray-400">
               Empowering the next generation through AI-driven education and creativity. 
               Building a future where technology meets human potential.
             </p>
@@ -167,12 +167,12 @@ const Footer = () => {
                 </svg>
               </a>
             </div>
-            <p className="mt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+            <p className="mt-3 text-xs text-gray-400">
               Follow our journey and upcoming launches.
             </p>
           </div>
         </div>
-        <div className="pt-8 border-t border-white/10 text-center text-xs" style={{ color: 'var(--text-secondary)' }}>
+        <div className="pt-8 border-t border-white/10 text-center text-xs text-gray-400">
           <p>&copy; {new Date().getFullYear()} AikoKidzTV. All rights reserved.</p>
           <p className="mt-2 text-[11px] font-semibold text-red-300">
             Ad-Free Website. NO REFUNDS under any circumstances. If an accidental purchase occurs, email a screenshot immediately. Missing gems issues will be resolved within 5 business days. Additional charges apply for disputes.
@@ -286,14 +286,14 @@ const Footer = () => {
       >
         <div className="space-y-6">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-gray-500 uppercase">Support Email</label>
+            <label className="text-sm font-bold text-gray-300 uppercase">Support Email</label>
             <a href="mailto:support@aikokidztv.com" className="text-xl text-accent hover:underline font-mono">
               support@aikokidztv.com
             </a>
           </div>
           
           <div className="flex flex-col gap-2">
-             <label className="text-sm font-bold text-gray-500 uppercase">Address</label>
+             <label className="text-sm font-bold text-gray-300 uppercase">Address</label>
              <p className="text-lg">Gohana, Haryana, India</p>
           </div>
 
@@ -314,5 +314,4 @@ const Footer = () => {
 };
 
 export default Footer;
-
 

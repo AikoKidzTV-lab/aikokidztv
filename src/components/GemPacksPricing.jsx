@@ -1,6 +1,10 @@
 import React from 'react';
 
-const calculateDonationGems = () => 0;
+const calculateDonationGems = (amount) => {
+  const numericAmount = Number(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) return 0;
+  return Math.ceil(numericAmount * 1.08);
+};
 
 const gemPacks = [
   {
@@ -61,10 +65,11 @@ export default function GemPacksPricing({ onPay }) {
   const activeCurrency = isINR ? 'INR' : 'USD';
   const supportLimits = SUPPORT_LIMITS[activeCurrency];
   const parsedSupportAmount = Number(customSupportAmount);
+  const displaySupportAmount = Number.isFinite(parsedSupportAmount) ? Math.max(0, parsedSupportAmount) : 0;
   const normalizedSupportAmount = Number.isFinite(parsedSupportAmount)
     ? Math.min(supportLimits.max, Math.max(supportLimits.min, parsedSupportAmount))
     : supportLimits.min;
-  const donationGemReward = calculateDonationGems(normalizedSupportAmount, activeCurrency);
+  const donationGemReward = calculateDonationGems(displaySupportAmount);
 
   React.useEffect(() => {
     setCustomSupportAmount(String(SUPPORT_LIMITS[activeCurrency].min));
@@ -132,8 +137,8 @@ export default function GemPacksPricing({ onPay }) {
             <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/90 bg-white/80 text-3xl shadow-md">
               ☕
             </div>
-            <p className="mt-3 text-base font-black !text-slate-900">Buy Me a Coffee</p>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] !text-rose-700">Your Will</p>
+            <p className="mt-3 text-base font-black !text-slate-900">Your Will</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] !text-rose-700">Custom Support</p>
           </div>
 
           <div className="mt-3 rounded-xl border border-white/90 bg-white/80 p-3 shadow-sm">
@@ -165,7 +170,7 @@ export default function GemPacksPricing({ onPay }) {
             <button
               type="button"
               onClick={() =>
-                onPay?.('Buy Me a Coffee', normalizedSupportAmount, donationGemReward, activeCurrency)
+                onPay?.('Your Will', normalizedSupportAmount, donationGemReward, activeCurrency)
               }
               className="w-full rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(244,63,94,0.35)] transition-all hover:brightness-105"
             >

@@ -19,8 +19,41 @@ import { supabase } from '../supabaseClient';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { useKidsMode } from '../context/KidsModeContext';
+import { addUserGems, spendUserGems } from '../utils/gemWallet';
 
-const GENERATION_COST_GEMS = 0;
+const GENERATION_COST_GEMS = 20;
+const DAILY_SESSION_LIMIT = 2;
+const STORY_STUDIO_DAILY_SESSIONS_STORAGE_KEY = 'aiko_story_studio_daily_sessions_v1';
+
+const getTodayDateStamp = () => new Date().toISOString().slice(0, 10);
+
+const readDailySessionState = () => {
+  const today = getTodayDateStamp();
+  if (typeof window === 'undefined') return { date: today, count: 0 };
+
+  try {
+    const raw = window.localStorage.getItem(STORY_STUDIO_DAILY_SESSIONS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    const parsedCount = Number(parsed?.count);
+    if (parsed?.date === today && Number.isFinite(parsedCount) && parsedCount >= 0) {
+      return { date: today, count: Math.floor(parsedCount) };
+    }
+  } catch {
+    // ignore malformed storage payloads
+  }
+
+  return { date: today, count: 0 };
+};
+
+const writeDailySessionState = (count) => {
+  if (typeof window === 'undefined') return;
+
+  const safeCount = Number.isFinite(Number(count)) ? Math.max(0, Math.floor(Number(count))) : 0;
+  window.localStorage.setItem(
+    STORY_STUDIO_DAILY_SESSIONS_STORAGE_KEY,
+    JSON.stringify({ date: getTodayDateStamp(), count: safeCount })
+  );
+};
 
 const characters = [
   { name: 'AIKO', role: 'Energetic Leader', emoji: '\u{1F31F}' },
@@ -82,7 +115,7 @@ const StoryStudio = () => {
   const [error, setError] = useState('');
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [apiStatus, setApiStatus] = useState('checking');
-  const [sessionCount, setSessionCount] = useState(0);
+  const [sessionCount, setSessionCount] = useState(() => readDailySessionState().count);
   const [cooldownTime, setCooldownTime] = useState(0);
 
   const chatEndRef = useRef(null);
@@ -125,17 +158,37 @@ const StoryStudio = () => {
   }, []);
 
   useEffect(() => {
+    const syncDailySessionState = () => {
+      const nextState = readDailySessionState();
+      setSessionCount(nextState.count);
+    };
+
+    syncDailySessionState();
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', syncDailySessionState);
+    }
+
+    const interval = setInterval(syncDailySessionState, 60000);
+
+    return () => {
+      clearInterval(interval);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('storage', syncDailySessionState);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     let timer;
     if (cooldownTime > 0) {
       timer = setInterval(() => {
         setCooldownTime((prev) => prev - 1);
       }, 1000);
-    } else if (cooldownTime === 0 && sessionCount > 0) {
-      setSessionCount(0);
     }
 
     return () => clearInterval(timer);
-  }, [cooldownTime, sessionCount]);
+  }, [cooldownTime]);
 
   useEffect(() => {
     if (!hasMountedChatRef.current) {
@@ -217,12 +270,26 @@ const StoryStudio = () => {
       return;
     }
 
+    const currentDaySessionCount = readDailySessionState().count;
+    if (currentDaySessionCount >= DAILY_SESSION_LIMIT) {
+      setSessionCount(currentDaySessionCount);
+      setError(`Daily limit reached (${DAILY_SESSION_LIMIT}/${DAILY_SESSION_LIMIT}). Please come back tomorrow.`);
+      return;
+    }
+
     const validation = validateInput(input);
     if (!validation.valid) {
       setError(validation.reason);
       return;
     }
 
+    const currentGems = Number(activeProfile?.gems || 0);
+    if (currentGems < GENERATION_COST_GEMS) {
+      setError(`You need ${GENERATION_COST_GEMS} Gems to generate a story or poem.`);
+      return;
+    }
+
+    let gemsDeducted = false;
     const userMsg = {
       id: Date.now(),
       role: 'user',
@@ -236,11 +303,39 @@ const StoryStudio = () => {
     triggerConfetti();
 
     try {
+      const spendResult = await spendUserGems({
+        userId: user.id,
+        amount: GENERATION_COST_GEMS,
+      });
+
+      if (!spendResult.ok) {
+        if (spendResult.code === 'insufficient_gems') {
+          setError(`You need ${GENERATION_COST_GEMS} Gems to generate a story or poem.`);
+        } else {
+          setError(spendResult.message || 'Gem deduction failed. Please try again.');
+        }
+        return;
+      }
+
+      gemsDeducted = true;
+      await fetchProfile?.(user.id);
+
       await generateWithGemini(userMsg);
-      setSessionCount(0);
+
+      const nextSessionCount = currentDaySessionCount + 1;
+      writeDailySessionState(nextSessionCount);
+      setSessionCount(nextSessionCount);
       setCooldownTime(0);
     } catch (err) {
       console.error('Generation Error:', err);
+      if (gemsDeducted && user?.id) {
+        try {
+          await addUserGems({ userId: user.id, amount: GENERATION_COST_GEMS });
+          await fetchProfile?.(user.id);
+        } catch (refundError) {
+          console.error('StoryStudio refund failed:', refundError);
+        }
+      }
       if (err?.code === 'QUOTA_TEXT') {
         setError('Free Gemini generation quota is exhausted. Please wait and try again.');
       } else {
@@ -320,7 +415,6 @@ const StoryStudio = () => {
   const handleClearChat = () => {
     setMessages([]);
     setError('');
-    setSessionCount(0);
     setCooldownTime(0);
   };
 
@@ -506,14 +600,14 @@ const StoryStudio = () => {
           </button>
         </div>
 
-        <p className="mt-2 rounded-xl border border-cyan-200/20 bg-cyan-400/5 px-3 py-2 text-[11px] font-semibold tracking-wide text-cyan-100/90">
+        <p className="mt-2 rounded-xl border border-cyan-200/20 bg-cyan-400/5 px-3 py-2 text-[11px] font-semibold tracking-wide text-slate-800">
           Create stories and poems by your own idea!
         </p>
 
         <div className="flex justify-between items-center mt-2 text-xs">
           <span className="sr-only">Powered by Gemini (2.5 Flash) for story and poem generation</span>
           <div className="flex gap-4 text-gray-400">
-            <span>Sessions: {sessionCount}/5</span>
+            <span>Sessions: {sessionCount}/{DAILY_SESSION_LIMIT}</span>
             {cooldownTime > 0 && <span>Cooldown: {cooldownTime}s</span>}
           </div>
         </div>
