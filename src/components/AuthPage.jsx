@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Mail, ArrowRight, Loader, KeyRound, Shield } from 'lucide-react';
 import { getAuthRedirectUrl, supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 
 const AUTH_REQUEST_TIMEOUT_MS = 15000;
 
@@ -46,9 +45,6 @@ const withAuthRequestTimeout = (promise, label) => {
     clearTimeout(timerId);
   });
 };
-
-const SIGNUP_BONUS_FLAG_PREFIX = 'aiko_signup_bonus_v1_';
-const SIGNUP_BONUS_WINDOW_MS = 30 * 60 * 1000;
 
 const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
   const { fetchProfile } = useAuth();
@@ -146,69 +142,27 @@ const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
         setInfo('Verified! Set a new password below.');
       } else {
         const userId = authData?.user?.id ?? authData?.session?.user?.id ?? null;
-        let bonusApplied = false;
-
+        
         if (userId) {
-          const bonusFlagKey = `${SIGNUP_BONUS_FLAG_PREFIX}${userId}`;
-          const alreadyApplied = typeof window !== 'undefined' && window.localStorage.getItem(bonusFlagKey) === '1';
+          // Check for existing profile or create basic one
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', userId)
+              .maybeSingle();
 
-          if (!alreadyApplied) {
-            try {
-              const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('id, gems, created_at')
-                .eq('id', userId)
-                .maybeSingle();
-
-              if (profileError) {
-                throw profileError;
-              }
-
-              if (!profile) {
-                const { error: insertError } = await supabase
-                  .from('profiles')
-                  .insert({ id: userId, gems: NEW_USER_BONUS_GEMS });
-                if (!insertError) {
-                  bonusApplied = true;
-                }
-              } else {
-                const currentGems = Number(profile.gems || 0);
-                const createdAtMs = profile.created_at ? Date.parse(profile.created_at) : NaN;
-                const isFreshProfile = Number.isFinite(createdAtMs) && Date.now() - createdAtMs <= SIGNUP_BONUS_WINDOW_MS;
-
-                if (currentGems <= 0 && isFreshProfile) {
-                const { error: bonusError } = await supabase
-                  .from('profiles')
-                  .update({ gems: NEW_USER_BONUS_GEMS })
-                  .eq('id', userId);
-
-                if (!bonusError) {
-                  bonusApplied = true;
-                }
-                }
-              }
-            } catch (bonusErr) {
-              console.warn('[AuthPage] Signup bonus check failed:', bonusErr);
+            if (!profile) {
+              await supabase.from('profiles').insert({ id: userId });
             }
-
-            if (typeof window !== 'undefined') {
-              window.localStorage.setItem(bonusFlagKey, '1');
-            }
+          } catch (profileErr) {
+            console.warn('[AuthPage] Profile check failed:', profileErr);
           }
         }
 
-        setInfo(
-          bonusApplied
-            ? `Logged in successfully! Welcome bonus unlocked: +${NEW_USER_BONUS_GEMS} Gems.`
-            : 'Logged in successfully!'
-        );
+        setInfo('Logged in successfully!');
         if (userId) {
           await fetchProfile?.(userId);
-          if (typeof window !== 'undefined') {
-            window.setTimeout(() => {
-              void fetchProfile?.(userId);
-            }, 200);
-          }
         }
         if (onLoginSuccess) onLoginSuccess();
       }

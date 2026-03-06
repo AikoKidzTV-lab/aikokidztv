@@ -1,24 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useKidsMode } from '../context/KidsModeContext';
-import { LEARNING_ZONE_PREMIUM_UNLOCKS } from '../constants/gemEconomy';
-import { unlockZoneWithGems } from '../utils/profileEconomy';
-
-const getUnlockStatusMessage = (unlockResult) => {
-  if (!unlockResult?.ok) {
-    if (unlockResult?.code === 'insufficient_gems') {
-      return unlockResult.message || 'Not enough Gems to unlock this zone.';
-    }
-    if (unlockResult?.code === 'missing_unlock_columns') {
-      return 'Profile unlock columns are missing in Supabase.';
-    }
-    if (unlockResult?.code === 'profile_sync_conflict') {
-      return 'Profile changed during unlock. Please try once more.';
-    }
-    return unlockResult?.message || 'Unable to unlock premium card right now.';
-  }
-  return '';
-};
 
 const learningBoxes = [
   {
@@ -46,8 +28,7 @@ const learningBoxes = [
     bg: 'bg-pink-100',
     text: 'text-pink-800',
     desc: 'Mix colors & learn shapes!',
-    tier: 'premium',
-    unlockCost: LEARNING_ZONE_PREMIUM_UNLOCKS.colors,
+    tier: 'core',
   },
   {
     id: 'animals',
@@ -56,13 +37,12 @@ const learningBoxes = [
     bg: 'bg-green-100',
     text: 'text-green-800',
     desc: 'Meet animals & hear sounds!',
-    tier: 'premium',
-    unlockCost: LEARNING_ZONE_PREMIUM_UNLOCKS.animals,
+    tier: 'core',
   },
 ];
 
 export default function LearningZone({ onSelect }) {
-  const { user, profile, fetchProfile } = useAuth();
+  const { user, profile } = useAuth();
   const { isKidsModeOn } = useKidsMode();
   const [statusMessage, setStatusMessage] = React.useState('');
   const [processingAction, setProcessingAction] = React.useState('');

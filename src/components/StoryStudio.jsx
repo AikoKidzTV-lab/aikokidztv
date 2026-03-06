@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Sparkles,
-  Gem,
   AlertCircle,
   Download,
   FileText,
@@ -20,7 +19,7 @@ import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { useKidsMode } from '../context/KidsModeContext';
 
-const GENERATION_COST_GEMS = 20;
+const GENERATION_COST_GEMS = 0;
 
 const characters = [
   { name: 'AIKO', role: 'Energetic Leader', emoji: '\u{1F31F}' },
@@ -223,25 +222,6 @@ const StoryStudio = () => {
       return;
     }
 
-    const currentGems = Number(activeProfile.gems ?? 0);
-
-    if (currentGems < GENERATION_COST_GEMS) {
-      await Swal.fire({
-        title: 'Not enough Gems! \u{1F48E}',
-        text: `You need at least ${GENERATION_COST_GEMS} Gems to generate a story or poem.`,
-        icon: 'warning',
-        confirmButtonText: 'Okay',
-        confirmButtonColor: '#22c55e',
-        background: '#0f172a',
-        color: '#e2e8f0',
-        customClass: {
-          popup: 'rounded-3xl',
-          confirmButton: 'rounded-xl px-5 py-2 text-sm',
-        },
-      });
-      return;
-    }
-
     const userMsg = {
       id: Date.now(),
       role: 'user',
@@ -255,7 +235,7 @@ const StoryStudio = () => {
     triggerConfetti();
 
     try {
-      await generateWithGemini(userMsg, currentGems);
+      await generateWithGemini(userMsg);
       setSessionCount(0);
       setCooldownTime(0);
     } catch (err) {
@@ -270,7 +250,7 @@ const StoryStudio = () => {
     }
   };
 
-  const generateWithGemini = async (userMsg, currentGems) => {
+  const generateWithGemini = async (userMsg) => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error('Gemini API key not found in environment variables');
@@ -308,20 +288,6 @@ const StoryStudio = () => {
 
     if (!text) {
       throw new Error('No content received from Gemini API');
-    }
-
-    const remainingGems = Math.max(0, currentGems - GENERATION_COST_GEMS);
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ gems: remainingGems })
-      .eq('id', user.id);
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    if (fetchProfile) {
-      await fetchProfile(user.id);
     }
 
     const aiMsg = {
@@ -546,7 +512,6 @@ const StoryStudio = () => {
         <div className="flex justify-between items-center mt-2 text-xs">
           <span className="sr-only">Powered by Gemini (2.5 Flash) for story and poem generation</span>
           <div className="flex gap-4 text-gray-400">
-            <span>Gems: {visibleGems ?? 'syncing...'}</span>
             <span>Sessions: {sessionCount}/5</span>
             {cooldownTime > 0 && <span>Cooldown: {cooldownTime}s</span>}
           </div>

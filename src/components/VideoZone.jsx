@@ -12,7 +12,7 @@ import {
 const UNKNOWN_CATEGORY = 'Uncategorized';
 const MOVIES_UNLOCK_COST_GEMS = 500;
 const MOVIES_FEATURE_KEY = 'movies';
-const MOVIE_TABLE_SOURCES = ['movies', 'videos'];
+const MOVIE_TABLE_SOURCES = ['videos'];
 const VIDEO_CLAY_THEME = {
   '--clay-surface-bg': '#ffffff',
   '--clay-surface-border': 'rgba(56, 189, 248, 0.36)',

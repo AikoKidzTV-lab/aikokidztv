@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2, Lock, Mail, Sparkles, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getAuthRedirectUrl, supabase } from '../supabaseClient';
-import { NEW_USER_BONUS_GEMS } from '../constants/gemEconomy';
 import { isAdminEmail } from '../utils/admin';
 
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
@@ -224,7 +223,6 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
     const baseProfilePayload = {
       id: userId,
-      gems: NEW_USER_BONUS_GEMS,
       unlocked_zones: [],
       unlocked_videos: [],
       unlocked_items: [],

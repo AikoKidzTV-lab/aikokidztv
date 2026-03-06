@@ -1,11 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { MAGIC_ART_PACK_COST_GEMS, MAGIC_ART_PACK_USES } from '../constants/gemEconomy';
-import {
-  buyMagicArtPack,
-  consumeMagicArtUse,
-  DEFAULT_MAGIC_ART_USES,
-} from '../utils/profileEconomy';
 
 const PRESET_COLORS = [
   '#FF4136',
@@ -68,7 +62,7 @@ const toSafeUses = (value, fallback = 0) => {
 };
 
 const MagicArt = ({ onBack }) => {
-  const { user, profile, fetchProfile } = useAuth();
+  const { user, profile } = useAuth();
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -77,25 +71,18 @@ const MagicArt = ({ onBack }) => {
   const [brushSize, setBrushSize] = useState(10);
   const [customColor, setCustomColor] = useState('#FF0000');
   const [selectedStamp, setSelectedStamp] = useState(null);
-  const [remainingUses, setRemainingUses] = useState(0);
-  const [packLoading, setPackLoading] = useState(false);
+  
+  // Magic Art is now free for everyone
+  const hasActivePack = true;
+  const remainingUses = 999;
+  const packLoading = false;
   const [statusMessage, setStatusMessage] = useState('');
-
-  const hasActivePack = remainingUses > 0;
 
   const showStatus = (message) => {
     setStatusMessage(message);
     window.setTimeout(() => setStatusMessage(''), 2400);
   };
 
-  useEffect(() => {
-    if (!user?.id) {
-      setRemainingUses(0);
-      return;
-    }
-
-    setRemainingUses(toSafeUses(profile?.magic_art_uses, DEFAULT_MAGIC_ART_USES));
-  }, [user?.id, profile?.magic_art_uses]);
 
   const paintCanvasBackground = (ctx, width, height) => {
     ctx.save();

@@ -23,7 +23,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { KidsModeProvider, useKidsMode } from './context/KidsModeContext';
 import { AuthModalProvider, useAuthModal } from './context/AuthModalContext';
 import { ParentControlsProvider } from './context/ParentControlsContext';
-import { Gem, ChevronDown, Sparkles, LogOut, Bell } from 'lucide-react';
+import { ChevronDown, Sparkles, LogOut, Bell } from 'lucide-react';
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { ADMIN_EMAIL, isAdminEmail } from './utils/admin';
 import ParentZoneHubPage from './components/parentZone/ParentZoneHubPage';
@@ -278,11 +278,6 @@ const Navbar = ({
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
-            <Gem size={16} className="text-pink-400" />
-            <span className="text-sm font-semibold text-slate-800 dark:text-white">{profile?.gems ?? 0}</span>
           </div>
 
           <div className="relative">

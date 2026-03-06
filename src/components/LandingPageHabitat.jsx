@@ -1,11 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import AIStudio from './AIStudio';
-import GemPacksPricing from './GemPacksPricing';
 import LearningZone from './LearningZone';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import { claimRewardOnce } from '../utils/profileEconomy';
 
 const RAZORPAY_SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 const RAZORPAY_KEY_ID = String(import.meta.env.VITE_RAZORPAY_KEY_ID || '').trim();
@@ -65,7 +63,7 @@ const normalizeMovieBannerRow = (row) => {
 
 const loadRecentMovieBanners = async () => {
   const { data, error } = await supabase
-    .from('movies')
+    .from('videos')
     .select('id, title, description, video_url, thumbnail_url, created_at')
     .order('created_at', { ascending: false })
     .limit(HERO_BANNER_LIMIT);
@@ -286,182 +284,6 @@ export default function LandingPageHabitat({
     setHeroSlideIndex((current) => (current + 1) % heroBannerCount);
   };
 
-  const handleClaimFreeGems = async () => {
-    if (freeGemsClaimed || isClaimingYoutubeReward) return;
-    if (!hasClickedSubscribe) {
-      setWatchEarnMessage('Please click "Subscribe to our channel" first.');
-      return;
-    }
-    if (!user?.id) {
-      onOpenLogin?.();
-      return;
-    }
-
-    setIsClaimingYoutubeReward(true);
-    try {
-      const claimResult = await claimRewardOnce({
-        userId: user.id,
-        rewardKey: YOUTUBE_SUBSCRIBE_REWARD_KEY,
-        gemReward: YOUTUBE_SUBSCRIBE_REWARD_GEMS,
-      });
-
-      if (!claimResult.ok) {
-        setWatchEarnMessage(claimResult.message || 'Could not claim your reward right now.');
-        return;
-      }
-
-      await fetchProfile?.(user.id);
-      setWatchEarnMessage(
-        claimResult.alreadyClaimed
-          ? 'This reward has already been claimed.'
-          : `Success! ${YOUTUBE_SUBSCRIBE_REWARD_GEMS} FREE GEMS were added to your balance.`
-      );
-    } catch (error) {
-      console.error('[LandingPageHabitat] Failed to claim YouTube reward:', error);
-      setWatchEarnMessage('Could not claim your reward right now.');
-    } finally {
-      setIsClaimingYoutubeReward(false);
-    }
-  };
-
-  const handleSubscribeClick = () => {
-    setHasClickedSubscribe(true);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY, 'true');
-    }
-  };
-
-  const handleTaskQuestReward = async () => {
-    if (!allTaskHabitsChecked || taskQuestClaimed || isClaimingTaskQuestReward) return;
-    if (!user?.id) {
-      onOpenLogin?.();
-      return;
-    }
-
-    setIsClaimingTaskQuestReward(true);
-    try {
-      const claimResult = await claimRewardOnce({
-        userId: user.id,
-        rewardKey: TASK_QUEST_REWARD_KEY,
-        gemReward: TASK_QUEST_REWARD_GEMS,
-      });
-
-      if (!claimResult.ok) {
-        showPaymentToast('error', claimResult.message || 'Task reward could not be claimed.');
-        return;
-      }
-
-      await fetchProfile?.(user.id);
-
-      if (!claimResult.alreadyClaimed) {
-        pushBellNotification(`You earned ${TASK_QUEST_REWARD_GEMS} gems!`);
-        showPaymentToast('success', `Task reward claimed: +${TASK_QUEST_REWARD_GEMS} Gems.`);
-      } else {
-        showPaymentToast('info', 'Task reward already claimed.');
-      }
-    } catch (error) {
-      console.error('[LandingPageHabitat] Failed to claim task reward:', error);
-      showPaymentToast('error', 'Task reward could not be claimed.');
-    } finally {
-      setIsClaimingTaskQuestReward(false);
-    }
-  };
-
-  const handleToggleTaskQuestCheck = (indexToToggle) => {
-    setTaskQuestChecks((currentChecks) => currentChecks.map(
-      (isChecked, index) => (index === indexToToggle ? !isChecked : isChecked)
-    ));
-  };
-
-  const handlePayment = async (packName, amount, gemAmount, currency = 'INR') => {
-    const paymentAmount = Number(amount);
-    const gemsToCredit = Number(gemAmount);
-    if (!Number.isFinite(paymentAmount) || paymentAmount <= 0 || !Number.isFinite(gemsToCredit) || gemsToCredit <= 0) {
-      showPaymentToast('error', 'Unable to start checkout for this pack. Please try again.');
-      return;
-    }
-
-    const paymentCurrency = currency === 'USD' ? 'USD' : 'INR';
-
-    if (!RAZORPAY_KEY_ID || RAZORPAY_KEY_ID === 'undefined' || RAZORPAY_KEY_ID === 'null') {
-      console.error('[Razorpay] Missing VITE_RAZORPAY_KEY_ID. Check your .env and restart the dev server.');
-      showPaymentToast('error', 'Payment is temporarily unavailable. Please contact support.');
-      return;
-    }
-
-    const sdkLoaded = window.Razorpay ? true : await loadRazorpayScript();
-    if (!sdkLoaded) {
-      showPaymentToast('error', 'Payment gateway failed to load. Please try again.');
-      return;
-    }
-
-    const options = {
-      key: RAZORPAY_KEY_ID,
-      amount: Math.round(paymentAmount * 100),
-      currency: paymentCurrency,
-      name: 'AikoKidzTV',
-      description: `Purchase ${packName}`,
-      notes: {
-        pack_name: packName,
-        gem_amount: String(gemsToCredit),
-        currency: paymentCurrency,
-      },
-      prefill: {
-        name: user?.user_metadata?.full_name || user?.user_metadata?.name || '',
-        email: user?.email || '',
-        contact: user?.user_metadata?.phone || '',
-      },
-      theme: {
-        color: '#0f172a',
-      },
-      handler: async (response) => {
-        if (!response?.razorpay_payment_id) {
-          showPaymentToast('error', 'Payment could not be verified. Please try again.');
-          return;
-        }
-
-        try {
-          if (user?.id) {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('gems')
-              .eq('id', user.id)
-              .single();
-
-            if (profileError) throw profileError;
-
-            const currentGems = Number(profile?.gems || 0);
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({ gems: currentGems + gemsToCredit })
-              .eq('id', user.id);
-
-            if (updateError) throw updateError;
-            await fetchProfile?.(user.id);
-          }
-
-          showPaymentToast('success', `Payment Successful! ${gemsToCredit} Gems added to your account.`);
-        } catch (error) {
-          console.error('[LandingPageHabitat] Supabase gem update failed.', error);
-          showPaymentToast('error', 'Payment succeeded but gem credit failed. Please contact support.');
-        }
-      },
-      modal: {
-        ondismiss: () => {
-          showPaymentToast('info', 'Payment cancelled. You can try again anytime.');
-        },
-      },
-    };
-
-    const razorpayInstance = new window.Razorpay(options);
-    razorpayInstance.on('payment.failed', (failure) => {
-      const errorMessage =
-        failure?.error?.description || 'Payment failed. Please try a different payment method.';
-      showPaymentToast('error', errorMessage);
-    });
-    razorpayInstance.open();
-  };
-
   return (
     <div className="relative overflow-x-hidden">
       <section
@@ -481,11 +303,6 @@ export default function LandingPageHabitat({
 
         <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-8 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="min-w-0">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-2 text-sm font-extrabold !text-sky-900 shadow-sm backdrop-blur">
-              <span className="text-lg">💎</span>
-              Gems power every adventure
-            </div>
-
             <h2 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl text-purple-900 drop-shadow-lg [text-shadow:0_2px_0_rgba(255,255,255,0.85),0_8px_24px_rgba(76,29,149,0.45)]">
               AikoKidzTV
               <span className="mt-2 block text-balance text-3xl sm:text-4xl lg:text-5xl !text-cyan-100">
@@ -494,8 +311,8 @@ export default function LandingPageHabitat({
             </h2>
 
             <p className="mt-5 max-w-2xl text-base leading-relaxed sm:text-lg !text-blue-50/95">
-              Jump into playful stories, magic art, and adorable adventure zones. Collect Gems 💎,
-              unlock fun instantly, and explore with zero boring stuff.
+              Jump into playful stories, magic art, and adorable adventure zones.
+              Unlock fun instantly, and explore with zero boring stuff.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
@@ -515,7 +332,7 @@ export default function LandingPageHabitat({
                 to="/videos"
                 className="rounded-2xl border border-purple-500 bg-purple-600 px-5 py-3 text-sm font-black !text-white shadow-lg shadow-purple-400/40 transition hover:-translate-y-1 hover:bg-purple-700"
               >
-                🎬 Movies (500 💎)
+                🎬 Movies
               </Link>
               <Link
                 to="/coloring"
@@ -540,9 +357,6 @@ export default function LandingPageHabitat({
               </span>
               <span className="rounded-full bg-white/70 px-3 py-1 font-bold !text-slate-700 shadow-sm">
                 Kid-Safe Fun
-              </span>
-              <span className="rounded-full bg-white/70 px-3 py-1 font-bold !text-slate-700 shadow-sm">
-                Gem Packs 💎
               </span>
             </div>
           </div>
@@ -591,7 +405,7 @@ export default function LandingPageHabitat({
         </div>
 
         <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
-          <GemPacksPricing onPay={handlePayment} />
+          <GemPacksPricing />
 
           <div className="mt-14 space-y-10">
             <div
@@ -607,8 +421,8 @@ export default function LandingPageHabitat({
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/80 bg-white/70 px-4 py-3 text-sm font-bold !text-slate-700 shadow">
-                  <span className="mr-2">💎</span>
-                  Gem-powered creative zone
+                  <span className="mr-2">✨</span>
+                  Free creative zone
                 </div>
               </div>
 
@@ -624,8 +438,7 @@ export default function LandingPageHabitat({
                   </div>
                   <h4 className="text-2xl font-black !text-slate-900">Unlock the AI Creative Studio</h4>
                   <p className="mx-auto mt-3 max-w-2xl !text-slate-600">
-                    Log in to create magical stories, generate playful images, and use your Gems 💎 to
-                    power extra fun.
+                    Log in to create magical stories, generate playful images, and enjoy fun adventures.
                   </p>
                   <div className="mt-6 flex flex-wrap justify-center gap-3">
                     <button

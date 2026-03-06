@@ -1,5 +1,3 @@
-import { applySmallItemEconomy } from '../../constants/gemEconomy';
-
 // Color palette with deuteranopia (red-green color blindness) simulation hex values.
 const CB_OVERRIDES = {
   red: '#8F7E00',
@@ -74,7 +72,7 @@ const BASE_PALETTE = [
 
 export const COLOR_PALETTE = BASE_PALETTE.map((c) => ({
   ...c,
-  unlockCost: c.unlockCost > 0 ? applySmallItemEconomy(c.unlockCost) : 0,
+  unlockCost: 0,
   cbHex: CB_OVERRIDES[c.id] || c.hex,
 }));
 

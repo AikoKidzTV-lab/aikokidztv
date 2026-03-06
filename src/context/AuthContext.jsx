@@ -68,26 +68,21 @@ export const AuthProvider = ({ children }) => {
     let isActive = true;
     let authSubscription;
 
-    const applySession = async (session) => {
-      if (!isActive) return;
-
-      const nextUser = session?.user ?? null;
-      setUser(nextUser);
-
-      if (!nextUser) {
-        setProfile(null);
-        return;
-      }
-
-      await fetchProfile(nextUser.id);
-    };
-
     const initialize = async () => {
       setLoading(true);
       try {
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
-        await applySession(data?.session ?? null);
+        
+        if (isActive) {
+          const session = data?.session ?? null;
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            await fetchProfile(session.user.id);
+          } else {
+            setProfile(null);
+          }
+        }
       } catch (error) {
         console.error('[AuthContext] Session init failed:', error);
         if (isActive) {
@@ -102,12 +97,18 @@ export const AuthProvider = ({ children }) => {
 
     const attachAuthListener = () => {
       const { data } = supabase.auth.onAuthStateChange((event, session) => {
-        if (!isActive || event === 'INITIAL_SESSION') return;
-        setLoading(true);
-        void (async () => {
-          await applySession(session);
-          if (isActive) setLoading(false);
-        })();
+        if (!isActive) return;
+        
+        // Only react to explicit sign in/out events to avoid loops
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          const nextUser = session?.user ?? null;
+          setUser(nextUser);
+          if (nextUser) {
+             void fetchProfile(nextUser.id);
+          } else {
+             setProfile(null);
+          }
+        }
       });
       authSubscription = data?.subscription;
     };
