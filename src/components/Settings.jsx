@@ -1,4 +1,5 @@
 import React from 'react';
+import ThemeToggle from './ThemeToggle';
 
 const fallbackThemes = [
   { key: 'light', label: 'Light' },
@@ -13,6 +14,9 @@ export default function Settings({
   onThemeChange,
 }) {
   const resolvedIsOpen = typeof isOpen === 'boolean' ? isOpen : Boolean(open);
+  const normalizedThemeKey = themeKey === 'dark' ? 'dark' : 'light';
+  const hasDarkTheme = themes.some((theme) => theme.key === 'dark');
+
   if (!resolvedIsOpen) return null;
 
   return (
@@ -38,27 +42,24 @@ export default function Settings({
 
         <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <h3 className="text-lg font-extrabold text-slate-900">Display Preferences</h3>
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {themes.map((theme) => {
-              const active = theme.key === themeKey;
-              return (
-                <button
-                  key={theme.key}
-                  type="button"
-                  onClick={() => onThemeChange?.(theme.key)}
-                  aria-pressed={active}
-                  className={`rounded-xl border-2 px-4 py-3 text-sm font-bold transition-colors ${
-                    active
-                      ? 'border-indigo-500 bg-indigo-600 text-white'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                  }`}
-                >
-                  {theme.label}
-                </button>
-              );
-            })}
+          <div className="mt-4 flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4">
+            <div>
+              <p className="text-sm font-black text-slate-900">Theme</p>
+              <p className="text-xs font-semibold text-slate-500">
+                {normalizedThemeKey === 'dark' ? 'Dark Mode' : 'Light Mode'}
+              </p>
+            </div>
+            <ThemeToggle
+              value={normalizedThemeKey}
+              onChange={(nextTheme) => onThemeChange?.(nextTheme)}
+              disabled={!hasDarkTheme}
+            />
           </div>
-
+          {!hasDarkTheme && (
+            <p className="mt-3 text-xs font-semibold text-slate-500">
+              Dark mode toggle will be enabled when dark theme is available.
+            </p>
+          )}
         </section>
 
         <section className="mt-6 rounded-2xl border-2 border-indigo-200 bg-indigo-50 p-5">

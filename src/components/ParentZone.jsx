@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useKidsMode } from '../context/KidsModeContext';
 import { useParentControls } from '../context/ParentControlsContext';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../supabaseClient';
 import { Link } from 'react-router-dom';
 
 const PARENT_PIN_STORAGE_KEY = 'aiko_parent_pin';
 const EYE_TRACKER_STORAGE_KEY = 'aiko_eye_health_tracker_v1';
+const CHILD_PROFILE_STORAGE_KEY = 'aiko_child_profile_v1';
 const WELLBEING_USAGE_STORAGE_KEY = 'aiko_wellbeing_usage_v1';
 const WELLBEING_SYNC_EVENT = 'aiko:wellbeing-sync';
 const DAILY_LIMIT_MINUTES = 300;
@@ -71,7 +74,17 @@ const formatMinutes = (minutes = 0) => {
   return `${hrs}h ${mins}m`;
 };
 
+const isMissingColumnError = (error, columnNames = []) => {
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  if (!text) return false;
+  return columnNames.some((columnName) => {
+    const name = String(columnName || '').toLowerCase();
+    return name && text.includes(name) && (text.includes('column') || text.includes('schema cache'));
+  });
+};
+
 export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinGate = false }) {
+  const { user, profile, fetchProfile } = useAuth();
   const [currentView, setCurrentView] = useState(skipPinGate ? 'dashboard' : 'pin_setup'); // pin_setup | pin_auth | pin_reset | dashboard
   const [savedPin, setSavedPin] = useState(null);
   const [pinInput, setPinInput] = useState('');
@@ -83,6 +96,11 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
     rightEyeOD: '',
     leftEyeOS: '',
     updatedAt: null,
+  });
+  const [childDetails, setChildDetails] = useState({
+    childHeight: '',
+    childWeight: '',
+    childBirthdate: '',
   });
   const [eyeSaveStatus, setEyeSaveStatus] = useState('');
   const [wellbeingUsage, setWellbeingUsage] = useState(() => readWellbeingUsage());
@@ -112,6 +130,16 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
           updatedAt: parsed?.updatedAt ?? null,
         });
       }
+
+      const rawChild = window.localStorage.getItem(CHILD_PROFILE_STORAGE_KEY);
+      if (rawChild) {
+        const parsedChild = JSON.parse(rawChild);
+        setChildDetails({
+          childHeight: parsedChild?.childHeight ? String(parsedChild.childHeight) : '',
+          childWeight: parsedChild?.childWeight ? String(parsedChild.childWeight) : '',
+          childBirthdate: parsedChild?.childBirthdate ? String(parsedChild.childBirthdate) : '',
+        });
+      }
     } catch {
       // ignore invalid localStorage payloads
     }
@@ -139,6 +167,25 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
     };
   }, []);
 
+  useEffect(() => {
+    setChildDetails((prev) => ({
+      childHeight:
+        profile?.child_height !== undefined && profile?.child_height !== null && `${profile.child_height}`.trim()
+          ? String(profile.child_height)
+          : prev.childHeight,
+      childWeight:
+        profile?.child_weight !== undefined && profile?.child_weight !== null && `${profile.child_weight}`.trim()
+          ? String(profile.child_weight)
+          : prev.childWeight,
+      childBirthdate:
+        profile?.child_birthdate !== undefined &&
+        profile?.child_birthdate !== null &&
+        `${profile.child_birthdate}`.trim()
+          ? String(profile.child_birthdate).slice(0, 10)
+          : prev.childBirthdate,
+    }));
+  }, [profile?.child_birthdate, profile?.child_height, profile?.child_weight]);
+
   const totalMockMinutes = useMemo(
     () => mockRecentActivities.reduce((sum, item) => sum + item.minutes, 0),
     []
@@ -152,6 +199,11 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
     ? Math.max(0, DAILY_LIMIT_MINUTES - (wellbeingUsage.minutesUsed || 0))
     : 0;
   const isTimeLimitReached = wellbeingUsage.limitEnabled && wellbeingUsage.minutesUsed >= DAILY_LIMIT_MINUTES;
+  const eyeStatusTone = eyeSaveStatus.toLowerCase().includes('failed')
+    ? 'text-red-700 bg-red-50 border-red-200'
+    : eyeSaveStatus.toLowerCase().includes('locally')
+      ? 'text-amber-700 bg-amber-50 border-amber-200'
+      : 'text-emerald-700 bg-emerald-50 border-emerald-200';
 
   const handlePinChange = (e) => {
     const val = e.target.value.replace(/[^0-9]/g, '');
@@ -192,17 +244,49 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
     }
   };
 
-  const handleSaveEyeHealth = (e) => {
+  const handleSaveEyeHealth = async (e) => {
     e.preventDefault();
-    const payload = {
+    const eyePayload = {
       rightEyeOD: eyeHealth.rightEyeOD.trim(),
       leftEyeOS: eyeHealth.leftEyeOS.trim(),
       updatedAt: new Date().toISOString(),
     };
-    setEyeHealth(payload);
+    const childPayload = {
+      child_height: childDetails.childHeight.trim() || null,
+      child_weight: childDetails.childWeight.trim() || null,
+      child_birthdate: childDetails.childBirthdate || null,
+    };
+
+    setEyeHealth(eyePayload);
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(EYE_TRACKER_STORAGE_KEY, JSON.stringify(payload));
+      window.localStorage.setItem(EYE_TRACKER_STORAGE_KEY, JSON.stringify(eyePayload));
+      window.localStorage.setItem(
+        CHILD_PROFILE_STORAGE_KEY,
+        JSON.stringify({
+          childHeight: childDetails.childHeight.trim(),
+          childWeight: childDetails.childWeight.trim(),
+          childBirthdate: childDetails.childBirthdate,
+          updatedAt: new Date().toISOString(),
+        })
+      );
     }
+
+    if (user?.id) {
+      const { error } = await supabase.from('profiles').update(childPayload).eq('id', user.id);
+
+      if (error) {
+        if (isMissingColumnError(error, ['child_height', 'child_weight', 'child_birthdate'])) {
+          setEyeSaveStatus('Saved locally. Add child fields in profiles table to sync cloud data.');
+        } else {
+          setEyeSaveStatus(`Save failed: ${error.message || 'Unknown error'}`);
+        }
+        window.setTimeout(() => setEyeSaveStatus(''), 3200);
+        return;
+      }
+
+      await fetchProfile?.(user.id);
+    }
+
     setEyeSaveStatus('Saved successfully');
     window.setTimeout(() => setEyeSaveStatus(''), 1800);
   };
@@ -462,7 +546,9 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                 <div className="flex items-center justify-between gap-3 mb-5">
                   <div>
                     <h3 className="text-xl font-extrabold text-gray-900">Eye Health Tracker</h3>
-                    <p className="text-sm text-gray-500 mt-1">Save Left Eye (OS) and Right Eye (OD) prescription values.</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Save Left Eye (OS), Right Eye (OD), and child profile details in one place.
+                    </p>
                   </div>
                   <div className="text-3xl">{'\u{1F453}'}</div>
                 </div>
@@ -477,7 +563,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                         value={eyeHealth.rightEyeOD}
                         onChange={(e) => setEyeHealth((prev) => ({ ...prev, rightEyeOD: e.target.value }))}
                         placeholder="e.g. -1.25"
-                        className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 font-semibold focus:outline-none focus:border-indigo-400"
+                        className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 font-semibold text-slate-100 shadow-[inset_2px_2px_8px_rgba(255,255,255,0.04),inset_-4px_-4px_10px_rgba(2,6,23,0.7)] placeholder:text-slate-400 focus:outline-none focus:border-cyan-300"
                       />
                     </label>
 
@@ -489,7 +575,45 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                         value={eyeHealth.leftEyeOS}
                         onChange={(e) => setEyeHealth((prev) => ({ ...prev, leftEyeOS: e.target.value }))}
                         placeholder="e.g. -1.00"
-                        className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 font-semibold focus:outline-none focus:border-indigo-400"
+                        className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 font-semibold text-slate-100 shadow-[inset_2px_2px_8px_rgba(255,255,255,0.04),inset_-4px_-4px_10px_rgba(2,6,23,0.7)] placeholder:text-slate-400 focus:outline-none focus:border-cyan-300"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-bold text-slate-700">Height (cm)</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        value={childDetails.childHeight}
+                        onChange={(e) => setChildDetails((prev) => ({ ...prev, childHeight: e.target.value }))}
+                        placeholder="Height (cm)"
+                        className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 font-semibold text-slate-100 shadow-[inset_2px_2px_8px_rgba(255,255,255,0.04),inset_-4px_-4px_10px_rgba(2,6,23,0.7)] placeholder:text-slate-400 focus:outline-none focus:border-cyan-300"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-bold text-slate-700">Weight (kg)</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        value={childDetails.childWeight}
+                        onChange={(e) => setChildDetails((prev) => ({ ...prev, childWeight: e.target.value }))}
+                        placeholder="Weight (kg)"
+                        className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 font-semibold text-slate-100 shadow-[inset_2px_2px_8px_rgba(255,255,255,0.04),inset_-4px_-4px_10px_rgba(2,6,23,0.7)] placeholder:text-slate-400 focus:outline-none focus:border-cyan-300"
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-bold text-slate-700">Birthdate (YYYY-MM-DD)</span>
+                      <input
+                        type="date"
+                        value={childDetails.childBirthdate}
+                        onChange={(e) => setChildDetails((prev) => ({ ...prev, childBirthdate: e.target.value }))}
+                        className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 font-semibold text-slate-100 shadow-[inset_2px_2px_8px_rgba(255,255,255,0.04),inset_-4px_-4px_10px_rgba(2,6,23,0.7)] focus:outline-none focus:border-cyan-300"
                       />
                     </label>
                   </div>
@@ -499,10 +623,10 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                       type="submit"
                       className="bg-indigo-600 text-white font-extrabold px-5 py-3 rounded-xl hover:bg-indigo-700 shadow-sm"
                     >
-                      Save Eye Prescription
+                      Save Changes
                     </button>
                     {eyeSaveStatus && (
-                      <span className="text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">
+                      <span className={`text-sm font-bold border px-3 py-2 rounded-xl ${eyeStatusTone}`}>
                         {'\u2705'} {eyeSaveStatus}
                       </span>
                     )}
