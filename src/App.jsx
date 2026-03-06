@@ -384,7 +384,6 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const [skipParentZonePinOnce, setSkipParentZonePinOnce] = useState(false);
   const [isForcedOffline, setIsForcedOffline] = useState(false);
   const [learningModule, setLearningModule] = useState(null); // 'alphabets' | 'numbers' | 'colors' | 'safari' | null
-  const [magicArt, setMagicArt] = useState(false);
   const [wellbeingUsage, setWellbeingUsage] = useState(() => readWellbeingUsage());
   const isAdmin = isAdminEmail(user?.email);
   const { isKidsModeOn } = useKidsMode();
@@ -401,7 +400,6 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
       window.history.replaceState(window.history.state, '', '/');
     }
     setLearningModule(null);
-    setMagicArt(false);
     navigate('/');
     forceScrollTop();
   }, [forceScrollTop, navigate]);
@@ -488,13 +486,12 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const scrollToId = (id) => {
     if (id === 'magic-art') {
       setLearningModule(null);
-      setMagicArt(true);
+      navigate('/magic-art');
       return;
     }
 
     // If navigating away from sub-views, reset them first
     if (learningModule) setLearningModule(null);
-    if (magicArt) setMagicArt(false);
 
     // Defer scroll until after any state-driven view change
     setTimeout(() => {
@@ -651,15 +648,6 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
           />
         </div>
       </>
-    );
-  }
-
-  if (magicArt) {
-    const backHome = () => navigateHomeToTop();
-    return (
-      <ErrorBoundary>
-        <MagicArt key="magic-art-screen" onBack={backHome} />
-      </ErrorBoundary>
     );
   }
 
@@ -827,6 +815,16 @@ function HomeRoutePage() {
   );
 }
 
+function MagicArtRoutePage() {
+  const navigate = useNavigate();
+
+  return (
+    <ErrorBoundary>
+      <MagicArt onBack={() => navigate('/')} />
+    </ErrorBoundary>
+  );
+}
+
 function AdminRoutePage() {
   const navigate = useNavigate();
 
@@ -959,6 +957,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<HomeRoutePage />} />
                 <Route path="/admin" element={<AdminRoutePage />} />
+                <Route path="/magic-art" element={<MagicArtRoutePage />} />
                 <Route path="/videos" element={<VideoZone />} />
                 <Route path="/poems" element={<PoemsPage />} />
                 <Route path="/story" element={<StoryReader />} />

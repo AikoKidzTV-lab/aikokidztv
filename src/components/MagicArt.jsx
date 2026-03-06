@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { MAGIC_ART_PACK_COST_GEMS, MAGIC_ART_PACK_USES } from '../constants/gemEconomy';
+import { DEFAULT_MAGIC_ART_USES, buyMagicArtPack, consumeMagicArtUse } from '../utils/profileEconomy';
 
 const PRESET_COLORS = [
   '#FF4136',
@@ -14,46 +16,46 @@ const PRESET_COLORS = [
 ];
 
 const STAMPS = [
-  { id: 'cloud', icon: '☁️' },
-  { id: 'sun', icon: '☀️' },
-  { id: 'moon', icon: '🌙' },
-  { id: 'rainbow', icon: '🌈' },
-  { id: 'star', icon: '⭐' },
-  { id: 'sparkles', icon: '✨' },
-  { id: 'balloon', icon: '🎈' },
-  { id: 'gift', icon: '🎁' },
-  { id: 'dog', icon: '🐶' },
-  { id: 'cat', icon: '🐱' },
-  { id: 'tiger', icon: '🐯' },
-  { id: 'lion', icon: '🦁' },
-  { id: 'rabbit', icon: '🐰' },
-  { id: 'bear', icon: '🐻' },
-  { id: 'panda', icon: '🐼' },
-  { id: 'monkey', icon: '🐵' },
-  { id: 'elephant', icon: '🐘' },
-  { id: 'giraffe', icon: '🦒' },
-  { id: 'dinosaur', icon: '🦖' },
-  { id: 'butterfly', icon: '🦋' },
-  { id: 'fish', icon: '🐟' },
-  { id: 'whale', icon: '🐳' },
-  { id: 'apple', icon: '🍎' },
-  { id: 'banana', icon: '🍌' },
-  { id: 'strawberry', icon: '🍓' },
-  { id: 'pizza', icon: '🍕' },
-  { id: 'icecream', icon: '🍦' },
-  { id: 'cupcake', icon: '🧁' },
-  { id: 'car', icon: '🚗' },
-  { id: 'bus', icon: '🚌' },
-  { id: 'train', icon: '🚂' },
-  { id: 'rocket', icon: '🚀' },
-  { id: 'airplane', icon: '✈️' },
-  { id: 'boat', icon: '⛵' },
-  { id: 'house', icon: '🏠' },
-  { id: 'tree', icon: '🌳' },
-  { id: 'flower', icon: '🌸' },
-  { id: 'magic_wand', icon: '🪄' },
-  { id: 'crown', icon: '👑' },
-  { id: 'heart', icon: '💖' },
+  { id: 'cloud', icon: '\u2601\uFE0F' },
+  { id: 'sun', icon: '\u2600\uFE0F' },
+  { id: 'moon', icon: '\u{1F319}' },
+  { id: 'rainbow', icon: '\u{1F308}' },
+  { id: 'star', icon: '\u2B50' },
+  { id: 'sparkles', icon: '\u2728' },
+  { id: 'balloon', icon: '\u{1F388}' },
+  { id: 'gift', icon: '\u{1F381}' },
+  { id: 'dog', icon: '\u{1F436}' },
+  { id: 'cat', icon: '\u{1F431}' },
+  { id: 'tiger', icon: '\u{1F42F}' },
+  { id: 'lion', icon: '\u{1F981}' },
+  { id: 'rabbit', icon: '\u{1F430}' },
+  { id: 'bear', icon: '\u{1F43B}' },
+  { id: 'panda', icon: '\u{1F43C}' },
+  { id: 'monkey', icon: '\u{1F435}' },
+  { id: 'elephant', icon: '\u{1F418}' },
+  { id: 'giraffe', icon: '\u{1F992}' },
+  { id: 'dinosaur', icon: '\u{1F996}' },
+  { id: 'butterfly', icon: '\u{1F98B}' },
+  { id: 'fish', icon: '\u{1F41F}' },
+  { id: 'whale', icon: '\u{1F433}' },
+  { id: 'apple', icon: '\u{1F34E}' },
+  { id: 'banana', icon: '\u{1F34C}' },
+  { id: 'strawberry', icon: '\u{1F353}' },
+  { id: 'pizza', icon: '\u{1F355}' },
+  { id: 'icecream', icon: '\u{1F366}' },
+  { id: 'cupcake', icon: '\u{1F9C1}' },
+  { id: 'car', icon: '\u{1F697}' },
+  { id: 'bus', icon: '\u{1F68C}' },
+  { id: 'train', icon: '\u{1F682}' },
+  { id: 'rocket', icon: '\u{1F680}' },
+  { id: 'airplane', icon: '\u2708\uFE0F' },
+  { id: 'boat', icon: '\u26F5' },
+  { id: 'house', icon: '\u{1F3E0}' },
+  { id: 'tree', icon: '\u{1F333}' },
+  { id: 'flower', icon: '\u{1F338}' },
+  { id: 'magic_wand', icon: '\u{1FA84}' },
+  { id: 'crown', icon: '\u{1F451}' },
+  { id: 'heart', icon: '\u{1F496}' },
 ];
 
 const toSafeUses = (value, fallback = 0) => {
@@ -62,7 +64,7 @@ const toSafeUses = (value, fallback = 0) => {
 };
 
 const MagicArt = ({ onBack }) => {
-  const { user, profile } = useAuth();
+  const { user, profile, fetchProfile } = useAuth();
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -71,17 +73,24 @@ const MagicArt = ({ onBack }) => {
   const [brushSize, setBrushSize] = useState(10);
   const [customColor, setCustomColor] = useState('#FF0000');
   const [selectedStamp, setSelectedStamp] = useState(null);
-  
-  // Magic Art is now free for everyone
-  const hasActivePack = true;
-  const remainingUses = 999;
-  const packLoading = false;
+  const [remainingUses, setRemainingUses] = useState(DEFAULT_MAGIC_ART_USES);
+  const [packLoading, setPackLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+  const hasActivePack = !user?.id || remainingUses > 0;
 
   const showStatus = (message) => {
     setStatusMessage(message);
     window.setTimeout(() => setStatusMessage(''), 2400);
   };
+
+  useEffect(() => {
+    if (!user?.id) {
+      setRemainingUses(DEFAULT_MAGIC_ART_USES);
+      return;
+    }
+
+    setRemainingUses(toSafeUses(profile?.magic_art_uses, DEFAULT_MAGIC_ART_USES));
+  }, [profile?.magic_art_uses, user?.id]);
 
 
   const paintCanvasBackground = (ctx, width, height) => {
@@ -154,7 +163,7 @@ const MagicArt = ({ onBack }) => {
   const handleBuyPack = async () => {
     if (packLoading) return;
     if (!user?.id) {
-      showStatus('Please log in to buy a Magic Art pack.');
+      showStatus('Guest mode is free. Log in only if you want cloud sync.');
       return;
     }
 
@@ -171,9 +180,14 @@ const MagicArt = ({ onBack }) => {
         return;
       }
 
-      setRemainingUses(toSafeUses(purchaseResult.profile?.magic_art_uses));
+      setRemainingUses(
+        toSafeUses(
+          purchaseResult?.profile?.magic_art_uses ?? purchaseResult?.remaining,
+          remainingUses
+        )
+      );
       await fetchProfile?.(user.id);
-      showStatus(`Unlocked ${MAGIC_ART_PACK_USES} uses for ${MAGIC_ART_PACK_COST_GEMS} 💎`);
+      showStatus(`Unlocked ${MAGIC_ART_PACK_USES} uses for ${MAGIC_ART_PACK_COST_GEMS} gems`);
     } catch (error) {
       console.error('[MagicArt] Pack purchase failed:', error);
       showStatus('Purchase failed. Please try again.');
@@ -244,17 +258,26 @@ const MagicArt = ({ onBack }) => {
   };
 
   const downloadImage = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const downloadLocally = () => {
+      const link = document.createElement('a');
+      link.download = 'magic-art.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+
     if (!user?.id) {
-      showStatus('Please log in to use Magic Art.');
+      downloadLocally();
+      showStatus('Saved locally in guest mode.');
       return;
     }
+
     if (!hasActivePack) {
       showStatus('No uses left. Buy a new pack to download art.');
       return;
     }
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
 
     try {
       const consumeResult = await consumeMagicArtUse({
@@ -267,16 +290,18 @@ const MagicArt = ({ onBack }) => {
         return;
       }
 
-      const link = document.createElement('a');
-      link.download = 'magic-art.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-
-      setRemainingUses(toSafeUses(consumeResult.profile?.magic_art_uses));
+      downloadLocally();
+      setRemainingUses(
+        toSafeUses(
+          consumeResult?.profile?.magic_art_uses ?? consumeResult?.remaining,
+          remainingUses
+        )
+      );
       await fetchProfile?.(user.id);
     } catch (error) {
       console.error('[MagicArt] Failed to consume use:', error);
-      showStatus('Download failed. Please try again.');
+      downloadLocally();
+      showStatus('Saved locally. Cloud usage sync failed.');
     }
   };
 
@@ -306,23 +331,29 @@ const MagicArt = ({ onBack }) => {
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Magic Art Economy</p>
           <p className="text-sm font-bold text-slate-800">
-            {MAGIC_ART_PACK_COST_GEMS} 💎 unlocks {MAGIC_ART_PACK_USES} uses
+            {MAGIC_ART_PACK_COST_GEMS} gems unlock {MAGIC_ART_PACK_USES} uses
           </p>
-          <p className="text-xs text-slate-600">Current Gems: {Number(profile?.gems || 0)} 💎</p>
+          <p className="text-xs text-slate-600">
+            {user?.id
+              ? `Current Gems: ${Number(profile?.gems || 0)}`
+              : 'Guest mode active: free local drawing'}
+          </p>
         </div>
         <button
           type="button"
           onClick={handleBuyPack}
-          disabled={packLoading}
+          disabled={packLoading || !user?.id}
           className={`rounded-xl px-4 py-2 text-sm font-black transition ${
-            packLoading
+            packLoading || !user?.id
               ? 'cursor-not-allowed bg-slate-200 text-slate-500'
               : 'bg-slate-900 text-white hover:bg-slate-800'
           }`}
         >
           {packLoading
             ? 'Processing...'
-            : `Buy ${MAGIC_ART_PACK_USES} Uses for ${MAGIC_ART_PACK_COST_GEMS} 💎`}
+            : user?.id
+              ? `Buy ${MAGIC_ART_PACK_USES} Uses for ${MAGIC_ART_PACK_COST_GEMS} gems`
+              : 'Guest Mode: Free Access'}
         </button>
       </div>
 
@@ -428,7 +459,7 @@ const MagicArt = ({ onBack }) => {
             <span className="text-xs font-extrabold tracking-wider text-gray-400">STAMPS</span>
             <span className="text-xs text-gray-500">
               Tap a stamp, then tap the page
-              {activeTool === 'stamp' && selectedStamp ? ` • Selected: ${selectedStamp.icon}` : ''}
+              {activeTool === 'stamp' && selectedStamp ? ` - Selected: ${selectedStamp.icon}` : ''}
             </span>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
@@ -492,7 +523,7 @@ const MagicArt = ({ onBack }) => {
                 >
                   {packLoading
                     ? 'Processing...'
-                    : `Unlock ${MAGIC_ART_PACK_USES} Uses for ${MAGIC_ART_PACK_COST_GEMS} 💎`}
+                    : `Unlock ${MAGIC_ART_PACK_USES} Uses for ${MAGIC_ART_PACK_COST_GEMS} gems`}
                 </button>
               </div>
             </div>
@@ -516,3 +547,5 @@ const MagicArt = ({ onBack }) => {
 };
 
 export default MagicArt;
+
+
