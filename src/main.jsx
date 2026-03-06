@@ -5,6 +5,12 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import './index.css'
 
 if (typeof window !== 'undefined') {
+  const isLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
+  if (window.location.protocol === 'http:' && !isLocalhost) {
+    const secureUrl = `https://${window.location.host}${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.replace(secureUrl);
+  }
+
   const root = document.documentElement;
   root.setAttribute('lang', 'en');
   root.classList.remove('dark');
