@@ -49,14 +49,6 @@ export default function StoryReader() {
                 <strong>AikoKidzTV (You are here):</strong> The ultimate ad-free, safe, and wildly fun entertainment
                 zone where kids can watch videos, read stories, and paint magic art.
               </li>
-              <li>
-                <strong>AikoKidz (Coming Soon):</strong> A revolutionary, dedicated educational platform engineered
-                specifically to make studying focused and engaging.
-              </li>
-              <li>
-                <strong>AikoTeeenz (Coming Soon):</strong> A vibrant, dynamic, and explorable digital universe built
-                exclusively for teenagers to learn, connect, and grow.
-              </li>
             </ul>
 
             <h2 className="!text-slate-900">The Magic Behind the Screen (Tech Stack)</h2>
