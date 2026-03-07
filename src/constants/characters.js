@@ -83,7 +83,7 @@ export const CHARACTER_PROFILES = [
     key: 'miko',
     name: 'Miko',
     cardTitle: 'MIKO BIO',
-    route: '/miko-bio',
+    route: '/learning-zone/miko',
     emoji: '\u{1F331}',
     colorTheme: 'Lime Green',
     specialHobby: 'Nature, Gardening & Earth Defense',
