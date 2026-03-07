@@ -31,7 +31,7 @@ const Sidebar = () => {
     <aside className="hidden lg:flex fixed left-6 top-28 z-40 w-52 flex-col gap-3">
       <div className="bg-secondary/70 border border-white/10 rounded-2xl shadow-xl backdrop-blur-md p-4">
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-gray-500 mb-3">
-          <Gem size={14} className="text-accent" />
+          <Gem size={14} className="text-purple-500" />
           <span>Sidebar</span>
         </div>
         <div className="flex flex-col gap-1">

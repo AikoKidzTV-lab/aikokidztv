@@ -94,7 +94,7 @@ const QuarterlyGiftCard = () => {
            <span>50</span>
         </div>
         <div className="text-purple-400 font-medium flex justify-center items-center gap-1">
-          <Gem size={16} /> Free Gems
+          <Gem size={16} className="text-purple-500" /> Free Gems
         </div>
       </div>
 

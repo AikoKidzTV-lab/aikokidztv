@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bell, ChevronDown, Sparkles } from 'lucide-react';
+import { Bell, ChevronDown, Gem, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ADMIN_EMAIL } from '../utils/admin';
 
@@ -57,7 +57,10 @@ function ProfileDropdownMenu({
               {isLoggedIn ? 'Profile' : 'Guest'}
             </p>
             <p className="truncate text-sm font-black text-black">{user?.email || 'Login / Profile'}</p>
-            <p className="mt-2 text-xs font-black text-black">Gems: {gemsBalance}</p>
+            <p className="mt-2 inline-flex items-center gap-1 text-xs font-black text-black">
+              Gems: {gemsBalance}
+              <Gem size={13} className="text-purple-500" />
+            </p>
             <p className="text-xs font-black text-black">Level: {level}</p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-3 text-right">

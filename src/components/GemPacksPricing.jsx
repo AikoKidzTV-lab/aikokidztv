@@ -1,4 +1,5 @@
 import React from 'react';
+import { Gem } from 'lucide-react';
 
 const USD_TO_INR_RATE = 83;
 
@@ -18,6 +19,7 @@ const gemPacks = [
     gems: 219,
     mascot: '\u{1F43C}',
     prices: { INR: 499, USD: convertInrToUsd(499) },
+    useCaseDescription: 'Unlock Colors & Shapes (120 Gems) and have gems left for Stories!',
     accent: 'from-pink-300 via-rose-200 to-yellow-200',
     border: 'border-pink-300/90',
     glow: 'shadow-[0_18px_40px_rgba(244,114,182,0.32)]',
@@ -29,6 +31,7 @@ const gemPacks = [
     gems: 419,
     mascot: '\u{1F426}',
     prices: { INR: 899, USD: convertInrToUsd(899) },
+    useCaseDescription: 'Unlock Animal Safari (150 Gems) + Colors & Shapes (120 Gems)!',
     accent: 'from-cyan-300 via-sky-200 to-blue-200',
     border: 'border-cyan-300/90',
     glow: 'shadow-[0_18px_40px_rgba(14,165,233,0.3)]',
@@ -39,6 +42,7 @@ const gemPacks = [
     gems: 1019,
     mascot: '\u{1F420}',
     prices: { INR: 1699, USD: convertInrToUsd(1699) },
+    useCaseDescription: 'Unlock everything in the Learning Zone + massive Story Studio sessions!',
     accent: 'from-yellow-300 via-amber-200 to-fuchsia-200',
     border: 'border-amber-300/90',
     glow: 'shadow-[0_18px_40px_rgba(245,158,11,0.3)]',
@@ -129,7 +133,7 @@ export default function GemPacksPricing({ onPay }) {
           Pick a Gem Pack and Jump In
         </h2>
         <p className="mx-auto mt-3 max-w-3xl text-sm !text-slate-700 sm:text-base">
-          Fast, fun, and automated-friendly. Tap a pack, unlock Gems 💎 instantly, and start
+          Fast, fun, and automated-friendly. Tap a pack, unlock Gems <Gem size={16} className="mb-0.5 inline-block text-purple-500" /> instantly, and start
           playing without manual waiting.
         </p>
       </div>
@@ -170,7 +174,9 @@ export default function GemPacksPricing({ onPay }) {
             </p>
             <div className="mt-2 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-center">
               <p className="text-[10px] font-black uppercase tracking-[0.14em] !text-rose-500">Estimated Reward</p>
-              <p className="mt-1 text-lg font-black !text-slate-900">{donationGemReward} Gems 💎</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-lg font-black !text-slate-900">
+                {donationGemReward} Gems <Gem size={18} className="text-purple-500" />
+              </p>
             </div>
           </div>
 
@@ -212,11 +218,14 @@ export default function GemPacksPricing({ onPay }) {
             </div>
 
             <div className="mt-3 rounded-xl border border-white/85 bg-white/80 p-3 text-center shadow-sm">
-              <p className="text-2xl font-black !text-slate-900">
-                {pack.gems} Gems <span className="text-xl">💎</span>
+              <p className="inline-flex items-center gap-1 text-2xl font-black !text-slate-900">
+                {pack.gems} Gems <Gem size={22} className="text-purple-500" />
               </p>
               <p className="mt-1.5 text-xl font-black !text-slate-900">
                 {formatCurrency(pack.prices[activeCurrency], activeCurrency)}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-gray-600">
+                {pack.useCaseDescription}
               </p>
             </div>
 

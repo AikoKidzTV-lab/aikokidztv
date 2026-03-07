@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
-import { X, Check, Loader, Tag, CreditCard } from 'lucide-react';
+import { X, Check, Gem, Loader, Tag, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const CheckoutModal = ({ plan, isOpen, onClose }) => {
@@ -155,7 +155,10 @@ const CheckoutModal = ({ plan, isOpen, onClose }) => {
                 <Check size={32} className="text-green-500" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">Payment Successful!</h3>
-              <p className="text-gray-400">Gems have been added to your account.</p>
+              <p className="inline-flex items-center gap-1 text-gray-400">
+                Gems have been added to your account.
+                <Gem size={14} className="text-purple-500" />
+              </p>
             </div>
           ) : (
             <>
@@ -172,7 +175,10 @@ const CheckoutModal = ({ plan, isOpen, onClose }) => {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h4 className="text-lg font-bold text-white">{plan.name}</h4>
-                      <p className="text-sm text-gray-400">{plan.gems} Gems Included</p>
+                      <p className="inline-flex items-center gap-1 text-sm text-gray-400">
+                        {plan.gems} Gems Included
+                        <Gem size={14} className="text-purple-500" />
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-accent">${finalPrice.toFixed(2)}</p>

@@ -457,7 +457,7 @@ const StoryStudio = () => {
           <div className="inline-flex items-center gap-2 rounded-xl border border-accent/30 bg-accent/10 px-3 py-2 text-sm font-bold text-accent">
             <FileText size={16} />
             <span>Story / Poem ({GENERATION_COST_GEMS} Gems)</span>
-            <Gem size={14} />
+            <Gem size={14} className="text-purple-500" />
           </div>
         </div>
 

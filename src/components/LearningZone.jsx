@@ -5,8 +5,8 @@ import { LEARNING_ZONE_PREMIUM_UNLOCKS } from '../constants/gemEconomy';
 import { unlockZoneWithGems } from '../utils/profileEconomy';
 
 const GUEST_PREMIUM_UNLOCKS = {
-  colors: 50,
-  animals: 60,
+  colors: LEARNING_ZONE_PREMIUM_UNLOCKS.colors,
+  animals: LEARNING_ZONE_PREMIUM_UNLOCKS.animals,
 };
 
 const GUEST_GEMS_STORAGE_KEY = 'aiko_guest_gems_v1';

@@ -10,8 +10,8 @@ export const LEARNING_ZONE_UNLOCK_STORAGE_PREFIX = 'aiko_learning_zone_unlocks_v
 export const applySmallItemEconomy = () => 0;
 
 export const LEARNING_ZONE_PREMIUM_UNLOCKS = {
-  colors: 0,
-  animals: 0,
+  colors: 120,
+  animals: 150,
 };
 
 export const calculateDonationGems = () => 0;
