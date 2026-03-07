@@ -63,7 +63,7 @@ export const CHARACTER_PROFILES = [
     key: 'mimi',
     name: 'Mimi',
     cardTitle: 'MIMI BIO',
-    route: '/mimi-bio',
+    route: '/learning-zone/mimi',
     emoji: '\u{1F4D6}',
     colorTheme: 'Soft Pink / Magenta',
     specialHobby: 'Puzzles, Books & "Why/How" Questions',

@@ -42,6 +42,7 @@ import MikoBioPage from './components/pages/MikoBioPage';
 import ChikoBioPage from './components/pages/ChikoBioPage';
 import ChikoTechLabPage from './components/pages/ChikoTechLabPage';
 import MikoGalaxyGardenPage from './components/pages/MikoGalaxyGardenPage';
+import MimiCuriousArtLabPage from './components/pages/MimiCuriousArtLabPage';
 
 const themes = [
   { key: 'light', label: 'Light Mode' },
@@ -972,6 +973,7 @@ function App() {
               <Route path="/mimi-bio" element={<MimiBioPage />} />
               <Route path="/miko-bio" element={<MikoBioPage />} />
               <Route path="/chiko-bio" element={<ChikoBioPage />} />
+              <Route path="/learning-zone/mimi" element={<MimiCuriousArtLabPage />} />
               <Route path="/learning-zone/miko" element={<MikoGalaxyGardenPage />} />
               <Route path="/learning-zone/chiko" element={<ChikoTechLabPage />} />
               <Route path="/parent-zone" element={<ParentZoneRouteGuard><ParentZoneHubPage /></ParentZoneRouteGuard>} />
