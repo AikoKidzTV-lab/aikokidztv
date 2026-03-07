@@ -3,7 +3,7 @@ export const CHARACTER_PROFILES = [
     key: 'aiko',
     name: 'Aiko',
     cardTitle: 'AIKO BIO',
-    route: '/aiko-bio',
+    route: '/learning-zone/aiko',
     emoji: '\u{1F31F}',
     colorTheme: 'Gold / Yellow',
     specialHobby: 'Fearless Leader & Positive Energy',

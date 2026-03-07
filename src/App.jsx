@@ -45,6 +45,7 @@ import MikoGalaxyGardenPage from './components/pages/MikoGalaxyGardenPage';
 import MimiCuriousArtLabPage from './components/pages/MimiCuriousArtLabPage';
 import KinuGeniusMischiefLabPage from './components/pages/KinuGeniusMischiefLabPage';
 import NikoFriendshipHavenPage from './components/pages/NikoFriendshipHavenPage';
+import AikoLeadershipPavilionPage from './components/pages/AikoLeadershipPavilionPage';
 
 const themes = [
   { key: 'light', label: 'Light Mode' },
@@ -975,6 +976,7 @@ function App() {
               <Route path="/mimi-bio" element={<MimiBioPage />} />
               <Route path="/miko-bio" element={<MikoBioPage />} />
               <Route path="/chiko-bio" element={<ChikoBioPage />} />
+              <Route path="/learning-zone/aiko" element={<AikoLeadershipPavilionPage />} />
               <Route path="/learning-zone/niko" element={<NikoFriendshipHavenPage />} />
               <Route path="/learning-zone/kinu" element={<KinuGeniusMischiefLabPage />} />
               <Route path="/learning-zone/mimi" element={<MimiCuriousArtLabPage />} />
