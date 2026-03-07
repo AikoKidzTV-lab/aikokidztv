@@ -1,18 +1,23 @@
 import React from 'react';
 
+const USD_TO_INR_RATE = 83;
+
 const calculateDonationGems = (amount) => {
   const numericAmount = Number(amount);
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) return 0;
   return Math.ceil(numericAmount * 1.08);
 };
 
+const convertInrToUsd = (inrAmount) => Number((inrAmount / USD_TO_INR_RATE).toFixed(2));
+const convertUsdToInr = (usdAmount) => Number(usdAmount) * USD_TO_INR_RATE;
+
 const gemPacks = [
   {
     id: 'safari-pro',
     title: 'Safari Pro',
-    gems: 200,
+    gems: 219,
     mascot: '\u{1F43C}',
-    prices: { INR: 299, USD: 1.99 },
+    prices: { INR: 499, USD: convertInrToUsd(499) },
     accent: 'from-pink-300 via-rose-200 to-yellow-200',
     border: 'border-pink-300/90',
     glow: 'shadow-[0_18px_40px_rgba(244,114,182,0.32)]',
@@ -21,9 +26,9 @@ const gemPacks = [
   {
     id: 'jungle-king',
     title: 'Jungle King',
-    gems: 500,
+    gems: 419,
     mascot: '\u{1F426}',
-    prices: { INR: 699, USD: 5.99 },
+    prices: { INR: 899, USD: convertInrToUsd(899) },
     accent: 'from-cyan-300 via-sky-200 to-blue-200',
     border: 'border-cyan-300/90',
     glow: 'shadow-[0_18px_40px_rgba(14,165,233,0.3)]',
@@ -31,9 +36,9 @@ const gemPacks = [
   {
     id: 'treasure-gems',
     title: 'Treasure Gems',
-    gems: 1000,
+    gems: 1019,
     mascot: '\u{1F420}',
-    prices: { INR: 1299, USD: 10.99 },
+    prices: { INR: 1699, USD: convertInrToUsd(1699) },
     accent: 'from-yellow-300 via-amber-200 to-fuchsia-200',
     border: 'border-amber-300/90',
     glow: 'shadow-[0_18px_40px_rgba(245,158,11,0.3)]',
@@ -47,8 +52,8 @@ const SUPPORT_LIMITS = {
 
 const VIP_PASS = {
   title: 'Semi-Monthly VIP Pass',
-  gems: 1370,
-  prices: { INR: 4999, USD: 59.99 },
+  gems: 920,
+  prices: { INR: 4999, USD: convertInrToUsd(4999) },
 };
 
 const formatCurrency = (value, currency) =>
@@ -69,7 +74,10 @@ export default function GemPacksPricing({ onPay }) {
   const normalizedSupportAmount = Number.isFinite(parsedSupportAmount)
     ? Math.min(supportLimits.max, Math.max(supportLimits.min, parsedSupportAmount))
     : supportLimits.min;
-  const donationGemReward = calculateDonationGems(displaySupportAmount);
+  const supportAmountInInr = activeCurrency === 'USD'
+    ? convertUsdToInr(displaySupportAmount)
+    : displaySupportAmount;
+  const donationGemReward = calculateDonationGems(supportAmountInInr);
 
   React.useEffect(() => {
     setCustomSupportAmount(String(SUPPORT_LIMITS[activeCurrency].min));
@@ -137,7 +145,7 @@ export default function GemPacksPricing({ onPay }) {
             <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/90 bg-white/80 text-3xl shadow-md">
               ☕
             </div>
-            <p className="mt-3 text-base font-black !text-slate-900">Your Will</p>
+            <p className="mt-3 text-base font-black !text-slate-900">For Schools & Educators</p>
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] !text-rose-700">Custom Support</p>
           </div>
 
@@ -170,7 +178,7 @@ export default function GemPacksPricing({ onPay }) {
             <button
               type="button"
               onClick={() =>
-                onPay?.('Your Will', normalizedSupportAmount, donationGemReward, activeCurrency)
+                onPay?.('For Schools & Educators', normalizedSupportAmount, donationGemReward, activeCurrency)
               }
               className="w-full rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(244,63,94,0.35)] transition-all hover:brightness-105"
             >
@@ -229,11 +237,11 @@ export default function GemPacksPricing({ onPay }) {
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.22em] !text-sky-200">Limited Membership</p>
             <p className="mt-1 text-sm font-semibold leading-relaxed !text-white sm:text-base">
-              Semi-Monthly VIP Pass: Get 200 Gems every month for 6 months + 170 Instant Bonus Gems! ✨
+              Semi-Monthly VIP Pass: Get 200 Gems every month for 4 months + 120 Instant Bonus Gems! ✨
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-xl font-black !text-amber-300">{formatCurrency(VIP_PASS.prices[activeCurrency], activeCurrency)}</p>
+            <p className="text-xl font-black !text-amber-300">Price: {formatCurrency(VIP_PASS.prices[activeCurrency], activeCurrency)}</p>
             <button
               type="button"
               onClick={() => onPay?.(VIP_PASS.title, VIP_PASS.prices[activeCurrency], VIP_PASS.gems, activeCurrency)}
