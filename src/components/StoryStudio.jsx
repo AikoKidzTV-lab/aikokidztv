@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Sparkles,
@@ -20,39 +20,88 @@ import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { useKidsMode } from '../context/KidsModeContext';
 import { addUserGems, spendUserGems } from '../utils/gemWallet';
+import {
+  getStorySessionRuleForTier,
+  resolveEconomyTier,
+} from '../utils/economyTier';
 
 const GENERATION_COST_GEMS = 20;
-const DAILY_SESSION_LIMIT = 2;
-const STORY_STUDIO_DAILY_SESSIONS_STORAGE_KEY = 'aiko_story_studio_daily_sessions_v1';
+const STORY_STUDIO_SESSIONS_STORAGE_KEY = 'aiko_story_studio_sessions_v2';
 
-const getTodayDateStamp = () => new Date().toISOString().slice(0, 10);
-
-const readDailySessionState = () => {
-  const today = getTodayDateStamp();
-  if (typeof window === 'undefined') return { date: today, count: 0 };
-
-  try {
-    const raw = window.localStorage.getItem(STORY_STUDIO_DAILY_SESSIONS_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    const parsedCount = Number(parsed?.count);
-    if (parsed?.date === today && Number.isFinite(parsedCount) && parsedCount >= 0) {
-      return { date: today, count: Math.floor(parsedCount) };
-    }
-  } catch {
-    // ignore malformed storage payloads
-  }
-
-  return { date: today, count: 0 };
+const toSafeWholeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(0, Math.floor(parsed));
 };
 
-const writeDailySessionState = (count) => {
-  if (typeof window === 'undefined') return;
+const getWindowMs = (windowDays) => Math.max(1, toSafeWholeNumber(windowDays, 1)) * 24 * 60 * 60 * 1000;
 
-  const safeCount = Number.isFinite(Number(count)) ? Math.max(0, Math.floor(Number(count))) : 0;
-  window.localStorage.setItem(
-    STORY_STUDIO_DAILY_SESSIONS_STORAGE_KEY,
-    JSON.stringify({ date: getTodayDateStamp(), count: safeCount })
-  );
+const getSessionBucketKey = (userId) => (userId ? `user:${String(userId)}` : 'guest');
+
+const readSessionBuckets = () => {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(STORY_STUDIO_SESSIONS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeSessionBuckets = (buckets) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(STORY_STUDIO_SESSIONS_STORAGE_KEY, JSON.stringify(buckets || {}));
+};
+
+const readStorySessionState = ({ userId, tier, rule }) => {
+  const now = Date.now();
+  const safeRule = rule || { limit: 2, windowDays: 3, resetLabel: 'Resets in 3 Days' };
+  const windowMs = getWindowMs(safeRule.windowDays);
+  const bucketKey = getSessionBucketKey(userId);
+  const buckets = readSessionBuckets();
+  const entry = buckets?.[bucketKey];
+
+  const fallbackState = {
+    count: 0,
+    windowStart: now,
+    windowEndsAt: now + windowMs,
+  };
+
+  if (!entry || typeof entry !== 'object') {
+    return fallbackState;
+  }
+
+  const entryTier = String(entry.tier || '');
+  const entryCount = toSafeWholeNumber(entry.count, 0);
+  const entryWindowStart = toSafeWholeNumber(entry.windowStart, now);
+  const maxCount = toSafeWholeNumber(safeRule.limit, 0);
+
+  if (entryTier !== String(tier || '')) {
+    return fallbackState;
+  }
+
+  const elapsed = now - entryWindowStart;
+  if (!Number.isFinite(elapsed) || elapsed >= windowMs || elapsed < 0) {
+    return fallbackState;
+  }
+
+  return {
+    count: Math.min(entryCount, maxCount),
+    windowStart: entryWindowStart,
+    windowEndsAt: entryWindowStart + windowMs,
+  };
+};
+
+const writeStorySessionState = ({ userId, tier, count, windowStart }) => {
+  const bucketKey = getSessionBucketKey(userId);
+  const buckets = readSessionBuckets();
+  buckets[bucketKey] = {
+    tier: String(tier || ''),
+    count: toSafeWholeNumber(count, 0),
+    windowStart: toSafeWholeNumber(windowStart, Date.now()),
+  };
+  writeSessionBuckets(buckets);
 };
 
 const characters = [
@@ -107,6 +156,14 @@ const buildGeminiPrompt = (topic) => {
 const StoryStudio = () => {
   const { user, profile, loading: authLoading, fetchProfile } = useAuth();
   const { triggerConfetti } = useKidsMode();
+  const economyTier = useMemo(
+    () => resolveEconomyTier({ profile, user }),
+    [profile, user]
+  );
+  const storySessionRule = useMemo(
+    () => getStorySessionRuleForTier(economyTier),
+    [economyTier]
+  );
 
   const [selectedChar, setSelectedChar] = useState(characters[0]);
   const [input, setInput] = useState('');
@@ -115,7 +172,13 @@ const StoryStudio = () => {
   const [error, setError] = useState('');
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [apiStatus, setApiStatus] = useState('checking');
-  const [sessionCount, setSessionCount] = useState(() => readDailySessionState().count);
+  const [sessionCount, setSessionCount] = useState(() =>
+    readStorySessionState({
+      userId: user?.id || null,
+      tier: economyTier,
+      rule: storySessionRule,
+    }).count
+  );
   const [cooldownTime, setCooldownTime] = useState(0);
 
   const chatEndRef = useRef(null);
@@ -157,27 +220,33 @@ const StoryStudio = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const syncSessionState = useCallback(() => {
+    const nextState = readStorySessionState({
+      userId: user?.id || null,
+      tier: economyTier,
+      rule: storySessionRule,
+    });
+    setSessionCount(nextState.count);
+    return nextState;
+  }, [economyTier, storySessionRule, user?.id]);
+
   useEffect(() => {
-    const syncDailySessionState = () => {
-      const nextState = readDailySessionState();
-      setSessionCount(nextState.count);
+    syncSessionState();
+
+    if (typeof window === 'undefined') return undefined;
+
+    const handleStorage = () => {
+      syncSessionState();
     };
 
-    syncDailySessionState();
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('storage', syncDailySessionState);
-    }
-
-    const interval = setInterval(syncDailySessionState, 60000);
+    window.addEventListener('storage', handleStorage);
+    const interval = setInterval(syncSessionState, 60000);
 
     return () => {
       clearInterval(interval);
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('storage', syncDailySessionState);
-      }
+      window.removeEventListener('storage', handleStorage);
     };
-  }, []);
+  }, [syncSessionState]);
 
   useEffect(() => {
     let timer;
@@ -270,10 +339,17 @@ const StoryStudio = () => {
       return;
     }
 
-    const currentDaySessionCount = readDailySessionState().count;
-    if (currentDaySessionCount >= DAILY_SESSION_LIMIT) {
-      setSessionCount(currentDaySessionCount);
-      setError(`Daily limit reached (${DAILY_SESSION_LIMIT}/${DAILY_SESSION_LIMIT}). Please come back tomorrow.`);
+    const currentSessionState = readStorySessionState({
+      userId: user?.id || null,
+      tier: economyTier,
+      rule: storySessionRule,
+    });
+    if (currentSessionState.count >= storySessionRule.limit) {
+      setSessionCount(currentSessionState.count);
+      const resetMessage = storySessionRule.resetLabel === 'Daily'
+        ? 'Please come back tomorrow.'
+        : 'Please come back in 3 days.';
+      setError(`Session limit reached (${storySessionRule.limit}/${storySessionRule.limit}). ${resetMessage}`);
       return;
     }
 
@@ -322,8 +398,13 @@ const StoryStudio = () => {
 
       await generateWithGemini(userMsg);
 
-      const nextSessionCount = currentDaySessionCount + 1;
-      writeDailySessionState(nextSessionCount);
+      const nextSessionCount = currentSessionState.count + 1;
+      writeStorySessionState({
+        userId: user?.id || null,
+        tier: economyTier,
+        count: nextSessionCount,
+        windowStart: currentSessionState.windowStart,
+      });
       setSessionCount(nextSessionCount);
       setCooldownTime(0);
     } catch (err) {
@@ -607,7 +688,7 @@ const StoryStudio = () => {
         <div className="flex justify-between items-center mt-2 text-xs">
           <span className="sr-only">Powered by Gemini (2.5 Flash) for story and poem generation</span>
           <div className="flex gap-4 text-gray-400">
-            <span>Sessions: {sessionCount}/{DAILY_SESSION_LIMIT}</span>
+            <span>Sessions: {sessionCount}/{storySessionRule.limit} ({storySessionRule.resetLabel})</span>
             {cooldownTime > 0 && <span>Cooldown: {cooldownTime}s</span>}
           </div>
         </div>

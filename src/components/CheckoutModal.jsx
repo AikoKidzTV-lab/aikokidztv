@@ -3,6 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { X, Check, Gem, Loader, Tag, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { ECONOMY_TIER, persistEconomyTier } from '../utils/economyTier';
+
+const resolveTierFromPlanName = (planName) => {
+  const normalized = String(planName || '').trim().toLowerCase();
+  if (!normalized) return ECONOMY_TIER.STANDARD;
+  if (normalized.includes('school') || normalized.includes('educator')) return ECONOMY_TIER.EDUCATOR;
+  if (normalized.includes('vip')) return ECONOMY_TIER.VIP;
+  if (normalized.includes('treasure') || normalized.includes('1699')) return ECONOMY_TIER.PACK_3;
+  if (normalized.includes('jungle') || normalized.includes('899')) return ECONOMY_TIER.PACK_2;
+  if (normalized.includes('safari') || normalized.includes('499')) return ECONOMY_TIER.PACK_1;
+  return ECONOMY_TIER.STANDARD;
+};
 
 const CheckoutModal = ({ plan, isOpen, onClose }) => {
   const { user } = useAuth();
@@ -117,6 +129,7 @@ const CheckoutModal = ({ plan, isOpen, onClose }) => {
 
       if (updateError) throw updateError;
 
+      persistEconomyTier(resolveTierFromPlanName(planName));
       setSuccess(true);
       setTimeout(() => {
         window.location.reload(); // Refresh to update context/UI

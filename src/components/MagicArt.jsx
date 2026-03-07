@@ -1,7 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import * as gemEconomy from '../constants/gemEconomy';
 import * as profileEconomy from '../utils/profileEconomy';
+import {
+  getEconomyTierLabel,
+  getMagicArtRuleForTier,
+  resolveEconomyTier,
+} from '../utils/economyTier';
 
 const PRESET_COLORS = [
   '#FF4136',
@@ -58,13 +62,35 @@ const STAMPS = [
   { id: 'heart', icon: '\u{1F496}' },
 ];
 
-const DEFAULT_MAGIC_ART_USES = Number(profileEconomy?.DEFAULT_MAGIC_ART_USES ?? 999);
-const MAGIC_ART_PACK_COST_GEMS = Number(gemEconomy?.MAGIC_ART_PACK_COST_GEMS ?? 0);
-const MAGIC_ART_PACK_USES = Number(gemEconomy?.MAGIC_ART_PACK_USES ?? DEFAULT_MAGIC_ART_USES);
+const DEFAULT_MAGIC_ART_USES = Number(profileEconomy?.DEFAULT_MAGIC_ART_USES ?? 0);
+const GUEST_GEMS_STORAGE_KEY = 'aiko_guest_gems_v1';
+const GUEST_MAGIC_ART_USES_STORAGE_KEY = 'aiko_guest_magic_art_uses_v1';
 
 const toSafeUses = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : fallback;
+};
+
+const readGuestGems = () => {
+  if (typeof window === 'undefined') return 0;
+  const raw = window.localStorage.getItem(GUEST_GEMS_STORAGE_KEY);
+  return toSafeUses(raw, 0);
+};
+
+const writeGuestGems = (value) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(GUEST_GEMS_STORAGE_KEY, String(toSafeUses(value, 0)));
+};
+
+const readGuestMagicArtUses = () => {
+  if (typeof window === 'undefined') return DEFAULT_MAGIC_ART_USES;
+  const raw = window.localStorage.getItem(GUEST_MAGIC_ART_USES_STORAGE_KEY);
+  return toSafeUses(raw, DEFAULT_MAGIC_ART_USES);
+};
+
+const writeGuestMagicArtUses = (value) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(GUEST_MAGIC_ART_USES_STORAGE_KEY, String(toSafeUses(value, DEFAULT_MAGIC_ART_USES)));
 };
 
 const MagicArt = ({ onBack }) => {
@@ -78,23 +104,64 @@ const MagicArt = ({ onBack }) => {
   const [customColor, setCustomColor] = useState('#FF0000');
   const [selectedStamp, setSelectedStamp] = useState(null);
   const [remainingUses, setRemainingUses] = useState(DEFAULT_MAGIC_ART_USES);
+  const [guestGems, setGuestGems] = useState(() => readGuestGems());
   const [packLoading, setPackLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
-  const hasActivePack = !user?.id || remainingUses > 0;
+  const economyTier = useMemo(
+    () => resolveEconomyTier({ profile, user }),
+    [profile, user]
+  );
+  const magicArtRule = useMemo(() => getMagicArtRuleForTier(economyTier), [economyTier]);
+  const isUnlimitedAccess = Boolean(magicArtRule?.unlimited);
+  const hasActivePack = isUnlimitedAccess || remainingUses > 0;
 
   const showStatus = (message) => {
     setStatusMessage(message);
     window.setTimeout(() => setStatusMessage(''), 2400);
   };
 
+  const tierLabel = getEconomyTierLabel(economyTier);
+  const usesLeftLabel = isUnlimitedAccess ? 'Unlimited' : String(toSafeUses(remainingUses, 0));
+  const currentGemBalance = user?.id ? toSafeUses(profile?.gems, 0) : guestGems;
+  const economyHeadline = isUnlimitedAccess
+    ? 'Free unlimited access for Schools & Educators'
+    : `${toSafeUses(magicArtRule?.costGems, 0)} Gems unlock ${toSafeUses(magicArtRule?.packUses, 0)} uses`;
+
   useEffect(() => {
+    if (isUnlimitedAccess) {
+      setRemainingUses(Number.POSITIVE_INFINITY);
+      return;
+    }
+
     if (!user?.id) {
-      setRemainingUses(DEFAULT_MAGIC_ART_USES);
+      setRemainingUses(readGuestMagicArtUses());
+      setGuestGems(readGuestGems());
+      return;
+    }
+
+    const getUsesFromProfile = profileEconomy?.getMagicArtUsesFromProfile;
+    if (typeof getUsesFromProfile === 'function') {
+      setRemainingUses(toSafeUses(getUsesFromProfile(profile, user.id, DEFAULT_MAGIC_ART_USES), DEFAULT_MAGIC_ART_USES));
       return;
     }
 
     setRemainingUses(toSafeUses(profile?.magic_art_uses, DEFAULT_MAGIC_ART_USES));
-  }, [profile?.magic_art_uses, user?.id]);
+  }, [isUnlimitedAccess, profile, user?.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const syncGuestWallet = () => {
+      if (user?.id || isUnlimitedAccess) return;
+      setGuestGems(readGuestGems());
+      setRemainingUses(readGuestMagicArtUses());
+    };
+
+    window.addEventListener('storage', syncGuestWallet);
+    return () => {
+      window.removeEventListener('storage', syncGuestWallet);
+    };
+  }, [isUnlimitedAccess, user?.id]);
 
 
   const paintCanvasBackground = (ctx, width, height) => {
@@ -166,15 +233,39 @@ const MagicArt = ({ onBack }) => {
 
   const handleBuyPack = async () => {
     if (packLoading) return;
+    if (isUnlimitedAccess) {
+      showStatus('Schools and Educators have free unlimited Magic Art access.');
+      return;
+    }
+
+    const packCost = toSafeUses(magicArtRule?.costGems, 0);
+    const packUses = toSafeUses(magicArtRule?.packUses, 0);
+    if (packCost <= 0 || packUses <= 0) {
+      showStatus('Magic Art pricing is unavailable right now.');
+      return;
+    }
+
     if (!user?.id) {
-      showStatus('Guest mode is free. Log in only if you want cloud sync.');
+      const currentGuestGems = readGuestGems();
+      if (currentGuestGems < packCost) {
+        setGuestGems(currentGuestGems);
+        showStatus(`You need ${packCost} Gems but only have ${currentGuestGems}.`);
+        return;
+      }
+
+      const nextGuestGems = Math.max(0, currentGuestGems - packCost);
+      const nextGuestUses = readGuestMagicArtUses() + packUses;
+      writeGuestGems(nextGuestGems);
+      writeGuestMagicArtUses(nextGuestUses);
+      setGuestGems(nextGuestGems);
+      setRemainingUses(nextGuestUses);
+      showStatus(`Unlocked ${packUses} uses for ${packCost} Gems (guest wallet).`);
       return;
     }
 
     const buyPackFn = profileEconomy?.buyMagicArtPack;
     if (typeof buyPackFn !== 'function') {
-      setRemainingUses(DEFAULT_MAGIC_ART_USES);
-      showStatus('Cloud pack sync unavailable. You can still draw freely.');
+      showStatus('Magic Art purchase service is unavailable right now.');
       return;
     }
 
@@ -182,12 +273,12 @@ const MagicArt = ({ onBack }) => {
     try {
       const purchaseResult = await buyPackFn({
         userId: user?.id,
-        costGems: MAGIC_ART_PACK_COST_GEMS,
-        packUses: MAGIC_ART_PACK_USES,
+        costGems: packCost,
+        packUses,
       });
 
       if (!purchaseResult || purchaseResult.ok === false) {
-        showStatus(purchaseResult.message || 'Unable to buy Magic Art pack right now.');
+        showStatus(purchaseResult?.message || 'Unable to buy Magic Art pack right now.');
         return;
       }
 
@@ -200,7 +291,7 @@ const MagicArt = ({ onBack }) => {
       if (user?.id) {
         await fetchProfile?.(user?.id);
       }
-      showStatus(`Unlocked ${MAGIC_ART_PACK_USES} uses for ${MAGIC_ART_PACK_COST_GEMS} gems`);
+      showStatus(`Unlocked ${packUses} uses for ${packCost} Gems.`);
     } catch (error) {
       console.error('[MagicArt] Pack purchase failed:', error);
       showStatus('Purchase failed. Please try again.');
@@ -281,9 +372,9 @@ const MagicArt = ({ onBack }) => {
       link.click();
     };
 
-    if (!user?.id) {
+    if (isUnlimitedAccess) {
       downloadLocally();
-      showStatus('Saved locally in guest mode.');
+      showStatus('Saved successfully. Unlimited access is active.');
       return;
     }
 
@@ -292,10 +383,18 @@ const MagicArt = ({ onBack }) => {
       return;
     }
 
+    if (!user?.id) {
+      const nextGuestUses = Math.max(0, readGuestMagicArtUses() - 1);
+      writeGuestMagicArtUses(nextGuestUses);
+      setRemainingUses(nextGuestUses);
+      downloadLocally();
+      showStatus(`Saved locally. Uses left: ${nextGuestUses}.`);
+      return;
+    }
+
     const consumeUseFn = profileEconomy?.consumeMagicArtUse;
     if (typeof consumeUseFn !== 'function') {
-      downloadLocally();
-      showStatus('Saved locally. Cloud usage sync unavailable.');
+      showStatus('Unable to use Magic Art right now. Please try again.');
       return;
     }
 
@@ -345,7 +444,7 @@ const MagicArt = ({ onBack }) => {
           Back to Home
         </button>
         <div className="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-900">
-          Uses Left: {remainingUses}
+          Uses Left: {usesLeftLabel}
         </div>
       </div>
 
@@ -353,29 +452,27 @@ const MagicArt = ({ onBack }) => {
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Magic Art Economy</p>
           <p className="text-sm font-bold text-slate-800">
-            {MAGIC_ART_PACK_COST_GEMS} gems unlock {MAGIC_ART_PACK_USES} uses
+            {economyHeadline}
           </p>
           <p className="text-xs text-slate-600">
-            {user?.id
-              ? `Current Gems: ${Number(profile?.gems || 0)}`
-              : 'Guest mode active: free local drawing'}
+            Current Gems: {currentGemBalance} | Tier: {tierLabel}
           </p>
         </div>
         <button
           type="button"
           onClick={handleBuyPack}
-          disabled={packLoading || !user?.id}
+          disabled={packLoading || isUnlimitedAccess}
           className={`rounded-xl px-4 py-2 text-sm font-black transition ${
-            packLoading || !user?.id
+            packLoading || isUnlimitedAccess
               ? 'cursor-not-allowed bg-slate-200 text-slate-500'
               : 'bg-slate-900 text-white hover:bg-slate-800'
           }`}
         >
           {packLoading
             ? 'Processing...'
-            : user?.id
-              ? `Buy ${MAGIC_ART_PACK_USES} Uses for ${MAGIC_ART_PACK_COST_GEMS} gems`
-              : 'Guest Mode: Free Access'}
+            : isUnlimitedAccess
+              ? 'Unlimited Access Active'
+              : `Buy ${toSafeUses(magicArtRule?.packUses, 0)} Uses for ${toSafeUses(magicArtRule?.costGems, 0)} Gems`}
         </button>
       </div>
 
@@ -545,7 +642,7 @@ const MagicArt = ({ onBack }) => {
                 >
                   {packLoading
                     ? 'Processing...'
-                    : `Unlock ${MAGIC_ART_PACK_USES} Uses for ${MAGIC_ART_PACK_COST_GEMS} gems`}
+                    : `Unlock ${toSafeUses(magicArtRule?.packUses, 0)} Uses for ${toSafeUses(magicArtRule?.costGems, 0)} Gems`}
                 </button>
               </div>
             </div>

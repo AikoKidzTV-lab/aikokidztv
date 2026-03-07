@@ -294,16 +294,20 @@ const Footer = () => {
         onClose={closeModal} 
         title="Pricing & Gem Economy"
       >
-        <p className="text-gray-200"><strong className="text-white">Transparency Notice:</strong> AikoKidzTV uses a strict Gem Economy to keep access fair and predictable.</p>
         <ul className="list-disc pl-5 space-y-3 text-gray-200">
-          <li><strong className="text-white">Story Studio:</strong> "Generating a personalized story or poem costs 20 Gems. Users are provided with 2 free sessions per day."</li>
-          <li><strong className="text-white">Magic Art:</strong> "100% Free! No gems or account login are required to access the drawing and painting canvas."</li>
-          <li><strong className="text-white">Learning Zone:</strong> "Basic numbers and letters are free. Premium interactive modules require a one-time permanent unlock: Colors & Shapes (120 Gems) and Animal Safari (150 Gems)."</li>
-          <li><strong className="text-white">VIP & Educator Packs:</strong> "We offer a Semi-Monthly VIP Pass for recurring gem benefits, along with custom packages specifically designed For Schools & Educators."</li>
+          <li>
+            <strong className="text-white">Story &amp; Poem Limits:</strong>{' '}
+            Session limits depend on your active pack. Basic packs offer 2, 5, or 8 sessions every 3 days. VIP Pass holders get 15 daily sessions, and School/Educator accounts get 120 daily sessions.
+          </li>
+          <li>
+            <strong className="text-white">Magic Art:</strong>{' '}
+            Standard access is 80 Gems for 10 uses. VIP Pass gives 150 uses for 120 Gems. Free for registered Schools &amp; Educators.
+          </li>
+          <li>
+            <strong className="text-white">Learning Zone:</strong>{' '}
+            Colors &amp; Shapes permanently unlocks for 120 Gems. Animal Safari permanently unlocks for 150 Gems.
+          </li>
         </ul>
-        <p className="mt-4 text-sm text-gray-200">
-          Gem pricing, unlock rules, and purchase policies may be updated for balancing and safety. Any updates are reflected here.
-        </p>
       </LegalModal>
 
       {/* Contact Us */}
