@@ -103,7 +103,7 @@ export const CHARACTER_PROFILES = [
     key: 'chiko',
     name: 'Chiko',
     cardTitle: 'CHIKO BIO',
-    route: '/chiko-bio',
+    route: '/learning-zone/chiko',
     emoji: '\u{1F916}',
     colorTheme: 'Teal / Cyan',
     specialHobby: 'Gadgets, Coding & Robot Inventions',
