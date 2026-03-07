@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 import LandingPageHabitat from './components/LandingPageHabitat';
 import Footer from './components/Footer';
 import AdminDashboard from './components/AdminDashboard';
@@ -46,6 +48,11 @@ import MimiCuriousArtLabPage from './components/pages/MimiCuriousArtLabPage';
 import KinuGeniusMischiefLabPage from './components/pages/KinuGeniusMischiefLabPage';
 import NikoFriendshipHavenPage from './components/pages/NikoFriendshipHavenPage';
 import AikoLeadershipPavilionPage from './components/pages/AikoLeadershipPavilionPage';
+import {
+  CHARACTER_SUBSCRIPTION_COST_GEMS,
+  hasActiveCharacterSubscription,
+  purchaseCharacterSubscription,
+} from './utils/characterSubscriptions';
 
 const themes = [
   { key: 'light', label: 'Light Mode' },
@@ -884,6 +891,173 @@ function RouteScrollToTop() {
   return null;
 }
 
+const showAppToast = (icon, title) =>
+  Swal.fire({
+    toast: true,
+    icon,
+    title,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 2800,
+    timerProgressBar: true,
+    background: '#0f172a',
+    color: '#f8fafc',
+  });
+
+function CharacterSubscriptionRouteGuard({ characterId, characterName, children }) {
+  const navigate = useNavigate();
+  const { user, loading: authLoading, fetchProfile } = useAuth();
+  const { openAuthModal } = useAuthModal();
+  const [status, setStatus] = useState('checking');
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [guardError, setGuardError] = useState('');
+
+  const verifySubscription = React.useCallback(async () => {
+    if (authLoading) {
+      setStatus('checking');
+      return;
+    }
+
+    if (!user?.id) {
+      setStatus('locked');
+      setGuardError('');
+      return;
+    }
+
+    setStatus('checking');
+    setGuardError('');
+
+    try {
+      const result = await hasActiveCharacterSubscription({
+        userId: user.id,
+        characterId,
+      });
+
+      if (result?.ok && result?.active) {
+        setStatus('unlocked');
+        return;
+      }
+
+      setStatus('locked');
+      if (!result?.ok) {
+        setGuardError(result?.message || 'Could not verify character access.');
+      }
+    } catch (error) {
+      setStatus('locked');
+      setGuardError(error?.message || 'Could not verify character access.');
+    }
+  }, [authLoading, characterId, user?.id]);
+
+  React.useEffect(() => {
+    void verifySubscription();
+  }, [verifySubscription]);
+
+  const handleUnlock = async () => {
+    if (!user?.id) {
+      showAppToast('info', 'Please log in to unlock characters.');
+      openAuthModal('login');
+      return;
+    }
+
+    setIsUnlocking(true);
+    try {
+      const result = await purchaseCharacterSubscription({
+        userId: user.id,
+        characterId,
+      });
+
+      if (!result?.ok) {
+        showAppToast('error', result?.message || 'Unlock failed. Please try again.');
+        return;
+      }
+
+      await fetchProfile?.(user.id);
+      setGuardError('');
+      setStatus('unlocked');
+      showAppToast('success', `${characterName} unlocked for 7 days! \u{1F389}`);
+    } catch (error) {
+      showAppToast('error', error?.message || 'Unlock failed. Please try again.');
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
+  if (status === 'unlocked') {
+    return children;
+  }
+
+  if (status === 'checking') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10">
+        <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center">
+          <div className="w-full rounded-[1.75rem] border border-slate-700 bg-slate-900/90 p-8 text-center text-slate-100 shadow-[0_20px_60px_rgba(2,6,23,0.5)]">
+            <div className="mb-4 text-5xl animate-pulse">{'\u{1F9FE}'}</div>
+            <h1 className="text-2xl font-black text-white">Checking Access...</h1>
+            <p className="mt-3 text-sm font-semibold text-slate-300">
+              Verifying your {characterName} subscription.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10">
+      <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center">
+        <div className="w-full rounded-[1.75rem] border border-yellow-300/40 bg-slate-900/90 p-8 text-center text-slate-100 shadow-[0_20px_60px_rgba(2,6,23,0.5)]">
+          <div className="mb-4 text-5xl">{'\u{1F512}'}</div>
+          <h1 className="text-2xl font-black text-white">
+            Unlock {characterName}! {'\u2728'}
+          </h1>
+          <p className="mt-3 text-sm font-semibold text-slate-200">
+            Get full access to {characterName}&apos;s zone for 7 days.
+          </p>
+          <div className="mt-4 inline-flex items-center rounded-full border border-amber-200/70 bg-amber-200/10 px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-amber-200">
+            {'\u{1F512}'} {CHARACTER_SUBSCRIPTION_COST_GEMS} Gems
+          </div>
+
+          {guardError && (
+            <p className="mt-3 text-xs font-bold text-red-300">{guardError}</p>
+          )}
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={handleUnlock}
+              disabled={isUnlocking}
+              className="rounded-full border border-yellow-200 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-200 px-5 py-2.5 text-sm font-black text-slate-900 shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isUnlocking
+                ? 'Unlocking...'
+                : `Unlock for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems \u{1F48E}`}
+            </button>
+            {!user?.id && (
+              <button
+                type="button"
+                onClick={() => openAuthModal('login')}
+                className="rounded-full border border-indigo-300 bg-indigo-400/20 px-5 py-2.5 text-sm font-black text-indigo-100 shadow-sm hover:bg-indigo-400/30"
+              >
+                Log In First
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                navigate('/');
+                window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+              }}
+              className="rounded-full border border-slate-500 bg-slate-800 px-5 py-2.5 text-sm font-bold text-slate-100 shadow-sm hover:bg-slate-700"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const readParentZoneRouteUnlock = () => {
   if (typeof window === 'undefined') return false;
   try {
@@ -976,12 +1150,54 @@ function App() {
               <Route path="/mimi-bio" element={<MimiBioPage />} />
               <Route path="/miko-bio" element={<MikoBioPage />} />
               <Route path="/chiko-bio" element={<ChikoBioPage />} />
-              <Route path="/learning-zone/aiko" element={<AikoLeadershipPavilionPage />} />
-              <Route path="/learning-zone/niko" element={<NikoFriendshipHavenPage />} />
-              <Route path="/learning-zone/kinu" element={<KinuGeniusMischiefLabPage />} />
-              <Route path="/learning-zone/mimi" element={<MimiCuriousArtLabPage />} />
-              <Route path="/learning-zone/miko" element={<MikoGalaxyGardenPage />} />
-              <Route path="/learning-zone/chiko" element={<ChikoTechLabPage />} />
+              <Route
+                path="/learning-zone/aiko"
+                element={(
+                  <CharacterSubscriptionRouteGuard characterId="aiko" characterName="AIKO">
+                    <AikoLeadershipPavilionPage />
+                  </CharacterSubscriptionRouteGuard>
+                )}
+              />
+              <Route
+                path="/learning-zone/niko"
+                element={(
+                  <CharacterSubscriptionRouteGuard characterId="niko" characterName="NIKO">
+                    <NikoFriendshipHavenPage />
+                  </CharacterSubscriptionRouteGuard>
+                )}
+              />
+              <Route
+                path="/learning-zone/kinu"
+                element={(
+                  <CharacterSubscriptionRouteGuard characterId="kinu" characterName="KINU">
+                    <KinuGeniusMischiefLabPage />
+                  </CharacterSubscriptionRouteGuard>
+                )}
+              />
+              <Route
+                path="/learning-zone/mimi"
+                element={(
+                  <CharacterSubscriptionRouteGuard characterId="mimi" characterName="MIMI">
+                    <MimiCuriousArtLabPage />
+                  </CharacterSubscriptionRouteGuard>
+                )}
+              />
+              <Route
+                path="/learning-zone/miko"
+                element={(
+                  <CharacterSubscriptionRouteGuard characterId="miko" characterName="MIKO">
+                    <MikoGalaxyGardenPage />
+                  </CharacterSubscriptionRouteGuard>
+                )}
+              />
+              <Route
+                path="/learning-zone/chiko"
+                element={(
+                  <CharacterSubscriptionRouteGuard characterId="chiko" characterName="CHIKO">
+                    <ChikoTechLabPage />
+                  </CharacterSubscriptionRouteGuard>
+                )}
+              />
               <Route path="/parent-zone" element={<ParentZoneRouteGuard><ParentZoneHubPage /></ParentZoneRouteGuard>} />
               <Route path="/parent-zone/tables" element={<ParentZoneRouteGuard><ParentZoneTablesPage /></ParentZoneRouteGuard>} />
               <Route path="/parent-zone/numbers" element={<ParentZoneRouteGuard><ParentZoneNumbersPage /></ParentZoneRouteGuard>} />
