@@ -23,7 +23,7 @@ export const CHARACTER_PROFILES = [
     key: 'niko',
     name: 'Niko',
     cardTitle: 'NIKO BIO',
-    route: '/niko-bio',
+    route: '/learning-zone/niko',
     emoji: '\u{1F3C3}',
     colorTheme: 'RED',
     specialHobby: 'Sports, Fitness & Teamwork',
