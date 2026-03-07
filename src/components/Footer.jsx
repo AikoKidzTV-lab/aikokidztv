@@ -294,15 +294,14 @@ const Footer = () => {
         onClose={closeModal} 
         title="Pricing & Gem Economy"
       >
-        <p><strong>Transparency Notice:</strong> AikoKidzTV uses a strict Gem Economy to keep access fair and predictable.</p>
-        <ul className="list-disc pl-5 space-y-2">
-          <li>New user bonus: 50 Gems on signup.</li>
-          <li>Minimum spend rule: small in-app actions use a minimum of 15 Gems, with legacy small costs increased by +8 Gems.</li>
-          <li>Story creation and story reading: 18 Gems per story.</li>
-          <li>Magic Art access: 60 Gems unlocks a 10-use pack.</li>
-          <li>Learning Zone entry: one-time 25 Gem unlock for zone access; premium cards require additional permanent unlocks.</li>
+        <p className="text-gray-200"><strong className="text-white">Transparency Notice:</strong> AikoKidzTV uses a strict Gem Economy to keep access fair and predictable.</p>
+        <ul className="list-disc pl-5 space-y-3 text-gray-200">
+          <li><strong className="text-white">Story Studio:</strong> "Generating a personalized story or poem costs 20 Gems. Users are provided with 2 free sessions per day."</li>
+          <li><strong className="text-white">Magic Art:</strong> "100% Free! No gems or account login are required to access the drawing and painting canvas."</li>
+          <li><strong className="text-white">Learning Zone:</strong> "Basic numbers and letters are free. Premium interactive modules require a one-time permanent unlock: Colors & Shapes (120 Gems) and Animal Safari (150 Gems)."</li>
+          <li><strong className="text-white">VIP & Educator Packs:</strong> "We offer a Semi-Monthly VIP Pass for recurring gem benefits, along with custom packages specifically designed For Schools & Educators."</li>
         </ul>
-        <p className="mt-4 text-sm text-gray-400">
+        <p className="mt-4 text-sm text-gray-200">
           Gem pricing, unlock rules, and purchase policies may be updated for balancing and safety. Any updates are reflected here.
         </p>
       </LegalModal>
