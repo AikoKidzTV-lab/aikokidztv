@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
@@ -28,14 +28,16 @@ const showToast = (icon, title) =>
   });
 
 const CharacterGallery = () => {
-  const { user, fetchProfile } = useAuth();
+  const { user } = useAuth();
   const { openAuthModal } = useAuthModal();
   const [activeSubscriptionIds, setActiveSubscriptionIds] = useState([]);
   const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(false);
   const [subscriptionLoadError, setSubscriptionLoadError] = useState('');
   const [selectedLockedCharacter, setSelectedLockedCharacter] = useState(null);
   const [purchasingCharacterKey, setPurchasingCharacterKey] = useState('');
+  const [isProcessingUnlock, setIsProcessingUnlock] = useState(false);
   const [recentlyUnlockedCharacterKey, setRecentlyUnlockedCharacterKey] = useState('');
+  const unlockPulseTimeoutRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -81,6 +83,13 @@ const CharacterGallery = () => {
     };
   }, [user?.id]);
 
+  useEffect(() => () => {
+    if (unlockPulseTimeoutRef.current) {
+      window.clearTimeout(unlockPulseTimeoutRef.current);
+      unlockPulseTimeoutRef.current = null;
+    }
+  }, []);
+
   const activeSubscriptionSet = useMemo(
     () => new Set(activeSubscriptionIds.map((id) => String(id || '').trim().toLowerCase())),
     [activeSubscriptionIds]
@@ -112,6 +121,8 @@ const CharacterGallery = () => {
   }, [purchasingCharacterKey]);
 
   const handleUnlockCharacter = useCallback(async () => {
+    if (isProcessingUnlock) return;
+
     const targetCharacter = selectedLockedCharacter;
     if (!targetCharacter?.key) return;
 
@@ -121,6 +132,7 @@ const CharacterGallery = () => {
       return;
     }
 
+    setIsProcessingUnlock(true);
     setPurchasingCharacterKey(targetCharacter.key);
     try {
       const result = await purchaseCharacterSubscription({
@@ -139,24 +151,30 @@ const CharacterGallery = () => {
       setRecentlyUnlockedCharacterKey(targetCharacter.key);
       setSelectedLockedCharacter(null);
       showToast('success', `${targetCharacter.name} unlocked for 7 days! \u{1F389}`);
-      await fetchProfile?.(user.id);
 
       if (typeof window !== 'undefined') {
-        window.setTimeout(() => {
+        if (unlockPulseTimeoutRef.current) {
+          window.clearTimeout(unlockPulseTimeoutRef.current);
+        }
+        unlockPulseTimeoutRef.current = window.setTimeout(() => {
           setRecentlyUnlockedCharacterKey((current) =>
             current === targetCharacter.key ? '' : current
           );
+          unlockPulseTimeoutRef.current = null;
         }, 1800);
       }
     } catch (error) {
       showToast('error', error?.message || 'Failed to unlock this character.');
     } finally {
       setPurchasingCharacterKey('');
+      setIsProcessingUnlock(false);
     }
-  }, [fetchProfile, openAuthModal, selectedLockedCharacter, user?.id]);
+  }, [isProcessingUnlock, openAuthModal, selectedLockedCharacter, user?.id]);
 
   const isPurchasingSelectedCharacter = Boolean(
-    selectedLockedCharacter?.key && purchasingCharacterKey === selectedLockedCharacter.key
+    isProcessingUnlock &&
+      selectedLockedCharacter?.key &&
+      purchasingCharacterKey === selectedLockedCharacter.key
   );
 
   return (

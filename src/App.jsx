@@ -906,60 +906,74 @@ const showAppToast = (icon, title) =>
 
 function CharacterSubscriptionRouteGuard({ characterId, characterName, children }) {
   const navigate = useNavigate();
-  const { user, loading: authLoading, fetchProfile } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { openAuthModal } = useAuthModal();
   const [status, setStatus] = useState('checking');
-  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isProcessingUnlock, setIsProcessingUnlock] = useState(false);
   const [guardError, setGuardError] = useState('');
 
-  const verifySubscription = React.useCallback(async () => {
+  React.useEffect(() => {
+    let isActive = true;
+
     if (authLoading) {
       setStatus('checking');
-      return;
+      return () => {
+        isActive = false;
+      };
     }
 
     if (!user?.id) {
       setStatus('locked');
       setGuardError('');
-      return;
+      return () => {
+        isActive = false;
+      };
     }
 
     setStatus('checking');
     setGuardError('');
 
-    try {
-      const result = await hasActiveCharacterSubscription({
-        userId: user.id,
-        characterId,
-      });
+    const run = async () => {
+      try {
+        const result = await hasActiveCharacterSubscription({
+          userId: user.id,
+          characterId,
+        });
 
-      if (result?.ok && result?.active) {
-        setStatus('unlocked');
-        return;
-      }
+        if (!isActive) return;
 
-      setStatus('locked');
-      if (!result?.ok) {
-        setGuardError(result?.message || 'Could not verify character access.');
+        if (result?.ok && result?.active) {
+          setStatus('unlocked');
+          return;
+        }
+
+        setStatus('locked');
+        if (!result?.ok) {
+          setGuardError(result?.message || 'Could not verify character access.');
+        }
+      } catch (error) {
+        if (!isActive) return;
+        setStatus('locked');
+        setGuardError(error?.message || 'Could not verify character access.');
       }
-    } catch (error) {
-      setStatus('locked');
-      setGuardError(error?.message || 'Could not verify character access.');
-    }
+    };
+
+    void run();
+    return () => {
+      isActive = false;
+    };
   }, [authLoading, characterId, user?.id]);
 
-  React.useEffect(() => {
-    void verifySubscription();
-  }, [verifySubscription]);
-
   const handleUnlock = async () => {
+    if (isProcessingUnlock) return;
+
     if (!user?.id) {
       showAppToast('info', 'Please log in to unlock characters.');
       openAuthModal('login');
       return;
     }
 
-    setIsUnlocking(true);
+    setIsProcessingUnlock(true);
     try {
       const result = await purchaseCharacterSubscription({
         userId: user.id,
@@ -971,14 +985,13 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
         return;
       }
 
-      await fetchProfile?.(user.id);
       setGuardError('');
       setStatus('unlocked');
       showAppToast('success', `${characterName} unlocked for 7 days! \u{1F389}`);
     } catch (error) {
       showAppToast('error', error?.message || 'Unlock failed. Please try again.');
     } finally {
-      setIsUnlocking(false);
+      setIsProcessingUnlock(false);
     }
   };
 
@@ -1025,10 +1038,10 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
             <button
               type="button"
               onClick={handleUnlock}
-              disabled={isUnlocking}
+              disabled={isProcessingUnlock}
               className="rounded-full border border-yellow-200 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-200 px-5 py-2.5 text-sm font-black text-slate-900 shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isUnlocking
+              {isProcessingUnlock
                 ? 'Unlocking...'
                 : `Unlock for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems \u{1F48E}`}
             </button>
