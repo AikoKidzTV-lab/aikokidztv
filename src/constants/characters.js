@@ -43,7 +43,7 @@ export const CHARACTER_PROFILES = [
     key: 'kinu',
     name: 'Kinu',
     cardTitle: 'KINU BIO',
-    route: '/kinu-bio',
+    route: '/learning-zone/kinu',
     emoji: '\u{1F3A8}',
     colorTheme: 'Blue / Azure',
     specialHobby: 'Art, Music & Creative Ideas',
