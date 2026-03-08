@@ -205,11 +205,9 @@ const CharacterGallery = () => {
                   <Link
                     to={char.route}
                     onClick={(event) => handleCardClick(event, char)}
-                    className="group relative block overflow-hidden rounded-[35px] p-6"
+                    className="group relative block overflow-hidden rounded-[35px] border border-white/20 p-6 shadow-sm shadow-black/10"
                     style={{
                       background: char.card.color,
-                      border: `1px solid ${char.card.shadowLight}`,
-                      boxShadow: `16px 16px 32px ${char.card.shadowDark}, -16px -16px 32px ${char.card.shadowLight}, inset 4px 4px 8px ${char.card.innerLight}, inset -4px -4px 8px ${char.card.innerDark}`,
                     }}
                   >
                     <div className="absolute right-3 top-3 z-20">
@@ -241,8 +239,7 @@ const CharacterGallery = () => {
                         className="grid h-14 w-14 place-items-center rounded-full text-2xl"
                         style={{
                           background: char.card.pillBg,
-                          border: `1px solid ${char.card.innerLight}`,
-                          boxShadow: `inset 2px 2px 6px ${char.card.innerLight}, inset -3px -4px 8px ${char.card.innerDark}`,
+                          border: '1px solid rgba(255,255,255,0.3)',
                         }}
                       >
                         <span>{char.emoji}</span>
@@ -261,8 +258,7 @@ const CharacterGallery = () => {
                       className={`relative z-10 mt-4 rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.12em] ${char.card.pillTextClass}`}
                       style={{
                         background: char.card.pillBg,
-                        border: `1px solid ${char.card.innerLight}`,
-                        boxShadow: `inset 2px 2px 6px ${char.card.innerLight}, inset -2px -2px 6px ${char.card.innerDark}`,
+                        border: '1px solid rgba(255,255,255,0.25)',
                       }}
                     >
                       {char.colorTheme}

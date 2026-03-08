@@ -37,12 +37,12 @@ export default function AikoLeadershipPavilionPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-amber-950 to-slate-900 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <header className="rounded-2xl border border-yellow-400/70 bg-slate-950/70 p-4 shadow-[0_0_28px_rgba(234,179,8,0.35)] sm:p-6">
+        <header className="rounded-2xl border border-yellow-300/20 bg-slate-900/75 p-4 shadow-sm shadow-black/10 sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <button
               type="button"
               onClick={handleBackToLearningZone}
-              className="rounded-xl border border-yellow-300/70 bg-yellow-500/20 px-4 py-2 text-sm font-black text-yellow-100 transition hover:bg-yellow-500/35"
+              className="rounded-xl border border-yellow-300/25 bg-yellow-400/15 px-4 py-2 text-sm font-black text-yellow-100 hover:bg-yellow-400/20"
             >
               ← Back to Learning Zone
             </button>
@@ -52,28 +52,28 @@ export default function AikoLeadershipPavilionPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-yellow-400/60 bg-slate-950/70 p-4 shadow-[0_0_24px_rgba(234,179,8,0.3)] sm:p-6">
+        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
           <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Daily Hero Affirmations</h2>
 
-          <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-yellow-300/55 bg-slate-800/80 p-5">
+          <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-yellow-200/20 bg-slate-800/65 p-5">
             <div className="animate-pulse text-6xl sm:text-7xl">☀️</div>
             <button
               type="button"
               onClick={() => setShowAffirmation(true)}
-              className="rounded-xl border border-yellow-300/70 bg-yellow-500/20 px-5 py-3 text-base font-black text-yellow-100 transition hover:bg-yellow-500/35"
+              className="rounded-xl border border-yellow-300/25 bg-yellow-400/15 px-5 py-3 text-base font-black text-yellow-100 hover:bg-yellow-400/20"
             >
               Tap for AIKO&apos;s Message! ✨
             </button>
 
             {showAffirmation && (
-              <p className="rounded-xl border border-yellow-300/60 bg-amber-500/20 px-4 py-3 text-center text-sm font-black text-yellow-100">
+              <p className="rounded-xl border border-yellow-200/25 bg-amber-500/12 px-4 py-3 text-center text-sm font-black text-yellow-100">
                 You are brave, you are smart, and you can do anything today! 💛
               </p>
             )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-yellow-400/60 bg-slate-950/70 p-4 shadow-[0_0_24px_rgba(234,179,8,0.3)] sm:p-6">
+        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
           <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Bravery Tales</h2>
           <p className="mt-2 text-sm font-bold text-slate-300">
             AIKO hears a strange noise in the dark room. What should she do?
@@ -83,7 +83,7 @@ export default function AikoLeadershipPavilionPage() {
             <button
               type="button"
               onClick={() => setBraveryResult("It's okay to be scared, but let's try to be brave!")}
-              className="rounded-xl border border-yellow-300/70 bg-yellow-500/15 px-5 py-4 text-base font-black text-yellow-100 transition hover:bg-yellow-500/30"
+              className="rounded-xl border border-yellow-300/25 bg-yellow-400/12 px-5 py-4 text-base font-black text-yellow-100 hover:bg-yellow-400/18"
             >
               Run away 🏃‍♀️
             </button>
@@ -94,23 +94,23 @@ export default function AikoLeadershipPavilionPage() {
                   'She found it! It was just a cute cat 🐈. You earned a Bravery Badge! 🛡️'
                 )
               }
-              className="rounded-xl border border-yellow-300/70 bg-yellow-500/15 px-5 py-4 text-base font-black text-yellow-100 transition hover:bg-yellow-500/30"
+              className="rounded-xl border border-yellow-300/25 bg-yellow-400/12 px-5 py-4 text-base font-black text-yellow-100 hover:bg-yellow-400/18"
             >
               Turn on the light! 💡
             </button>
           </div>
 
           {braveryResult && (
-            <p className="mt-4 rounded-xl border border-yellow-300/60 bg-slate-800/85 px-4 py-2 text-sm font-black text-yellow-100">
+            <p className="mt-4 rounded-xl border border-yellow-200/25 bg-slate-800/65 px-4 py-2 text-sm font-black text-yellow-100">
               {braveryResult}
             </p>
           )}
         </section>
 
-        <section className="rounded-2xl border border-yellow-400/60 bg-slate-950/70 p-4 shadow-[0_0_24px_rgba(234,179,8,0.3)] sm:p-6">
+        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
           <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Real-Life Hero Missions</h2>
 
-          <div className="mt-4 space-y-3 rounded-2xl border border-yellow-300/55 bg-slate-800/80 p-4">
+          <div className="mt-4 space-y-3 rounded-2xl border border-yellow-200/20 bg-slate-800/65 p-4">
             {HERO_MISSIONS.map((mission, index) => {
               const checked = completedMissions.includes(mission);
               return (
@@ -118,7 +118,7 @@ export default function AikoLeadershipPavilionPage() {
                   key={mission}
                   type="button"
                   onClick={() => handleToggleMission(mission)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-yellow-300/40 bg-yellow-500/10 px-3 py-3 text-left transition hover:bg-yellow-500/20"
+                  className="flex w-full items-center gap-3 rounded-xl border border-yellow-200/20 bg-yellow-400/10 px-3 py-3 text-left hover:bg-yellow-400/15"
                 >
                   <span
                     className={`grid h-7 w-7 shrink-0 place-items-center rounded-md border-2 ${
