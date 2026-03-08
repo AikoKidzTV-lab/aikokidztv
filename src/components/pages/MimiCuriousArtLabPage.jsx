@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const PATTERN_CHOICES = ['🍃', '🌊', '☀️'];
+const EMOJI_DETECTIVE_ITEM_COUNT = 12;
+const RIDDLE_OPTIONS = ['A Map', 'A Keyboard', 'A Door'];
 
 export default function MimiCuriousArtLabPage() {
   const navigate = useNavigate();
@@ -11,6 +13,16 @@ export default function MimiCuriousArtLabPage() {
   const [patternValue, setPatternValue] = useState('?');
   const [patternSolved, setPatternSolved] = useState(false);
   const [patternFeedback, setPatternFeedback] = useState('');
+  const [emojiDetectiveBoard] = useState(() => {
+    const board = Array(EMOJI_DETECTIVE_ITEM_COUNT).fill('🍎');
+    const tomatoIndex = Math.floor(Math.random() * EMOJI_DETECTIVE_ITEM_COUNT);
+    board[tomatoIndex] = '🍅';
+    return board;
+  });
+  const [emojiDetectiveSolved, setEmojiDetectiveSolved] = useState(false);
+  const [emojiDetectiveFeedback, setEmojiDetectiveFeedback] = useState('');
+  const [riddleSolved, setRiddleSolved] = useState(false);
+  const [riddleFeedback, setRiddleFeedback] = useState('');
 
   useEffect(() => {
     if (!shapeFeedback) return undefined;
@@ -51,6 +63,29 @@ export default function MimiCuriousArtLabPage() {
     setPatternValue('?');
     setPatternSolved(false);
     setPatternFeedback('Try again, detective!');
+  };
+
+  const handleEmojiDetectivePick = (emoji) => {
+    if (emoji === '🍅') {
+      setEmojiDetectiveSolved(true);
+      setEmojiDetectiveFeedback('You found the odd one out! 🎉');
+      return;
+    }
+
+    if (!emojiDetectiveSolved) {
+      setEmojiDetectiveFeedback('Try again!');
+    }
+  };
+
+  const handleRiddleAnswer = (answer) => {
+    if (answer === 'A Keyboard') {
+      setRiddleSolved(true);
+      setRiddleFeedback('Correct! You are a genius! 🌟');
+      return;
+    }
+
+    setRiddleSolved(false);
+    setRiddleFeedback('Oops! Try again! ❌');
   };
 
   return (
@@ -200,6 +235,64 @@ export default function MimiCuriousArtLabPage() {
             {patternFeedback && (
               <p className={`mt-3 text-center text-sm font-black ${patternSolved ? 'text-emerald-300' : 'text-pink-200'}`}>
                 {patternFeedback}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-pink-200 sm:text-xl">Emoji Detective 🔍</h2>
+
+          <div className="mt-4 rounded-2xl border border-pink-200 bg-gradient-to-br from-rose-100 via-pink-100 to-fuchsia-100 p-4 text-slate-900 shadow-none sm:p-6">
+            <p className="text-sm font-bold text-pink-800">
+              Find the odd one out in Mimi&apos;s fruity puzzle board.
+            </p>
+
+            <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+              {emojiDetectiveBoard.map((emoji, index) => (
+                <button
+                  key={`${emoji}-${index}`}
+                  type="button"
+                  onClick={() => handleEmojiDetectivePick(emoji)}
+                  className="rounded-2xl border border-pink-200 bg-white px-4 py-5 text-4xl font-black text-pink-700 shadow-none"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+
+            {emojiDetectiveFeedback && (
+              <p className={`mt-4 text-sm font-black ${emojiDetectiveSolved ? 'text-emerald-600' : 'text-pink-700'}`}>
+                {emojiDetectiveFeedback}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-pink-200 sm:text-xl">Mimi&apos;s Riddle 🤔</h2>
+
+          <div className="mt-4 rounded-2xl border border-fuchsia-200/40 bg-gradient-to-br from-fuchsia-200 via-pink-200 to-rose-200 p-5 text-slate-900 shadow-none sm:p-6">
+            <p className="text-base font-black text-fuchsia-900 sm:text-lg">
+              I have keys but no locks. I have space but no room. You can enter but not go outside. What am I?
+            </p>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              {RIDDLE_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handleRiddleAnswer(option)}
+                  className="rounded-xl border border-fuchsia-300 bg-white px-4 py-3 text-sm font-black text-fuchsia-900 shadow-none"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+
+            {riddleFeedback && (
+              <p className={`mt-4 text-sm font-black ${riddleSolved ? 'text-emerald-700' : 'text-red-600'}`}>
+                {riddleFeedback}
               </p>
             )}
           </div>
