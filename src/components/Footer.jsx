@@ -20,24 +20,24 @@ const LegalModal = ({ isOpen, onClose, title, children }) => {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative bg-gray-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col shadow-2xl kid-modal kid-3d"
+          className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-[12px] flex flex-col shadow-none"
         >
-          <div className="flex justify-between items-center p-6 border-b border-white/10 bg-gray-900/50">
+          <div className="flex justify-between items-center p-6 border-b border-white/10 bg-white/5">
             <h3 className="text-xl font-bold text-white">{title}</h3>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              className="rounded-full p-2 text-gray-100 shadow-none hover:bg-white/10 transition-colors"
             >
               <X size={20} className="text-gray-400" />
             </button>
           </div>
-          <div className="p-6 overflow-y-auto text-gray-200 space-y-4 leading-relaxed [&_p]:text-gray-200 [&_li]:text-gray-200">
+          <div className="p-6 overflow-y-auto text-gray-100 space-y-4 leading-relaxed [&_p]:text-gray-100 [&_li]:text-gray-100">
             {children}
           </div>
-          <div className="p-4 border-t border-white/10 bg-gray-900/50 flex justify-end">
+          <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm"
+              className="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-gray-100 shadow-none transition-colors hover:bg-white/20"
             >
               Close
             </button>
@@ -64,7 +64,15 @@ const Footer = () => {
   };
 
   return (
-    <footer className="py-12 border-t border-white/10 mt-auto bg-white/10 dark:bg-black/20 backdrop-blur-md text-gray-200">
+    <footer
+      className="mt-auto border-t border-white/10 bg-white/5 py-12 text-gray-100 backdrop-blur-[12px]"
+      style={{
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+      }}
+    >
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 gap-8 mb-8 md:grid-cols-2 lg:grid-cols-5">
           
@@ -73,7 +81,7 @@ const Footer = () => {
             <h3 className="text-xl font-bold mb-4 tracking-tight">
               AikoKidzTV
             </h3>
-            <p className="text-sm leading-relaxed mb-4 text-gray-400">
+            <p className="mb-4 text-sm leading-relaxed text-gray-100/85">
               Empowering the next generation through AI-driven education and creativity. 
               Building a future where technology meets human potential.
             </p>
@@ -85,23 +93,23 @@ const Footer = () => {
               Quick Links
             </h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#hero" className="hover:text-accent transition-colors">Home</a></li>
+              <li><a href="#hero" className="text-gray-100 hover:text-accent transition-colors">Home</a></li>
               <li>
-                <Link to="/story" className="font-semibold hover:text-accent transition-colors">
+                <Link to="/story" className="font-semibold text-gray-100 hover:text-accent transition-colors">
                   Our Story
                 </Link>
               </li>
               <li>
-                <Link to="/projects" className="hover:text-accent transition-colors">
+                <Link to="/projects" className="text-gray-100 hover:text-accent transition-colors">
                   Projects
                 </Link>
               </li>
               <li>
-                <Link to="/blender-credit" className="hover:text-accent transition-colors">
+                <Link to="/blender-credit" className="text-gray-100 hover:text-accent transition-colors">
                   Blender Studio Credit
                 </Link>
               </li>
-              <li><a href="#ai-studio" className="hover:text-accent transition-colors">AI Studio</a></li>
+              <li><a href="#ai-studio" className="text-gray-100 hover:text-accent transition-colors">AI Studio</a></li>
             </ul>
           </div>
 
@@ -112,7 +120,7 @@ const Footer = () => {
               <li>
                 <button
                   onClick={() => openModal('privacy')}
-                  className="hover:text-accent transition-colors text-left no-underline"
+                  className="text-left text-gray-100 no-underline hover:text-accent transition-colors"
                   style={plainFooterButtonStyle}
                 >
                   Privacy Policy
@@ -121,7 +129,7 @@ const Footer = () => {
               <li>
                 <button
                   onClick={() => openModal('terms')}
-                  className="hover:text-accent transition-colors text-left no-underline"
+                  className="text-left text-gray-100 no-underline hover:text-accent transition-colors"
                   style={plainFooterButtonStyle}
                 >
                   Terms of Service
@@ -130,7 +138,7 @@ const Footer = () => {
               <li>
                 <button
                   onClick={() => openModal('refund')}
-                  className="hover:text-accent transition-colors text-left no-underline"
+                  className="text-left text-gray-100 no-underline hover:text-accent transition-colors"
                   style={plainFooterButtonStyle}
                 >
                   Refund Policy
@@ -139,7 +147,7 @@ const Footer = () => {
               <li>
                 <button
                   onClick={() => openModal('pricing')}
-                  className="hover:text-accent transition-colors text-left no-underline"
+                  className="text-left text-gray-100 no-underline hover:text-accent transition-colors"
                   style={plainFooterButtonStyle}
                 >
                   Pricing & Gem Economy
@@ -156,7 +164,7 @@ const Footer = () => {
                 <Mail size={16} className="text-gray-400" />
                 <button
                   onClick={() => openModal('contact')}
-                  className="hover:text-accent transition-colors text-left no-underline"
+                  className="text-left text-gray-100 no-underline hover:text-accent transition-colors"
                   style={plainFooterButtonStyle}
                 >
                   support@aikokidztv.com
@@ -178,7 +186,7 @@ const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="YouTube"
-                className="grid h-10 w-10 place-items-center rounded-full border border-red-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:bg-red-50"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/10 shadow-none transition hover:-translate-y-0.5 hover:bg-red-500/15"
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5 fill-red-600" aria-hidden="true">
                   <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.6 12 3.6 12 3.6s-7.6 0-9.4.5A3 3 0 0 0 .5 6.2 31.4 31.4 0 0 0 0 12a31.4 31.4 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.5 9.4.5 9.4.5s7.6 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.4 31.4 0 0 0 24 12a31.4 31.4 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.2 3.6-6.2 3.6Z" />
@@ -189,19 +197,19 @@ const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="grid h-10 w-10 place-items-center rounded-full border border-pink-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:bg-pink-50"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-white/10 shadow-none transition hover:-translate-y-0.5 hover:bg-pink-500/15"
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5 fill-pink-600" aria-hidden="true">
                   <path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4A5.8 5.8 0 0 1 16.2 22H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2Zm0 1.9A3.9 3.9 0 0 0 3.9 7.8v8.4a3.9 3.9 0 0 0 3.9 3.9h8.4a3.9 3.9 0 0 0 3.9-3.9V7.8a3.9 3.9 0 0 0-3.9-3.9H7.8Zm8.9 1.4a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 1.9a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2Z" />
                 </svg>
               </a>
             </div>
-            <p className="mt-3 text-xs text-gray-400">
+            <p className="mt-3 text-xs text-gray-100/80">
               Follow our journey and upcoming launches.
             </p>
           </div>
         </div>
-        <div className="pt-8 border-t border-white/10 text-center text-xs text-gray-400">
+        <div className="pt-8 border-t border-white/10 text-center text-xs text-gray-100/80">
           <p>&copy; {new Date().getFullYear()} AikoKidzTV. All rights reserved.</p>
           <p className="mt-2 text-[11px] font-semibold text-red-300">
             Ad-Free Website. NO REFUNDS under any circumstances. If an accidental purchase occurs, email a screenshot immediately. Missing gems issues will be resolved within 5 business days. Additional charges apply for disputes.
@@ -283,7 +291,7 @@ const Footer = () => {
             <strong>Strict Policy:</strong> All payments and Gem purchases are final. Once a transaction is complete, it cannot be retreated or refunded under any circumstances.
           </p>
         </div>
-        <p className="mt-4 text-sm text-gray-400">
+        <p className="mt-4 text-sm text-gray-100/80">
           By completing a purchase, you acknowledge and agree to this policy. If you have technical issues accessing your content, please contact our support team immediately.
         </p>
       </LegalModal>
@@ -294,7 +302,7 @@ const Footer = () => {
         onClose={closeModal} 
         title="Pricing & Gem Economy"
       >
-        <ul className="list-disc pl-5 space-y-3 text-gray-200">
+        <ul className="list-disc pl-5 space-y-3 text-gray-100">
           <li>
             <strong className="text-white">Story &amp; Poem Limits:</strong>{' '}
             Session limits depend on your active pack. Basic packs offer 2, 5, or 8 sessions every 3 days. VIP Pass holders get 15 daily sessions, and School/Educator accounts get 120 daily sessions.
@@ -318,22 +326,22 @@ const Footer = () => {
       >
         <div className="space-y-6">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-gray-300 uppercase">Support Email</label>
+            <label className="text-sm font-bold text-gray-100 uppercase">Support Email</label>
             <a href="mailto:support@aikokidztv.com" className="text-xl text-accent hover:underline font-mono">
               support@aikokidztv.com
             </a>
           </div>
           
           <div className="flex flex-col gap-2">
-             <label className="text-sm font-bold text-gray-300 uppercase">Address</label>
+             <label className="text-sm font-bold text-gray-100 uppercase">Address</label>
              <p className="text-lg">Gohana, Haryana, India</p>
           </div>
 
-          <div className="bg-secondary/50 p-6 rounded-xl border border-white/10 mt-4">
+          <div className="bg-white/5 p-6 rounded-xl border border-white/10 mt-4 shadow-none backdrop-blur-[12px]">
             <h4 className="text-white font-bold mb-2 flex items-center gap-2">
               <span className="w-2 h-2 bg-accent rounded-full animate-pulse"></span> Note to Users
             </h4>
-            <p className="text-gray-300 italic leading-relaxed">
+            <p className="text-gray-100/85 italic leading-relaxed">
               "Please Note: We are a founder-led startup. As an independent team, we personally review every query to ensure the best support. 
               Please allow 24-48 hours for a response. We appreciate your patience and support for indie developers."
             </p>
