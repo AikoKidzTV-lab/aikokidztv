@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, ChevronDown, Gem, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useKidsMode } from '../context/KidsModeContext';
 import { ADMIN_EMAIL } from '../utils/admin';
 
 const BELL_NOTIFICATION_EVENT = 'aiko:bell-notification';
@@ -31,6 +32,7 @@ function ProfileDropdownMenu({
   onOpenCosmicJourney,
   onGoToAdmin,
 }) {
+  const { isKidsModeOn, toggleKidsMode } = useKidsMode();
   if (!open) return null;
 
   const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
@@ -47,67 +49,93 @@ function ProfileDropdownMenu({
 
   return (
     <div className="absolute right-0 top-full mt-3 w-[24rem] max-w-[96vw] rounded-[1.5rem] border border-white/85 bg-white p-3 shadow-[0_20px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl z-50 animate-[fadeIn_0.18s_ease-out]">
-      <div className="rounded-2xl border border-white/90 bg-white p-3 shadow-[14px_14px_28px_rgba(148,163,184,0.25),-10px_-10px_24px_rgba(255,255,255,0.95),inset_2px_2px_6px_rgba(255,255,255,0.85),inset_-3px_-3px_8px_rgba(148,163,184,0.22)]">
-        <div className="grid grid-cols-[1fr_1fr] gap-3">
-          <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="mb-2 grid h-10 w-10 place-items-center rounded-full border border-slate-300 bg-white font-black text-black">
-              {avatarLetter}
+      <div className="max-h-[70vh] overflow-y-auto overscroll-contain pr-1">
+        <div className="rounded-2xl border border-white/90 bg-white p-3 shadow-[14px_14px_28px_rgba(148,163,184,0.25),-10px_-10px_24px_rgba(255,255,255,0.95),inset_2px_2px_6px_rgba(255,255,255,0.85),inset_-3px_-3px_8px_rgba(148,163,184,0.22)]">
+          <div className="grid grid-cols-[1fr_1fr] gap-3">
+            <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="mb-2 grid h-10 w-10 place-items-center rounded-full border border-slate-300 bg-white font-black text-black">
+                {avatarLetter}
+              </div>
+              <p className="text-[11px] font-black uppercase tracking-wider text-black">
+                {isLoggedIn ? 'Profile' : 'Guest'}
+              </p>
+              <p className="truncate text-sm font-black text-black">{user?.email || 'Login / Profile'}</p>
+              <p className="mt-2 inline-flex items-center gap-1 text-xs font-black text-black">
+                Gems: {gemsBalance}
+                <Gem size={13} className="text-purple-500" />
+              </p>
+              <p className="text-xs font-black text-black">Level: {level}</p>
             </div>
-            <p className="text-[11px] font-black uppercase tracking-wider text-black">
-              {isLoggedIn ? 'Profile' : 'Guest'}
-            </p>
-            <p className="truncate text-sm font-black text-black">{user?.email || 'Login / Profile'}</p>
-            <p className="mt-2 inline-flex items-center gap-1 text-xs font-black text-black">
-              Gems: {gemsBalance}
-              <Gem size={13} className="text-purple-500" />
-            </p>
-            <p className="text-xs font-black text-black">Level: {level}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-3 text-right">
-            <h2 className="text-3xl font-black tracking-tight text-black">
-              BLENDER STUDIO
-            </h2>
-            <p className="mt-2 text-[11px] leading-relaxed font-semibold text-black">
-              Note: The movies listed above are general kids&apos; movies. AikoKidzTV will soon bring its own original movies!
-            </p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 text-right">
+              <h2 className="text-3xl font-black tracking-tight text-black">
+                BLENDER STUDIO
+              </h2>
+              <p className="mt-2 text-[11px] leading-relaxed font-semibold text-black">
+                Note: The movies listed above are general kids&apos; movies. AikoKidzTV will soon bring its own original movies!
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-2.5">
-        <p className="px-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
-          Quick Links
-        </p>
-        <div className="mt-2 h-[280px] space-y-1.5 overflow-y-auto pr-1 scrollbar-hide">
-          {isAdmin && canSeeAdminPanel && (
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-2.5">
+          <div className="flex flex-col items-start gap-2 rounded-xl border border-pink-100 bg-gradient-to-r from-pink-50 to-amber-50 px-3.5 py-3">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-pink-700">
+              Kids Mode
+            </p>
             <button
-              onClick={run(onGoToAdmin)}
-              className="w-full rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-left text-sm font-bold text-violet-800 shadow-sm transition hover:bg-violet-100"
+              type="button"
+              onClick={toggleKidsMode}
+              aria-label="Toggle Kids Mode"
+              aria-pressed={isKidsModeOn}
+              className={`relative h-6 w-12 rounded-full transition ${
+                isKidsModeOn ? 'bg-pink-400' : 'bg-slate-300'
+              }`}
             >
-              Admin Panel
+              <span
+                className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  isKidsModeOn ? 'translate-x-6' : ''
+                }`}
+              />
             </button>
-          )}
-          <button
-            onClick={run(onOpenParentZone)}
-            className="w-full rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-100 to-sky-100 px-3.5 py-2 text-left text-sm font-bold text-indigo-900 shadow-sm transition hover:-translate-y-0.5"
-          >
-            Parent Zone
-          </button>
-          <button
-            type="button"
-            onClick={run(onOpenSignup || onOpenLogin)}
-            className="w-full rounded-xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-3.5 py-2 text-left text-sm font-bold text-pink-900 shadow-sm transition hover:brightness-105"
-          >
-            Create Account / Login with OTP
-          </button>
-          <button
-            type="button"
-            onClick={run(onOpenCosmicJourney)}
-            className="w-full rounded-xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-3.5 py-2 text-left text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
-          >
-            {'\u{1F680}'} Cosmic Journey
-            <span className="block text-xs font-semibold text-indigo-100">Open secure space exploration zone</span>
-          </button>
+            <p className="text-xs font-semibold text-slate-600">
+              {isKidsModeOn ? 'ON' : 'OFF'}
+            </p>
+          </div>
+
+          <p className="mt-3 px-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+            Quick Links
+          </p>
+          <div className="mt-2 space-y-1.5">
+            {isAdmin && canSeeAdminPanel && (
+              <button
+                onClick={run(onGoToAdmin)}
+                className="w-full rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-left text-sm font-bold text-violet-800 shadow-sm transition hover:bg-violet-100"
+              >
+                Admin Panel
+              </button>
+            )}
+            <button
+              onClick={run(onOpenParentZone)}
+              className="w-full rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-100 to-sky-100 px-3.5 py-2 text-left text-sm font-bold text-indigo-900 shadow-sm transition hover:-translate-y-0.5"
+            >
+              Parent Zone
+            </button>
+            <button
+              type="button"
+              onClick={run(onOpenSignup || onOpenLogin)}
+              className="w-full rounded-xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-3.5 py-2 text-left text-sm font-bold text-pink-900 shadow-sm transition hover:brightness-105"
+            >
+              Create Account / Login with OTP
+            </button>
+            <button
+              type="button"
+              onClick={run(onOpenCosmicJourney)}
+              className="w-full rounded-xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-3.5 py-2 text-left text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
+            >
+              {'\u{1F680}'} Cosmic Journey
+              <span className="block text-xs font-semibold text-indigo-100">Open secure space exploration zone</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
