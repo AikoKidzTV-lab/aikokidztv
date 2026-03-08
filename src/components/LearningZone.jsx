@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useKidsMode } from '../context/KidsModeContext';
 import { LEARNING_ZONE_PREMIUM_UNLOCKS } from '../constants/gemEconomy';
-import { unlockZoneWithGems } from '../utils/profileEconomy';
+import { supabase } from '../supabaseClient';
 
 const GUEST_PREMIUM_UNLOCKS = {
   colors: LEARNING_ZONE_PREMIUM_UNLOCKS.colors,
@@ -42,20 +42,6 @@ const writeGuestUnlockedZones = (zones) => {
     ? [...new Set(zones.map((value) => String(value || '').trim()).filter(Boolean))]
     : [];
   window.localStorage.setItem(GUEST_UNLOCKED_ZONES_STORAGE_KEY, JSON.stringify(safeZones));
-};
-
-const getUnlockStatusMessage = (result) => {
-  if (!result) return 'Unlock failed. Please try again.';
-  if (result.message) return String(result.message);
-
-  switch (result.code) {
-    case 'auth_required':
-      return 'Please log in to unlock this zone.';
-    case 'insufficient_gems':
-      return 'Not enough Gems. Please recharge and try again.';
-    default:
-      return 'Unlock failed. Please try again.';
-  }
 };
 
 const learningBoxes = [
@@ -108,6 +94,8 @@ export default function LearningZone({ onSelect }) {
   const [processingAction, setProcessingAction] = React.useState('');
   const [guestGems, setGuestGems] = React.useState(() => readGuestGems());
   const [guestUnlockedZones, setGuestUnlockedZones] = React.useState(() => readGuestUnlockedZones());
+  const [dbUnlockedModules, setDbUnlockedModules] = React.useState([]);
+  const [localGemBalance, setLocalGemBalance] = React.useState(null);
   const statusTimeoutRef = React.useRef(null);
 
   const unlockedZones = React.useMemo(() => {
@@ -117,7 +105,9 @@ export default function LearningZone({ onSelect }) {
   }, [profile?.unlocked_features, profile?.unlocked_zones]);
 
   const premiumUnlocks = user?.id ? LEARNING_ZONE_PREMIUM_UNLOCKS : GUEST_PREMIUM_UNLOCKS;
-  const currentDisplayedGems = user?.id ? Number(profile?.gems || 0) : guestGems;
+  const currentDisplayedGems = user?.id
+    ? (Number.isFinite(Number(localGemBalance)) ? Number(localGemBalance) : Number(profile?.gems || 0))
+    : guestGems;
 
   React.useEffect(() => () => {
     if (statusTimeoutRef.current) {
@@ -139,6 +129,55 @@ export default function LearningZone({ onSelect }) {
     };
   }, []);
 
+  React.useEffect(() => {
+    if (!user?.id) {
+      setDbUnlockedModules([]);
+      return undefined;
+    }
+
+    let isActive = true;
+    const loadUnlockedModules = async () => {
+      const { data, error } = await supabase
+        .from('unlocked_modules')
+        .select('module_id, zone_id')
+        .eq('user_id', user.id);
+
+      if (!isActive) return;
+
+      if (error) {
+        setDbUnlockedModules([]);
+        return;
+      }
+
+      const moduleIds = Array.isArray(data)
+        ? [...new Set(
+          data
+            .map((row) => String(row?.module_id || row?.zone_id || '').trim().toLowerCase())
+            .filter(Boolean)
+        )]
+        : [];
+
+      setDbUnlockedModules((current) => [...new Set([...current, ...moduleIds])]);
+    };
+
+    void loadUnlockedModules();
+    return () => {
+      isActive = false;
+    };
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    if (!user?.id) {
+      setLocalGemBalance(null);
+      return;
+    }
+
+    const profileGems = Number(profile?.gems);
+    if (Number.isFinite(profileGems)) {
+      setLocalGemBalance(Math.max(0, Math.floor(profileGems)));
+    }
+  }, [profile?.gems, user?.id]);
+
   const showStatus = React.useCallback((message) => {
     if (statusTimeoutRef.current) {
       window.clearTimeout(statusTimeoutRef.current);
@@ -150,10 +189,13 @@ export default function LearningZone({ onSelect }) {
   const canAccessCard = React.useCallback(
     (box) => {
       if (box.tier === 'core') return true;
-      if (user?.id) return unlockedZones.includes(box.id);
+      if (user?.id) {
+        const normalizedBoxId = String(box.id || '').trim().toLowerCase();
+        return unlockedZones.includes(box.id) || dbUnlockedModules.includes(normalizedBoxId);
+      }
       return guestUnlockedZones.includes(box.id);
     },
-    [guestUnlockedZones, unlockedZones, user?.id]
+    [dbUnlockedModules, guestUnlockedZones, unlockedZones, user?.id]
   );
 
   const visibleCards = React.useMemo(() => {
@@ -184,6 +226,7 @@ export default function LearningZone({ onSelect }) {
     if (!box?.id || box.tier !== 'premium' || processingAction) return;
     if (canAccessCard(box)) return;
 
+    const normalizedZoneId = String(box.id || '').trim().toLowerCase();
     const unlockCost = user?.id ? Number(box.unlockCost || 0) : Number(box.guestUnlockCost || 0);
     if (!Number.isFinite(unlockCost) || unlockCost <= 0) {
       showStatus('Unlock configuration is unavailable. Please try again.');
@@ -193,19 +236,76 @@ export default function LearningZone({ onSelect }) {
     setProcessingAction(box.id);
     try {
       if (user?.id) {
-        const unlockResult = await unlockZoneWithGems({
-          userId: user.id,
-          zoneId: box.id,
-          costGems: unlockCost,
-        });
+        const { data: dbProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('gems')
+          .eq('id', user.id)
+          .maybeSingle();
 
-        if (!unlockResult.ok) {
-          showStatus(getUnlockStatusMessage(unlockResult));
+        if (profileError) {
+          throw profileError;
+        }
+
+        const currentGems = Number(dbProfile?.gems || 0);
+        if (!Number.isFinite(currentGems) || currentGems < unlockCost) {
+          showStatus(`Not enough Gems. ${box.title} needs ${unlockCost} \u{1F48E}.`);
           return;
         }
 
-        await fetchProfile?.(user.id);
+        const nextGems = Math.max(0, Math.floor(currentGems) - unlockCost);
+        const { data: deductRow, error: deductError } = await supabase
+          .from('profiles')
+          .update({ gems: nextGems })
+          .eq('id', user.id)
+          .select('id, gems')
+          .maybeSingle();
+
+        if (deductError) {
+          throw deductError;
+        }
+        if (!deductRow?.id) {
+          throw new Error('Gem deduction failed. Please try again.');
+        }
+
+        const unlockTimestamp = new Date().toISOString();
+        let { error: unlockInsertError } = await supabase
+          .from('unlocked_modules')
+          .upsert(
+            {
+              user_id: user.id,
+              module_id: normalizedZoneId,
+              status: 'active',
+              unlocked_at: unlockTimestamp,
+            },
+            { onConflict: 'user_id,module_id' }
+          );
+
+        if (unlockInsertError) {
+          ({ error: unlockInsertError } = await supabase
+            .from('unlocked_modules')
+            .upsert(
+              {
+                user_id: user.id,
+                zone_id: normalizedZoneId,
+                status: 'active',
+                unlocked_at: unlockTimestamp,
+              },
+              { onConflict: 'user_id,zone_id' }
+            ));
+        }
+
+        if (unlockInsertError) {
+          await supabase
+            .from('profiles')
+            .update({ gems: currentGems })
+            .eq('id', user.id);
+          throw unlockInsertError;
+        }
+
+        setDbUnlockedModules((current) => [...new Set([...current, normalizedZoneId])]);
+        setLocalGemBalance(nextGems);
         showStatus(`${box.title} unlocked permanently for ${unlockCost} \u{1F48E}`);
+        void fetchProfile?.(user.id);
         return;
       }
 
@@ -223,7 +323,7 @@ export default function LearningZone({ onSelect }) {
       showStatus(`${box.title} unlocked for ${unlockCost} \u{1F48E} (guest wallet).`);
     } catch (error) {
       console.error('[LearningZone] Premium unlock failed:', error);
-      showStatus('Unlock failed. Please try again.');
+      showStatus(error?.message || 'Unlock failed. Please try again.');
     } finally {
       setProcessingAction('');
     }

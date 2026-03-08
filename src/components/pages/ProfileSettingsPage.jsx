@@ -22,44 +22,44 @@ export default function ProfileSettingsPage() {
   const { user, profile, fetchProfile } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [nickname, setNickname] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setDisplayName(String(profile?.full_name || profile?.display_name || ''));
     setNickname(String(profile?.nickname || ''));
   }, [profile?.display_name, profile?.full_name, profile?.nickname]);
 
-  const handleSave = async (event) => {
-    event.preventDefault();
-    if (isSaving) return;
+  const handleSaveProfile = async () => {
+    if (isLoading) return;
+    if (!user) return;
 
-    if (!user?.id) {
-      showProfileToast('info', 'Please log in to edit your profile.');
-      return;
-    }
-
-    setIsSaving(true);
     try {
-      const payload = {
+      setIsLoading(true);
+
+      const updates = {
         full_name: displayName.trim() || null,
         nickname: nickname.trim() || null,
+        updated_at: new Date().toISOString(),
       };
 
       const { error } = await supabase
         .from('profiles')
-        .update(payload)
+        .update(updates)
         .eq('id', user.id);
 
       if (error) {
         throw error;
       }
 
-      await fetchProfile?.(user.id);
       showProfileToast('success', 'Profile saved successfully.');
+      await Promise.resolve(fetchProfile?.(user.id)).catch((syncError) => {
+        console.warn('[ProfileSettings] Profile refresh failed after save:', syncError);
+      });
     } catch (error) {
+      console.error('Error updating profile:', error?.message || error);
       showProfileToast('error', error?.message || 'Could not save profile right now.');
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   };
 
@@ -106,7 +106,13 @@ export default function ProfileSettingsPage() {
             </button>
           </div>
 
-          <form onSubmit={handleSave} className="mt-6 space-y-4">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleSaveProfile();
+            }}
+            className="mt-6 space-y-4"
+          >
             <label className="block">
               <span className="mb-1.5 block text-sm font-black text-slate-200">Display Name</span>
               <input
@@ -136,10 +142,10 @@ export default function ProfileSettingsPage() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="submit"
-                disabled={isSaving}
+                disabled={isLoading}
                 className="rounded-full border border-cyan-300 bg-gradient-to-r from-cyan-300 to-blue-300 px-5 py-2.5 text-sm font-black text-slate-900 shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSaving ? 'Saving...' : 'Save Profile'}
+                {isLoading ? 'Saving...' : 'Save Profile'}
               </button>
             </div>
           </form>
