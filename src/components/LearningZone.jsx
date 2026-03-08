@@ -65,6 +65,7 @@ const learningBoxes = [
   },
   {
     id: 'colors',
+    moduleId: 'colors_and_shapes',
     title: 'Colors & Shapes',
     icon: '\u{1F3A8}',
     bg: 'bg-pink-100',
@@ -76,6 +77,7 @@ const learningBoxes = [
   },
   {
     id: 'animals',
+    moduleId: 'animal_safari',
     title: 'Animal Safari',
     icon: '\u{1F993}',
     bg: 'bg-green-100',
@@ -97,12 +99,6 @@ export default function LearningZone({ onSelect }) {
   const [dbUnlockedModules, setDbUnlockedModules] = React.useState([]);
   const [localGemBalance, setLocalGemBalance] = React.useState(null);
   const statusTimeoutRef = React.useRef(null);
-
-  const unlockedZones = React.useMemo(() => {
-    const zones = Array.isArray(profile?.unlocked_zones) ? profile.unlocked_zones : [];
-    const features = Array.isArray(profile?.unlocked_features) ? profile.unlocked_features : [];
-    return [...new Set([...zones, ...features].map((value) => String(value || '').trim()).filter(Boolean))];
-  }, [profile?.unlocked_features, profile?.unlocked_zones]);
 
   const premiumUnlocks = user?.id ? LEARNING_ZONE_PREMIUM_UNLOCKS : GUEST_PREMIUM_UNLOCKS;
   const currentDisplayedGems = user?.id
@@ -139,7 +135,7 @@ export default function LearningZone({ onSelect }) {
     const loadUnlockedModules = async () => {
       const { data, error } = await supabase
         .from('unlocked_modules')
-        .select('module_id, zone_id')
+        .select('module_id')
         .eq('user_id', user.id);
 
       if (!isActive) return;
@@ -152,7 +148,7 @@ export default function LearningZone({ onSelect }) {
       const moduleIds = Array.isArray(data)
         ? [...new Set(
           data
-            .map((row) => String(row?.module_id || row?.zone_id || '').trim().toLowerCase())
+            .map((row) => String(row?.module_id || '').trim().toLowerCase())
             .filter(Boolean)
         )]
         : [];
@@ -190,12 +186,12 @@ export default function LearningZone({ onSelect }) {
     (box) => {
       if (box.tier === 'core') return true;
       if (user?.id) {
-        const normalizedBoxId = String(box.id || '').trim().toLowerCase();
-        return unlockedZones.includes(box.id) || dbUnlockedModules.includes(normalizedBoxId);
+        const normalizedModuleId = String(box?.moduleId || box?.id || '').trim().toLowerCase();
+        return dbUnlockedModules.includes(normalizedModuleId);
       }
       return guestUnlockedZones.includes(box.id);
     },
-    [dbUnlockedModules, guestUnlockedZones, unlockedZones, user?.id]
+    [dbUnlockedModules, guestUnlockedZones, user?.id]
   );
 
   const visibleCards = React.useMemo(() => {
@@ -226,9 +222,9 @@ export default function LearningZone({ onSelect }) {
     if (!box?.id || box.tier !== 'premium' || processingAction) return;
     if (canAccessCard(box)) return;
 
-    const normalizedZoneId = String(box.id || '').trim().toLowerCase();
+    const normalizedModuleId = String(box?.moduleId || box?.id || '').trim().toLowerCase();
     const unlockCost = user?.id ? Number(box.unlockCost || 0) : Number(box.guestUnlockCost || 0);
-    if (!Number.isFinite(unlockCost) || unlockCost <= 0) {
+    if (!normalizedModuleId || !Number.isFinite(unlockCost) || unlockCost <= 0) {
       showStatus('Unlock configuration is unavailable. Please try again.');
       return;
     }
@@ -267,32 +263,9 @@ export default function LearningZone({ onSelect }) {
           throw new Error('Gem deduction failed. Please try again.');
         }
 
-        const unlockTimestamp = new Date().toISOString();
-        let { error: unlockInsertError } = await supabase
+        const { error: unlockInsertError } = await supabase
           .from('unlocked_modules')
-          .upsert(
-            {
-              user_id: user.id,
-              module_id: normalizedZoneId,
-              status: 'active',
-              unlocked_at: unlockTimestamp,
-            },
-            { onConflict: 'user_id,module_id' }
-          );
-
-        if (unlockInsertError) {
-          ({ error: unlockInsertError } = await supabase
-            .from('unlocked_modules')
-            .upsert(
-              {
-                user_id: user.id,
-                zone_id: normalizedZoneId,
-                status: 'active',
-                unlocked_at: unlockTimestamp,
-              },
-              { onConflict: 'user_id,zone_id' }
-            ));
-        }
+          .insert({ user_id: user.id, module_id: normalizedModuleId });
 
         if (unlockInsertError) {
           await supabase
@@ -302,7 +275,7 @@ export default function LearningZone({ onSelect }) {
           throw unlockInsertError;
         }
 
-        setDbUnlockedModules((current) => [...new Set([...current, normalizedZoneId])]);
+        setDbUnlockedModules((current) => [...new Set([...current, normalizedModuleId])]);
         setLocalGemBalance(nextGems);
         showStatus(`${box.title} unlocked permanently for ${unlockCost} \u{1F48E}`);
         void fetchProfile?.(user.id);
