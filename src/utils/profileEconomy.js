@@ -35,6 +35,18 @@ const isMissingColumnError = (error, columnName) => {
   );
 };
 
+const isMissingTableError = (error, tableName) => {
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  const normalizedTable = String(tableName || '').toLowerCase();
+  if (!normalizedTable) return false;
+  return text.includes(normalizedTable) || error?.code === '42P01';
+};
+
+const toStringArray = (value) =>
+  Array.isArray(value)
+    ? [...new Set(value.map((item) => String(item || '').trim()).filter(Boolean))]
+    : [];
+
 const mergeProfileWithUses = (profile, userId, uses) => {
   const source = profile && typeof profile === 'object' ? profile : {};
   return {
@@ -114,7 +126,161 @@ const updateProfileMagicArtEconomy = async ({ userId, nextGems, nextUses }) => {
   };
 };
 
-export const unlockZoneWithGems = async () => ({ ok: true });
+export const unlockZoneWithGems = async ({ userId, zoneId, costGems } = {}) => {
+  if (!userId) {
+    return { ok: false, code: 'auth_required', message: 'Please log in to continue.' };
+  }
+
+  const normalizedZoneId = String(zoneId || '').trim().toLowerCase();
+  if (!normalizedZoneId) {
+    return { ok: false, code: 'invalid_zone', message: 'Invalid learning zone unlock request.' };
+  }
+
+  const spendAmount = normalizeWholeNumber(costGems);
+  if (spendAmount <= 0) {
+    return { ok: false, code: 'invalid_cost', message: 'Invalid unlock cost configuration.' };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, gems, unlocked_zones, unlocked_features')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (profileError) {
+    return {
+      ok: false,
+      code: 'profile_error',
+      message: profileError.message || 'Failed to load profile.',
+    };
+  }
+
+  const sourceProfile = profile && typeof profile === 'object' ? profile : { id: userId, gems: 0 };
+  const currentGems = normalizeWholeNumber(sourceProfile.gems);
+  const currentUnlockedZones = toStringArray(sourceProfile.unlocked_zones);
+  const currentUnlockedFeatures = toStringArray(sourceProfile.unlocked_features);
+  const isAlreadyUnlocked =
+    currentUnlockedZones.includes(normalizedZoneId) || currentUnlockedFeatures.includes(normalizedZoneId);
+
+  if (isAlreadyUnlocked) {
+    return {
+      ok: true,
+      alreadyUnlocked: true,
+      gems: currentGems,
+      zoneId: normalizedZoneId,
+    };
+  }
+
+  if (currentGems < spendAmount) {
+    return {
+      ok: false,
+      code: 'insufficient_gems',
+      message: `Not enough Gems. ${spendAmount} Gems required.`,
+      gems: currentGems,
+      required: spendAmount,
+    };
+  }
+
+  const nextGems = Math.max(0, currentGems - spendAmount);
+  const nextUnlockedZones = [...new Set([...currentUnlockedZones, normalizedZoneId])];
+  const nextUnlockedFeatures = [...new Set([...currentUnlockedFeatures, normalizedZoneId])];
+
+  let { error: profileUpdateError } = await supabase
+    .from('profiles')
+    .update({
+      gems: nextGems,
+      unlocked_zones: nextUnlockedZones,
+      unlocked_features: nextUnlockedFeatures,
+    })
+    .eq('id', userId);
+
+  if (profileUpdateError && isMissingColumnError(profileUpdateError, 'unlocked_features')) {
+    ({ error: profileUpdateError } = await supabase
+      .from('profiles')
+      .update({
+        gems: nextGems,
+        unlocked_zones: nextUnlockedZones,
+      })
+      .eq('id', userId));
+  }
+
+  if (profileUpdateError && isMissingColumnError(profileUpdateError, 'unlocked_zones')) {
+    ({ error: profileUpdateError } = await supabase
+      .from('profiles')
+      .update({
+        gems: nextGems,
+        unlocked_features: nextUnlockedFeatures,
+      })
+      .eq('id', userId));
+  }
+
+  if (profileUpdateError) {
+    return {
+      ok: false,
+      code: 'update_error',
+      message: profileUpdateError.message || 'Failed to unlock module.',
+    };
+  }
+
+  // Persist unlock in dedicated table when available.
+  const unlockRecord = {
+    user_id: userId,
+    module_id: normalizedZoneId,
+    status: 'active',
+    unlocked_at: new Date().toISOString(),
+  };
+
+  let { error: insertUnlockRecordError } = await supabase
+    .from('unlocked_modules')
+    .upsert(unlockRecord, { onConflict: 'user_id,module_id' });
+
+  if (insertUnlockRecordError && isMissingColumnError(insertUnlockRecordError, 'module_id')) {
+    ({ error: insertUnlockRecordError } = await supabase
+      .from('unlocked_modules')
+      .upsert(
+        {
+          user_id: userId,
+          zone_id: normalizedZoneId,
+          status: 'active',
+          unlocked_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,zone_id' }
+      ));
+  }
+
+  const canIgnoreUnlockRecordError =
+    isMissingTableError(insertUnlockRecordError, 'unlocked_modules') ||
+    isMissingColumnError(insertUnlockRecordError, 'module_id') ||
+    isMissingColumnError(insertUnlockRecordError, 'zone_id') ||
+    isMissingColumnError(insertUnlockRecordError, 'status') ||
+    isMissingColumnError(insertUnlockRecordError, 'unlocked_at');
+
+  if (insertUnlockRecordError && !canIgnoreUnlockRecordError) {
+    await supabase
+      .from('profiles')
+      .update({
+        gems: currentGems,
+        unlocked_zones: currentUnlockedZones,
+        unlocked_features: currentUnlockedFeatures,
+      })
+      .eq('id', userId);
+
+    return {
+      ok: false,
+      code: 'unlock_record_error',
+      message: insertUnlockRecordError.message || 'Failed to persist unlock record. Transaction rolled back.',
+    };
+  }
+
+  return {
+    ok: true,
+    gems: nextGems,
+    spent: spendAmount,
+    zoneId: normalizedZoneId,
+    unlockedZones: nextUnlockedZones,
+    unlockedFeatures: nextUnlockedFeatures,
+  };
+};
 export const claimRewardOnce = async () => ({ ok: true, alreadyClaimed: false });
 
 export const buyMagicArtPack = async ({ userId, costGems, packUses } = {}) => {

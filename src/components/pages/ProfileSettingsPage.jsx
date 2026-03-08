@@ -25,9 +25,9 @@ export default function ProfileSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setDisplayName(String(profile?.display_name || ''));
+    setDisplayName(String(profile?.full_name || profile?.display_name || ''));
     setNickname(String(profile?.nickname || ''));
-  }, [profile?.display_name, profile?.nickname]);
+  }, [profile?.display_name, profile?.full_name, profile?.nickname]);
 
   const handleSave = async (event) => {
     event.preventDefault();
@@ -41,14 +41,14 @@ export default function ProfileSettingsPage() {
     setIsSaving(true);
     try {
       const payload = {
-        id: user.id,
-        display_name: displayName.trim() || null,
+        full_name: displayName.trim() || null,
         nickname: nickname.trim() || null,
       };
 
       const { error } = await supabase
         .from('profiles')
-        .upsert(payload, { onConflict: 'id' });
+        .update(payload)
+        .eq('id', user.id);
 
       if (error) {
         throw error;
