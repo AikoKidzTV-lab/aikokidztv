@@ -112,47 +112,47 @@ export default function NikoFriendshipHavenPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-red-200 sm:text-xl">The Quiet Helper</h2>
-          <p className="mt-2 text-sm font-bold text-slate-300">AIKO broke his toy. How can NIKO help?</p>
+        <section className="rounded-2xl border border-red-300/30 bg-red-900 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-white sm:text-xl">The Quiet Helper</h2>
+          <p className="mt-2 text-sm font-bold text-red-100">AIKO broke his toy. How can NIKO help?</p>
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => setHelperMessage("Too loud! Let's be gentle.")}
-              className="rounded-xl border border-red-300/25 bg-red-400/12 px-5 py-4 text-base font-black text-red-100 shadow-none hover:bg-red-400/18"
+              className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-base font-black text-red-950 shadow-none hover:bg-red-100"
             >
               Shout loudly 🗣️
             </button>
             <button
               type="button"
               onClick={() => setHelperMessage('Great job! You helped quietly! 🥰')}
-              className="rounded-xl border border-red-300/25 bg-red-400/12 px-5 py-4 text-base font-black text-red-100 shadow-none hover:bg-red-400/18"
+              className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-base font-black text-red-950 shadow-none hover:bg-red-100"
             >
               Bring tape quietly 🩹
             </button>
           </div>
 
           {helperMessage && (
-            <p className="mt-4 rounded-xl border border-red-200/25 bg-slate-800/65 px-4 py-2 text-sm font-black text-red-100">
+            <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-950">
               {helperMessage}
             </p>
           )}
         </section>
 
-        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-red-200 sm:text-xl">Calm Breathing</h2>
+        <section className="rounded-2xl border border-red-300/30 bg-red-900 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-white sm:text-xl">Calm Breathing</h2>
 
-          <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-red-200/20 bg-slate-800/65 p-5 shadow-none">
+          <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-950 shadow-none">
             <div
-              className={`grid h-28 w-28 place-items-center rounded-full border-4 border-red-300 bg-red-500/20 text-5xl transition-transform duration-[4000ms] ${
+              className={`grid h-28 w-28 place-items-center rounded-full border-4 border-red-300 bg-red-100 text-5xl transition-transform duration-[4000ms] ${
                 breathingPhase === 'in' ? 'scale-125' : 'scale-90'
               }`}
             >
               🎈
             </div>
 
-            <p className="text-sm font-black text-red-100">
+            <p className="text-sm font-black text-red-950">
               {breathingPhase === 'in'
                 ? 'Breathe In...'
                 : breathingPhase === 'out'
@@ -163,24 +163,24 @@ export default function NikoFriendshipHavenPage() {
             <button
               type="button"
               onClick={handleStartBreathing}
-              className="rounded-xl border border-red-300/25 bg-red-400/15 px-5 py-3 text-base font-black text-red-100 shadow-none hover:bg-red-400/20"
+              className="rounded-xl border border-red-700 bg-red-700 px-5 py-3 text-base font-black text-white shadow-none hover:bg-red-800"
             >
               {isBreathing ? 'Restart Breathing 🧘' : 'Start Breathing 🧘'}
             </button>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-red-200 sm:text-xl">Confidence Meter</h2>
+        <section className="rounded-2xl border border-red-300/30 bg-red-900 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-white sm:text-xl">Confidence Meter</h2>
 
-          <div className="mt-4 rounded-2xl border border-red-200/20 bg-slate-800/65 p-4 shadow-none">
-            <div className="h-6 w-full overflow-hidden rounded-full bg-gray-700">
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-950 shadow-none">
+            <div className="h-6 w-full overflow-hidden rounded-full bg-rose-100">
               <div
-                className="h-full bg-red-500/85"
+                className="h-full bg-red-700"
                 style={{ width: `${confidence}%` }}
               />
             </div>
-            <p className="mt-2 text-sm font-bold text-red-100">Confidence: {confidence}%</p>
+            <p className="mt-2 text-sm font-bold text-red-950">Confidence: {confidence}%</p>
 
             <button
               type="button"
@@ -189,23 +189,23 @@ export default function NikoFriendshipHavenPage() {
               className={`mt-4 rounded-xl border px-5 py-3 text-base font-black shadow-none ${
                 confidence >= 100
                   ? 'cursor-not-allowed border-gray-600 bg-gray-700 text-gray-300'
-                  : 'border-red-300/25 bg-red-400/15 text-red-100 hover:bg-red-400/20'
+                  : 'border-red-700 bg-red-700 text-white hover:bg-red-800'
               }`}
             >
               Encourage NIKO! 👏
             </button>
 
             {showConfidenceSuccess && (
-              <div className="mt-4 rounded-xl border border-pink-200/25 bg-pink-500/12 px-4 py-3 text-sm font-black text-pink-100">
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-100 px-4 py-3 text-sm font-black text-red-950">
                 NIKO feels brave today! Best Friends Forever! 💖
               </div>
             )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-red-300/30 bg-red-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-red-200 sm:text-xl">60-Second Fitness Mission 🏆</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">60-Second Fitness Mission 🏆</h2>
             <button
               type="button"
               onClick={() => {
@@ -218,8 +218,8 @@ export default function NikoFriendshipHavenPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-red-200/25 bg-gradient-to-br from-red-200 via-rose-100 to-orange-100 p-5 text-slate-900 shadow-none sm:p-6">
-            <p className="text-2xl font-black leading-relaxed text-red-900 sm:text-3xl">
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-950 shadow-none sm:p-6">
+            <p className="text-2xl font-black leading-relaxed text-red-950 sm:text-3xl">
               {fitnessMissions[missionIndex]}
             </p>
 
@@ -230,7 +230,7 @@ export default function NikoFriendshipHavenPage() {
                 className={`rounded-xl border px-5 py-3 text-sm font-black shadow-none ${
                   isAccomplished
                     ? 'border-emerald-400 bg-emerald-500 text-white'
-                    : 'border-red-300 bg-white text-red-900'
+                    : 'border-red-700 bg-white text-red-950'
                 }`}
               >
                 Mission Accomplished ✅
@@ -239,9 +239,9 @@ export default function NikoFriendshipHavenPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-red-300/30 bg-red-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-red-200 sm:text-xl">Power Food Facts 🍎</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Power Food Facts 🍎</h2>
             <button
               type="button"
               onClick={() => setFoodIndex((prev) => (prev + 1) % foodFacts.length)}
@@ -251,10 +251,10 @@ export default function NikoFriendshipHavenPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-rose-200/30 bg-gradient-to-br from-rose-100 via-pink-100 to-red-100 p-5 text-slate-900 shadow-none sm:p-6">
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-950 shadow-none sm:p-6">
             <p className="text-6xl">{foodFacts[foodIndex].emoji}</p>
-            <p className="mt-3 text-2xl font-black text-red-900">{foodFacts[foodIndex].food}</p>
-            <p className="mt-2 text-base font-bold leading-relaxed text-rose-900">
+            <p className="mt-3 text-2xl font-black text-red-950">{foodFacts[foodIndex].food}</p>
+            <p className="mt-2 text-base font-bold leading-relaxed text-red-900">
               {foodFacts[foodIndex].fact}
             </p>
           </div>

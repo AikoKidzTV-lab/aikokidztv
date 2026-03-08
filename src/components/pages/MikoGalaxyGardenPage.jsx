@@ -171,9 +171,9 @@ export default function MikoGalaxyGardenPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-lime-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-lime-300/30 bg-green-950 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-lime-200 sm:text-xl">Cosmic Seed Growth 🌰</h2>
+            <h2 className="text-lg font-black text-lime-50 sm:text-xl">Cosmic Seed Growth 🌰</h2>
             <button
               type="button"
               onClick={() => setGrowthStage((prev) => nextIndex(prev, COSMIC_STAGES.length))}
@@ -183,15 +183,15 @@ export default function MikoGalaxyGardenPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-lime-200/25 bg-gradient-to-br from-lime-100 via-green-100 to-emerald-100 p-5 text-slate-900">
+          <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-950">
             <div className="grid grid-cols-3 gap-4">
               {COSMIC_STAGES.map((stage, index) => (
                 <div
                   key={stage.label}
                   className={`rounded-2xl border px-4 py-5 text-center ${
                     growthStage === index
-                      ? 'border-lime-400 bg-white text-emerald-900 ring-2 ring-lime-300'
-                      : 'border-lime-200 bg-white/70 text-lime-900'
+                      ? 'border-lime-500 bg-white text-green-950 ring-2 ring-lime-400'
+                      : 'border-green-200 bg-green-100 text-green-900'
                   }`}
                 >
                   <p className={`text-5xl ${growthStage === index ? 'text-6xl' : ''}`}>{stage.emoji}</p>
@@ -202,8 +202,8 @@ export default function MikoGalaxyGardenPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-lime-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-lime-200 sm:text-xl">Animal Safari Grid 🦁</h2>
+        <section className="rounded-2xl border border-lime-300/30 bg-green-950 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-lime-50 sm:text-xl">Animal Safari Grid 🦁</h2>
 
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {ANIMAL_SAFARI_GRID.map((animal) => {
@@ -215,8 +215,8 @@ export default function MikoGalaxyGardenPage() {
                   onClick={() => setSelectedAnimal(animal.id)}
                   className={`rounded-2xl border px-4 py-5 text-center ${
                     isSelected
-                      ? 'border-lime-300 bg-lime-500/20 text-lime-100'
-                      : 'border-lime-200/20 bg-slate-800/65 text-lime-100'
+                      ? 'border-lime-600 bg-green-100 text-green-950'
+                      : 'border-green-200 bg-green-50 text-green-950'
                   }`}
                 >
                   <p className="text-5xl">{animal.emoji}</p>
@@ -225,35 +225,35 @@ export default function MikoGalaxyGardenPage() {
             })}
           </div>
 
-          <div className="mt-4 rounded-2xl border border-lime-200/20 bg-slate-800/65 p-5 shadow-none">
-            <p className="text-2xl font-black text-lime-100">{activeSafariAnimal.name}</p>
-            <p className="mt-2 text-sm font-bold leading-relaxed text-slate-200">{activeSafariAnimal.fact}</p>
+          <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-5 shadow-none">
+            <p className="text-2xl font-black text-green-950">{activeSafariAnimal.name}</p>
+            <p className="mt-2 text-sm font-bold leading-relaxed text-green-900">{activeSafariAnimal.fact}</p>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-lime-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-lime-200 sm:text-xl">Earth Defender Badge 🛡️</h2>
+        <section className="rounded-2xl border border-lime-300/30 bg-green-950 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-lime-50 sm:text-xl">Earth Defender Badge 🛡️</h2>
 
-          <div className="mt-4 rounded-2xl border border-lime-200/20 bg-slate-800/65 p-5 shadow-none">
+          <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-950 shadow-none">
             {!hasBadge ? (
               <button
                 type="button"
                 onClick={() => setHasBadge(true)}
-                className="rounded-xl border border-lime-300/25 bg-lime-400/15 px-5 py-3 text-base font-black text-lime-100 shadow-none hover:bg-lime-400/20"
+                className="rounded-xl border border-green-700 bg-green-700 px-5 py-3 text-base font-black text-white shadow-none hover:bg-green-800"
               >
                 Pledge to Protect the Earth!
               </button>
             ) : (
-              <div className="rounded-2xl border border-lime-300 bg-gradient-to-r from-lime-400/25 via-emerald-400/25 to-green-400/25 px-5 py-4 text-lg font-black text-lime-100 ring-2 ring-lime-300/40">
+              <div className="rounded-2xl border border-green-700 bg-green-100 px-5 py-4 text-lg font-black text-green-950 ring-2 ring-lime-400/40">
                 Official Earth Defender! 🌍💚
               </div>
             )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-lime-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-lime-300/30 bg-green-950 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-lime-200 sm:text-xl">Nature Explorer Mission 🌿</h2>
+            <h2 className="text-lg font-black text-lime-50 sm:text-xl">Nature Explorer Mission 🌿</h2>
             <button
               type="button"
               onClick={() => {
@@ -266,8 +266,8 @@ export default function MikoGalaxyGardenPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-lime-200/30 bg-gradient-to-br from-lime-100 via-emerald-100 to-green-100 p-5 text-slate-900 shadow-none sm:p-6">
-            <p className="text-2xl font-black leading-relaxed text-lime-900 sm:text-3xl">
+          <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-950 shadow-none sm:p-6">
+            <p className="text-2xl font-black leading-relaxed text-green-950 sm:text-3xl">
               {ecoMissions[missionIndex]}
             </p>
 
@@ -278,7 +278,7 @@ export default function MikoGalaxyGardenPage() {
                 className={`rounded-xl border px-5 py-3 text-sm font-black shadow-none ${
                   isMissionDone
                     ? 'border-emerald-400 bg-emerald-500 text-white'
-                    : 'border-lime-300 bg-white text-lime-900'
+                    : 'border-green-700 bg-white text-green-950'
                 }`}
               >
                 Mission Accomplished ✅
@@ -287,9 +287,9 @@ export default function MikoGalaxyGardenPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-lime-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-lime-300/30 bg-green-950 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-lime-200 sm:text-xl">Guess the Animal 🐾</h2>
+            <h2 className="text-lg font-black text-lime-50 sm:text-xl">Guess the Animal 🐾</h2>
             <button
               type="button"
               onClick={() => {
@@ -302,13 +302,13 @@ export default function MikoGalaxyGardenPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-green-200/20 bg-slate-800/65 p-5 shadow-none sm:p-6">
-            <p className="text-xl font-black leading-relaxed text-lime-100 sm:text-2xl">
+          <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-950 shadow-none sm:p-6">
+            <p className="text-xl font-black leading-relaxed text-green-950 sm:text-2xl">
               {currentAnimalRiddle.riddle}
             </p>
 
             {showAnimalAnswer && (
-              <div className="mt-4 rounded-xl border border-lime-200/25 bg-lime-500/12 px-4 py-4 text-lime-100">
+              <div className="mt-4 rounded-xl border border-green-200 bg-green-100 px-4 py-4 text-green-950">
                 <p className="text-5xl">{currentAnimalRiddle.emoji}</p>
                 <p className="mt-2 text-lg font-black">{currentAnimalRiddle.answer}</p>
               </div>
@@ -318,7 +318,7 @@ export default function MikoGalaxyGardenPage() {
               <button
                 type="button"
                 onClick={() => setShowAnimalAnswer(true)}
-                className="rounded-xl border border-lime-300/25 bg-lime-400/15 px-5 py-3 text-sm font-black text-lime-100 shadow-none hover:bg-lime-400/20"
+                className="rounded-xl border border-green-700 bg-green-700 px-5 py-3 text-sm font-black text-white shadow-none hover:bg-green-800"
               >
                 Reveal Animal 👁️
               </button>
@@ -326,9 +326,9 @@ export default function MikoGalaxyGardenPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-lime-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-lime-300/30 bg-green-950 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-lime-200 sm:text-xl">Amazing Earth Facts 🌍</h2>
+            <h2 className="text-lg font-black text-lime-50 sm:text-xl">Amazing Earth Facts 🌍</h2>
             <button
               type="button"
               onClick={() => setEarthFactIndex((prev) => nextIndex(prev, earthFacts.length))}
@@ -338,16 +338,16 @@ export default function MikoGalaxyGardenPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-lime-200/30 bg-gradient-to-br from-green-100 via-lime-100 to-emerald-100 p-5 text-slate-900 shadow-none sm:p-6">
-            <p className="text-xl font-black leading-relaxed text-green-900 sm:text-2xl">
+          <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-950 shadow-none sm:p-6">
+            <p className="text-xl font-black leading-relaxed text-green-950 sm:text-2xl">
               {earthFacts[earthFactIndex]}
             </p>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-lime-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-lime-300/30 bg-green-950 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-lime-200 sm:text-xl">Galaxy Secrets 🪐</h2>
+            <h2 className="text-lg font-black text-lime-50 sm:text-xl">Galaxy Secrets 🪐</h2>
             <button
               type="button"
               onClick={() => setSpaceFactIndex((prev) => nextIndex(prev, spaceFacts.length))}
@@ -357,16 +357,16 @@ export default function MikoGalaxyGardenPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-emerald-200/20 bg-gradient-to-br from-slate-950 via-green-950 to-emerald-950 p-5 text-emerald-50 shadow-none sm:p-6">
-            <p className="text-xl font-black leading-relaxed text-lime-100 sm:text-2xl">
+          <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-950 shadow-none sm:p-6">
+            <p className="text-xl font-black leading-relaxed text-green-950 sm:text-2xl">
               {spaceFacts[spaceFactIndex]}
             </p>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-lime-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-lime-300/30 bg-green-950 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-lime-200 sm:text-xl">Safari Fact Finder 🦒</h2>
+            <h2 className="text-lg font-black text-lime-50 sm:text-xl">Safari Fact Finder 🦒</h2>
             <button
               type="button"
               onClick={() => setSafariFactIndex((prev) => nextIndex(prev, safariFacts.length))}
@@ -376,10 +376,10 @@ export default function MikoGalaxyGardenPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-lime-200/30 bg-gradient-to-br from-lime-100 via-yellow-50 to-green-100 p-5 text-slate-900 shadow-none sm:p-6">
+          <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-950 shadow-none sm:p-6">
             <p className="text-6xl">{currentSafariFact.emoji}</p>
-            <p className="mt-3 text-2xl font-black text-green-900">{currentSafariFact.name}</p>
-            <p className="mt-2 text-base font-bold leading-relaxed text-lime-900">
+            <p className="mt-3 text-2xl font-black text-green-950">{currentSafariFact.name}</p>
+            <p className="mt-2 text-base font-bold leading-relaxed text-green-900">
               {currentSafariFact.fact}
             </p>
           </div>

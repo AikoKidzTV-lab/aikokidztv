@@ -333,9 +333,9 @@ export default function MimiCuriousArtLabPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-pink-300/30 bg-fuchsia-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-pink-200 sm:text-xl">Why/How Magic Book</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Why/How Magic Book</h2>
             <button
               type="button"
               onClick={handleNextMagicBook}
@@ -345,13 +345,13 @@ export default function MimiCuriousArtLabPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-pink-300/25 bg-gradient-to-br from-rose-100/95 to-pink-100/95 p-4 text-slate-800 shadow-none sm:p-6">
+          <div className="mt-4 rounded-2xl border border-pink-200 bg-pink-50 p-4 text-pink-950 shadow-none sm:p-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-xl border border-pink-200 bg-white/85 p-4">
+              <div className="rounded-xl border border-pink-200 bg-white p-4">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-pink-700">Question Page</p>
                 <p className="mt-3 text-2xl font-black text-pink-900">{currentMagicBook.question}</p>
               </div>
-              <div className="rounded-xl border border-pink-200 bg-white/85 p-4">
+              <div className="rounded-xl border border-pink-200 bg-white p-4">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-pink-700">Discovery Page</p>
                 <div className="mt-3 space-y-2 text-sm font-bold text-pink-900">
                   {revealStep === 0 && <p>Open the steps one by one!</p>}
@@ -372,12 +372,12 @@ export default function MimiCuriousArtLabPage() {
                 <button
                   type="button"
                   onClick={handleAdvanceMagicBook}
-                  className="rounded-xl border border-pink-300/25 bg-pink-500/12 px-4 py-3 text-sm font-black text-pink-900 shadow-none hover:bg-pink-500/18"
+                  className="rounded-xl border border-pink-300 bg-white px-4 py-3 text-sm font-black text-pink-950 shadow-none hover:bg-pink-100"
                 >
                   {revealStep + 1}. {currentMagicBook.steps[revealStep]}
                 </button>
               ) : (
-                <div className="rounded-xl border border-pink-300/25 bg-pink-500/12 px-4 py-3 text-sm font-black text-pink-900">
+                <div className="rounded-xl border border-pink-300 bg-pink-100 px-4 py-3 text-sm font-black text-pink-950">
                   All clues unlocked 📖
                 </div>
               )}
@@ -385,9 +385,9 @@ export default function MimiCuriousArtLabPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-pink-300/30 bg-fuchsia-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-pink-200 sm:text-xl">The Puzzle Canvas</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">The Puzzle Canvas</h2>
             <button
               type="button"
               onClick={handleNextPuzzleCanvas}
@@ -397,8 +397,8 @@ export default function MimiCuriousArtLabPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-pink-200/20 bg-slate-800/65 p-5 shadow-none">
-            <div className="mx-auto flex h-52 w-full max-w-md flex-col items-center justify-center rounded-xl border border-pink-300/40 bg-gradient-to-b from-pink-100/70 to-fuchsia-100/70 p-4">
+          <div className="mt-4 rounded-2xl border border-pink-200 bg-pink-50 p-5 text-pink-950 shadow-none">
+            <div className="mx-auto flex h-52 w-full max-w-md flex-col items-center justify-center rounded-xl border border-pink-200 bg-white p-4">
               <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-pink-700">Art Challenge</p>
               <div
                 className={`grid h-24 w-24 place-items-center rounded-3xl border-4 ${
@@ -409,7 +409,7 @@ export default function MimiCuriousArtLabPage() {
               >
                 <span className="text-5xl">{canvasSolved ? currentPuzzleCanvas.targetIcon : '❔'}</span>
               </div>
-              <div className="mt-4 rounded-md border border-pink-200 bg-white/80 px-3 py-2 text-center text-xs font-black text-pink-800">
+              <div className="mt-4 rounded-md border border-pink-200 bg-pink-100 px-3 py-2 text-center text-xs font-black text-pink-950">
                 {canvasSolved ? currentPuzzleCanvas.solvedPrompt : currentPuzzleCanvas.placeholderLabel}
               </div>
               <p className="mt-3 text-center text-sm font-black text-pink-900">{currentPuzzleCanvas.prompt}</p>
@@ -421,7 +421,7 @@ export default function MimiCuriousArtLabPage() {
                   key={option.id}
                   type="button"
                   onClick={() => handleShapeSelect(option.id)}
-                  className="rounded-xl border border-pink-300/25 bg-pink-500/15 px-5 py-3 text-base font-black text-pink-100 shadow-none hover:bg-pink-500/20"
+                  className="rounded-xl border border-pink-300 bg-white px-5 py-3 text-base font-black text-pink-950 shadow-none hover:bg-pink-100"
                 >
                   {option.label} {option.icon}
                 </button>
@@ -429,14 +429,14 @@ export default function MimiCuriousArtLabPage() {
             </div>
 
             {shapeFeedback && (
-              <p className="mt-3 text-center text-sm font-black text-pink-200">{shapeFeedback}</p>
+              <p className="mt-3 text-center text-sm font-black text-pink-900">{shapeFeedback}</p>
             )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-pink-300/30 bg-fuchsia-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-pink-200 sm:text-xl">Pattern Detective</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Pattern Detective</h2>
             <button
               type="button"
               onClick={handleNextPattern}
@@ -446,17 +446,17 @@ export default function MimiCuriousArtLabPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-pink-200/20 bg-slate-800/65 p-4 shadow-none">
+          <div className="mt-4 rounded-2xl border border-pink-200 bg-pink-50 p-4 text-pink-950 shadow-none">
             <div className="flex flex-wrap items-center justify-center gap-3 text-2xl sm:text-3xl">
               {currentPattern.sequence.map((item, index) => (
                 <span
                   key={`${item}-${index}`}
-                  className="rounded-lg border border-pink-300/60 bg-pink-500/20 px-3 py-2"
+                  className="rounded-lg border border-pink-200 bg-white px-3 py-2"
                 >
                   {item}
                 </span>
               ))}
-              <span className="rounded-lg border border-pink-300/60 bg-pink-500/20 px-3 py-2">{patternValue}</span>
+              <span className="rounded-lg border border-pink-200 bg-pink-100 px-3 py-2">{patternValue}</span>
             </div>
 
             <div className="mt-4 flex flex-wrap justify-center gap-3">
@@ -465,7 +465,7 @@ export default function MimiCuriousArtLabPage() {
                   key={choice}
                   type="button"
                   onClick={() => handlePatternChoice(choice)}
-                  className="rounded-xl border border-pink-300/25 bg-pink-500/15 px-5 py-3 text-2xl font-black text-pink-100 shadow-none hover:bg-pink-500/20"
+                  className="rounded-xl border border-pink-300 bg-white px-5 py-3 text-2xl font-black text-pink-950 shadow-none hover:bg-pink-100"
                 >
                   {choice}
                 </button>
@@ -473,16 +473,16 @@ export default function MimiCuriousArtLabPage() {
             </div>
 
             {patternFeedback && (
-              <p className={`mt-3 text-center text-sm font-black ${patternSolved ? 'text-emerald-300' : 'text-pink-200'}`}>
+              <p className={`mt-3 text-center text-sm font-black ${patternSolved ? 'text-emerald-700' : 'text-pink-900'}`}>
                 {patternFeedback}
               </p>
             )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-pink-300/30 bg-fuchsia-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-pink-200 sm:text-xl">Emoji Detective 🔍</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Emoji Detective 🔍</h2>
             <button
               type="button"
               onClick={handleNextEmojiDetective}
@@ -492,8 +492,8 @@ export default function MimiCuriousArtLabPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-pink-200 bg-gradient-to-br from-rose-100 via-pink-100 to-fuchsia-100 p-4 text-slate-900 shadow-none sm:p-6">
-            <p className="text-sm font-bold text-pink-800">
+          <div className="mt-4 rounded-2xl border border-pink-200 bg-pink-50 p-4 text-pink-950 shadow-none sm:p-6">
+            <p className="text-sm font-bold text-pink-950">
               Find the odd one out in Mimi&apos;s emoji puzzle board.
             </p>
 
@@ -503,7 +503,7 @@ export default function MimiCuriousArtLabPage() {
                   key={`${currentEmojiDetective.targetEmoji}-${index}`}
                   type="button"
                   onClick={() => handleEmojiDetectivePick(emoji)}
-                  className="rounded-2xl border border-pink-200 bg-white px-4 py-5 text-4xl font-black text-pink-700 shadow-none"
+                  className="rounded-2xl border border-pink-200 bg-white px-4 py-5 text-4xl font-black text-pink-950 shadow-none"
                 >
                   {emoji}
                 </button>
@@ -511,16 +511,16 @@ export default function MimiCuriousArtLabPage() {
             </div>
 
             {emojiDetectiveFeedback && (
-              <p className={`mt-4 text-sm font-black ${emojiDetectiveSolved ? 'text-emerald-600' : 'text-pink-700'}`}>
+              <p className={`mt-4 text-sm font-black ${emojiDetectiveSolved ? 'text-emerald-700' : 'text-pink-900'}`}>
                 {emojiDetectiveFeedback}
               </p>
             )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-pink-300/30 bg-fuchsia-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-pink-200 sm:text-xl">Mimi&apos;s Riddle 🤔</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Mimi&apos;s Riddle 🤔</h2>
             <button
               type="button"
               onClick={handleNextRiddle}
@@ -530,8 +530,8 @@ export default function MimiCuriousArtLabPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-fuchsia-200/40 bg-gradient-to-br from-fuchsia-200 via-pink-200 to-rose-200 p-5 text-slate-900 shadow-none sm:p-6">
-            <p className="text-base font-black text-fuchsia-900 sm:text-lg">
+          <div className="mt-4 rounded-2xl border border-pink-200 bg-pink-50 p-5 text-pink-950 shadow-none sm:p-6">
+            <p className="text-base font-black text-pink-950 sm:text-lg">
               {currentRiddle.question}
             </p>
 
@@ -541,7 +541,7 @@ export default function MimiCuriousArtLabPage() {
                   key={option}
                   type="button"
                   onClick={() => handleRiddleAnswer(option)}
-                  className="rounded-xl border border-fuchsia-300 bg-white px-4 py-3 text-sm font-black text-fuchsia-900 shadow-none"
+                  className="rounded-xl border border-pink-300 bg-white px-4 py-3 text-sm font-black text-pink-950 shadow-none"
                 >
                   {option}
                 </button>

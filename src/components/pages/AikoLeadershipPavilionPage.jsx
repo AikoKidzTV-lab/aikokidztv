@@ -87,30 +87,30 @@ export default function AikoLeadershipPavilionPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Daily Hero Affirmations</h2>
+        <section className="rounded-2xl border border-yellow-300/30 bg-yellow-700 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-white sm:text-xl">Daily Hero Affirmations</h2>
 
-          <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-yellow-200/20 bg-slate-800/65 p-5 shadow-none">
+          <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-yellow-200 bg-yellow-50 p-5 text-amber-950 shadow-none">
             <div className="animate-pulse text-6xl sm:text-7xl">☀️</div>
             <button
               type="button"
               onClick={() => setShowAffirmation(true)}
-              className="rounded-xl border border-yellow-300/25 bg-yellow-400/15 px-5 py-3 text-base font-black text-yellow-100 shadow-none hover:bg-yellow-400/20"
+              className="rounded-xl border border-amber-700 bg-amber-600 px-5 py-3 text-base font-black text-white shadow-none hover:bg-amber-700"
             >
               Tap for AIKO&apos;s Message! ✨
             </button>
 
             {showAffirmation && (
-              <p className="rounded-xl border border-yellow-200/25 bg-amber-500/12 px-4 py-3 text-center text-sm font-black text-yellow-100">
+              <p className="rounded-xl border border-yellow-200 bg-yellow-100 px-4 py-3 text-center text-sm font-black text-amber-950">
                 You are brave, you are smart, and you can do anything today! 💛
               </p>
             )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Bravery Tales</h2>
-          <p className="mt-2 text-sm font-bold text-slate-300">
+        <section className="rounded-2xl border border-yellow-300/30 bg-yellow-700 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-white sm:text-xl">Bravery Tales</h2>
+          <p className="mt-2 text-sm font-bold text-yellow-100">
             AIKO hears a strange noise in the dark room. What should she do?
           </p>
 
@@ -118,7 +118,7 @@ export default function AikoLeadershipPavilionPage() {
             <button
               type="button"
               onClick={() => setBraveryResult("It's okay to be scared, but let's try to be brave!")}
-              className="rounded-xl border border-yellow-300/25 bg-yellow-400/12 px-5 py-4 text-base font-black text-yellow-100 shadow-none hover:bg-yellow-400/18"
+              className="rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-4 text-base font-black text-amber-950 shadow-none hover:bg-yellow-100"
             >
               Run away 🏃‍♀️
             </button>
@@ -129,23 +129,23 @@ export default function AikoLeadershipPavilionPage() {
                   'She found it! It was just a cute cat 🐈. You earned a Bravery Badge! 🛡️'
                 )
               }
-              className="rounded-xl border border-yellow-300/25 bg-yellow-400/12 px-5 py-4 text-base font-black text-yellow-100 shadow-none hover:bg-yellow-400/18"
+              className="rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-4 text-base font-black text-amber-950 shadow-none hover:bg-yellow-100"
             >
               Turn on the light! 💡
             </button>
           </div>
 
           {braveryResult && (
-            <p className="mt-4 rounded-xl border border-yellow-200/25 bg-slate-800/65 px-4 py-2 text-sm font-black text-yellow-100">
+            <p className="mt-4 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-2 text-sm font-black text-amber-950">
               {braveryResult}
             </p>
           )}
         </section>
 
-        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Real-Life Hero Missions</h2>
+        <section className="rounded-2xl border border-yellow-300/30 bg-yellow-700 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-white sm:text-xl">Real-Life Hero Missions</h2>
 
-          <div className="mt-4 space-y-3 rounded-2xl border border-yellow-200/20 bg-slate-800/65 p-4 shadow-none">
+          <div className="mt-4 space-y-3 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-amber-950 shadow-none">
             {HERO_MISSIONS.map((mission, index) => {
               const checked = completedMissions.includes(mission);
               return (
@@ -153,20 +153,20 @@ export default function AikoLeadershipPavilionPage() {
                   key={mission}
                   type="button"
                   onClick={() => handleToggleMission(mission)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-yellow-200/20 bg-yellow-400/10 px-3 py-3 text-left shadow-none hover:bg-yellow-400/15"
+                  className="flex w-full items-center gap-3 rounded-xl border border-yellow-200 bg-white px-3 py-3 text-left shadow-none hover:bg-yellow-100"
                 >
                   <span
                     className={`grid h-7 w-7 shrink-0 place-items-center rounded-md border-2 ${
                       checked
                         ? 'border-yellow-200 bg-yellow-400 text-slate-900'
-                        : 'border-yellow-300/80 bg-slate-900 text-transparent'
+                        : 'border-amber-700 bg-white text-transparent'
                     }`}
                   >
                     ✓
                   </span>
                   <span
                     className={`text-sm font-black sm:text-base ${
-                      checked ? 'line-through text-gray-500' : 'text-yellow-100'
+                      checked ? 'line-through text-amber-500' : 'text-amber-950'
                     }`}
                   >
                     {index + 1}. {mission}
@@ -177,9 +177,9 @@ export default function AikoLeadershipPavilionPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-yellow-300/30 bg-yellow-700 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Heroic Good Deeds 🌟</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Heroic Good Deeds 🌟</h2>
             <button
               type="button"
               onClick={() => {
@@ -192,8 +192,8 @@ export default function AikoLeadershipPavilionPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-yellow-200/30 bg-gradient-to-br from-yellow-200 via-amber-100 to-yellow-100 p-5 text-slate-900 shadow-none sm:p-6">
-            <p className="text-2xl font-black leading-relaxed text-amber-900 sm:text-3xl">
+          <div className="mt-4 rounded-2xl border border-yellow-200 bg-yellow-50 p-5 text-amber-950 shadow-none sm:p-6">
+            <p className="text-2xl font-black leading-relaxed text-amber-950 sm:text-3xl">
               {goodDeeds[deedIndex]}
             </p>
 
@@ -213,9 +213,9 @@ export default function AikoLeadershipPavilionPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-yellow-300/30 bg-yellow-700 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Bravery Situations 🦸‍♀️</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Bravery Situations 🦸‍♀️</h2>
             <button
               type="button"
               onClick={() => {
@@ -228,8 +228,8 @@ export default function AikoLeadershipPavilionPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-yellow-200/20 bg-gradient-to-br from-amber-100 via-yellow-100 to-orange-100 p-5 text-slate-900 shadow-none sm:p-6">
-            <p className="text-xl font-black leading-relaxed text-amber-900 sm:text-2xl">
+          <div className="mt-4 rounded-2xl border border-yellow-200 bg-yellow-50 p-5 text-amber-950 shadow-none sm:p-6">
+            <p className="text-xl font-black leading-relaxed text-amber-950 sm:text-2xl">
               {braveryScenarios[scenarioIndex].scenario}
             </p>
 

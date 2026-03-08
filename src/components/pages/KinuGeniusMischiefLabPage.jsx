@@ -256,9 +256,9 @@ export default function KinuGeniusMischiefLabPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-blue-300/30 bg-blue-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-blue-200 sm:text-xl">Crazy Contraptions</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Crazy Contraptions</h2>
             <button
               type="button"
               onClick={handleNextContraption}
@@ -267,30 +267,30 @@ export default function KinuGeniusMischiefLabPage() {
               Next 🔄
             </button>
           </div>
-          <div className="mt-4 rounded-2xl border border-blue-200/20 bg-slate-800/65 p-4 shadow-none">
-            <p className="text-base font-bold text-blue-100">{currentContraption.prompt}</p>
+          <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-950 shadow-none">
+            <p className="text-base font-bold text-blue-950">{currentContraption.prompt}</p>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <span className="rounded-lg border border-blue-300/50 bg-blue-500/10 px-3 py-2 text-2xl">{currentContraption.startEmoji}</span>
+              <span className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-2xl">{currentContraption.startEmoji}</span>
               <span className="text-xl text-blue-300">→</span>
-              <span className="rounded-lg border border-dashed border-blue-400/50 bg-slate-900/70 px-3 py-2 text-lg text-blue-200">
+              <span className="rounded-lg border border-dashed border-blue-300 bg-blue-100 px-3 py-2 text-lg text-blue-900">
                 {contraptionActivated ? currentContraption.toolEmoji : '...'}
               </span>
               <span className="text-xl text-blue-300">→</span>
-              <span className="rounded-lg border border-blue-300/50 bg-blue-500/10 px-3 py-2 text-2xl">{currentContraption.endEmoji}</span>
+              <span className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-2xl">{currentContraption.endEmoji}</span>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={handleActivateContraption}
-                className="rounded-xl border border-blue-300/25 bg-blue-400/15 px-5 py-3 text-base font-black text-blue-100 shadow-none hover:bg-blue-400/20"
+                className="rounded-xl border border-blue-700 bg-blue-700 px-5 py-3 text-base font-black text-white shadow-none hover:bg-blue-800"
               >
                 {currentContraption.actionLabel}
               </button>
 
               {contraptionActivated && (
-                <p className="rounded-xl border border-emerald-200/25 bg-emerald-500/12 px-4 py-2 text-sm font-black text-emerald-200">
+                <p className="rounded-xl border border-emerald-200 bg-emerald-100 px-4 py-2 text-sm font-black text-emerald-900">
                   {currentContraption.successMessage}
                 </p>
               )}
@@ -298,9 +298,9 @@ export default function KinuGeniusMischiefLabPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-blue-300/30 bg-blue-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-blue-200 sm:text-xl">Hide &amp; Seek Prank</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Hide &amp; Seek Prank</h2>
             <button
               type="button"
               onClick={handleNextPrank}
@@ -309,7 +309,7 @@ export default function KinuGeniusMischiefLabPage() {
               Next 🔄
             </button>
           </div>
-          <p className="mt-2 text-sm font-bold text-slate-300">{currentPrankChallenge.prompt}</p>
+          <p className="mt-2 text-sm font-bold text-blue-100">{currentPrankChallenge.prompt}</p>
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {currentPrankChallenge.spots.map((spot) => (
@@ -317,7 +317,7 @@ export default function KinuGeniusMischiefLabPage() {
                 key={`${currentPrankChallenge.answerId}-${spot.id}`}
                 type="button"
                 onClick={() => handlePrankSpotClick(spot.id)}
-                className="rounded-xl border border-blue-300/25 bg-blue-400/12 px-5 py-5 text-lg font-black text-blue-100 shadow-none hover:bg-blue-400/18"
+                className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-5 text-lg font-black text-blue-950 shadow-none hover:bg-blue-100"
               >
                 {spot.label}
               </button>
@@ -325,15 +325,15 @@ export default function KinuGeniusMischiefLabPage() {
           </div>
 
           {prankResult && (
-            <p className="mt-4 rounded-xl border border-blue-200/25 bg-slate-800/65 px-4 py-2 text-sm font-black text-blue-100">
+            <p className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-black text-blue-950">
               {prankResult}
             </p>
           )}
         </section>
 
-        <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+        <section className="rounded-2xl border border-blue-300/30 bg-blue-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-blue-200 sm:text-xl">Silly Solutions</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Silly Solutions</h2>
             <button
               type="button"
               onClick={handleNextSolution}
@@ -343,8 +343,8 @@ export default function KinuGeniusMischiefLabPage() {
             </button>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-blue-200/20 bg-slate-800/65 p-4 shadow-none">
-            <p className="text-base font-black text-blue-100">{currentSolutionChallenge.prompt}</p>
+          <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-950 shadow-none">
+            <p className="text-base font-black text-blue-950">{currentSolutionChallenge.prompt}</p>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {currentSolutionChallenge.options.map((option) => (
@@ -352,7 +352,7 @@ export default function KinuGeniusMischiefLabPage() {
                   key={`${currentSolutionChallenge.prompt}-${option.id}`}
                   type="button"
                   onClick={() => handleSillySolutionClick(option.message)}
-                  className="rounded-xl border border-blue-300/25 bg-blue-400/12 px-4 py-4 text-base font-black text-blue-100 shadow-none hover:bg-blue-400/18"
+                  className="rounded-xl border border-blue-200 bg-white px-4 py-4 text-base font-black text-blue-950 shadow-none hover:bg-blue-100"
                 >
                   {option.label}
                 </button>
@@ -360,18 +360,18 @@ export default function KinuGeniusMischiefLabPage() {
             </div>
 
             {solutionResult && (
-              <p className="mt-4 rounded-xl border border-emerald-200/25 bg-emerald-500/12 px-4 py-2 text-sm font-black text-emerald-200">
+              <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-100 px-4 py-2 text-sm font-black text-emerald-900">
                 {solutionResult}
               </p>
             )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-blue-200 sm:text-xl">Crazy Drawing Prompt 🎨</h2>
+        <section className="rounded-2xl border border-blue-300/30 bg-blue-900 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-white sm:text-xl">Crazy Drawing Prompt 🎨</h2>
 
-          <div className="mt-4 rounded-2xl border border-sky-200/50 bg-gradient-to-br from-sky-100 via-blue-100 to-cyan-100 p-5 text-slate-900 shadow-none sm:p-6">
-            <p className="text-2xl font-black leading-relaxed text-blue-900 sm:text-3xl">
+          <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-5 text-blue-950 shadow-none sm:p-6">
+            <p className="text-2xl font-black leading-relaxed text-blue-950 sm:text-3xl">
               {drawingPrompts[promptIndex]}
             </p>
 
@@ -379,7 +379,7 @@ export default function KinuGeniusMischiefLabPage() {
               <button
                 type="button"
                 onClick={() => setPromptIndex((prev) => (prev + 1) % drawingPrompts.length)}
-                className="rounded-xl border border-sky-300 bg-blue-500 px-5 py-3 text-sm font-black text-white shadow-none hover:bg-blue-600"
+                className="rounded-xl border border-blue-700 bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-none hover:bg-blue-800"
               >
                 Give me another idea! 🔄
               </button>
@@ -387,16 +387,16 @@ export default function KinuGeniusMischiefLabPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-blue-200 sm:text-xl">Silly Joke of the Day 😂</h2>
+        <section className="rounded-2xl border border-blue-300/30 bg-blue-900 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-white sm:text-xl">Silly Joke of the Day 😂</h2>
 
-          <div className="mt-4 rounded-2xl border border-sky-200/40 bg-gradient-to-br from-cyan-100 via-sky-100 to-blue-100 p-5 text-slate-900 shadow-none sm:p-6">
-            <p className="text-xl font-black leading-relaxed text-blue-900 sm:text-2xl">
+          <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-5 text-blue-950 shadow-none sm:p-6">
+            <p className="text-xl font-black leading-relaxed text-blue-950 sm:text-2xl">
               {kinuJokes[jokeIndex].setup}
             </p>
 
             {showPunchline && (
-              <p className="mt-4 rounded-xl border border-blue-200 bg-white/80 px-4 py-3 text-sm font-black text-blue-800">
+              <p className="mt-4 rounded-xl border border-blue-200 bg-blue-100 px-4 py-3 text-sm font-black text-blue-950">
                 {kinuJokes[jokeIndex].punchline}
               </p>
             )}
@@ -405,7 +405,7 @@ export default function KinuGeniusMischiefLabPage() {
               <button
                 type="button"
                 onClick={() => setShowPunchline(true)}
-                className="rounded-xl border border-sky-300 bg-white px-5 py-3 text-sm font-black text-blue-900 shadow-none hover:bg-sky-50"
+                className="rounded-xl border border-blue-200 bg-white px-5 py-3 text-sm font-black text-blue-950 shadow-none hover:bg-blue-100"
               >
                 Tell me! 🎭
               </button>
@@ -415,7 +415,7 @@ export default function KinuGeniusMischiefLabPage() {
                   setJokeIndex((prev) => (prev + 1) % kinuJokes.length);
                   setShowPunchline(false);
                 }}
-                className="rounded-xl border border-blue-300 bg-blue-500 px-5 py-3 text-sm font-black text-white shadow-none hover:bg-blue-600"
+                className="rounded-xl border border-blue-700 bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-none hover:bg-blue-800"
               >
                 Next Joke ➡️
               </button>
