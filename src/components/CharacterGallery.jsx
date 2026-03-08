@@ -15,7 +15,7 @@ const CharacterGallery = () => {
           <div key={char.key}>
             <Link
               to={char.route}
-              className="group relative block cursor-pointer overflow-hidden rounded-[35px] border border-white/40 p-6 transition-all duration-300 ease-in-out hover:-translate-y-3 hover:scale-[1.02] hover:shadow-2xl shadow-[0_18px_36px_var(--card-shadow-dark),0_0_0_1px_var(--card-outline),0_0_28px_var(--card-glow),inset_0_-8px_0_rgba(0,0,0,0.15),inset_0_4px_0_rgba(255,255,255,0.42)] hover:shadow-[0_28px_56px_var(--card-shadow-dark),0_0_0_1px_var(--card-outline),0_0_44px_var(--card-glow),inset_0_-10px_0_rgba(0,0,0,0.18),inset_0_5px_0_rgba(255,255,255,0.5)]"
+              className="group relative block cursor-pointer overflow-hidden rounded-[35px] border border-white/40 p-6 transition-all duration-300 ease-in-out hover:-translate-y-3 hover:scale-[1.02] shadow-[0_18px_36px_var(--card-shadow-dark),0_0_0_1px_var(--card-outline),0_0_28px_var(--card-glow),inset_0_-8px_0_rgba(0,0,0,0.15),inset_0_4px_0_rgba(255,255,255,0.42)] hover:shadow-[0_28px_56px_var(--card-shadow-dark),0_0_0_1px_var(--card-outline),0_0_44px_var(--card-glow),inset_0_-10px_0_rgba(0,0,0,0.18),inset_0_5px_0_rgba(255,255,255,0.5)]"
               style={{
                 '--card-shadow-dark': char.card.shadowDark,
                 '--card-outline': char.card.innerLight,
