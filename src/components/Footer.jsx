@@ -7,10 +7,10 @@ const footerPanelClass =
   'rounded-[2rem] border border-white/75 bg-white/62 shadow-[0_20px_60px_rgba(15,23,42,0.14)] backdrop-blur-2xl';
 
 const footerLinkClass =
-  'flex w-full items-start justify-between gap-3 rounded-xl border border-white/75 bg-white/58 px-3.5 py-3 text-left text-sm font-bold text-slate-900 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/78';
+  'flex w-full items-start justify-between gap-3 rounded-2xl border border-white/75 bg-white/58 px-3.5 py-3 text-left text-sm font-bold text-slate-900 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-colors duration-200 hover:bg-white/66';
 
 const footerInfoCardClass =
-  'rounded-xl border border-white/75 bg-white/52 px-3.5 py-3 text-sm text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.07)] backdrop-blur-xl';
+  'rounded-2xl border border-white/75 bg-white/52 px-3.5 py-3 text-sm text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.07)] backdrop-blur-xl';
 
 const LegalModal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
@@ -162,7 +162,7 @@ const Footer = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="YouTube"
-                  className="grid h-12 w-12 place-items-center rounded-xl border border-white/75 bg-white/58 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/78"
+                  className="grid h-12 w-12 place-items-center rounded-2xl border border-white/75 bg-white/58 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-colors duration-200 hover:bg-white/66"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5 fill-red-600" aria-hidden="true">
                     <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.6 12 3.6 12 3.6s-7.6 0-9.4.5A3 3 0 0 0 .5 6.2 31.4 31.4 0 0 0 0 12a31.4 31.4 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.5 9.4.5 9.4.5s7.6 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.4 31.4 0 0 0 24 12a31.4 31.4 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.2 3.6-6.2 3.6Z" />
@@ -173,7 +173,7 @@ const Footer = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Instagram"
-                  className="grid h-12 w-12 place-items-center rounded-xl border border-white/75 bg-white/58 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/78"
+                  className="grid h-12 w-12 place-items-center rounded-2xl border border-white/75 bg-white/58 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-colors duration-200 hover:bg-white/66"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5 fill-pink-600" aria-hidden="true">
                     <path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4A5.8 5.8 0 0 1 16.2 22H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2Zm0 1.9A3.9 3.9 0 0 0 3.9 7.8v8.4a3.9 3.9 0 0 0 3.9 3.9h8.4a3.9 3.9 0 0 0 3.9-3.9V7.8a3.9 3.9 0 0 0-3.9-3.9H7.8Zm8.9 1.4a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 1.9a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2Z" />
