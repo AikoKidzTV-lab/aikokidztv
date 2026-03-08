@@ -15,28 +15,28 @@ const CharacterGallery = () => {
           <div key={char.key}>
             <Link
               to={char.route}
-              className="group relative block overflow-hidden rounded-[35px] p-6"
+              className="group relative block cursor-pointer overflow-hidden rounded-[35px] border border-white/40 p-6 transition-all duration-300 ease-in-out hover:-translate-y-3 hover:scale-[1.02] hover:shadow-2xl shadow-[0_18px_36px_var(--card-shadow-dark),0_0_0_1px_var(--card-outline),0_0_28px_var(--card-glow),inset_0_-8px_0_rgba(0,0,0,0.15),inset_0_4px_0_rgba(255,255,255,0.42)] hover:shadow-[0_28px_56px_var(--card-shadow-dark),0_0_0_1px_var(--card-outline),0_0_44px_var(--card-glow),inset_0_-10px_0_rgba(0,0,0,0.18),inset_0_5px_0_rgba(255,255,255,0.5)]"
               style={{
-                background: char.card.color,
-                border: `1px solid ${char.card.shadowLight}`,
-                boxShadow: `16px 16px 32px ${char.card.shadowDark}, -16px -16px 32px ${char.card.shadowLight}, inset 4px 4px 8px ${char.card.innerLight}, inset -4px -4px 8px ${char.card.innerDark}`,
+                '--card-shadow-dark': char.card.shadowDark,
+                '--card-outline': char.card.innerLight,
+                '--card-glow': `${char.card.shadowLight}cc`,
+                background: `linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 24%, rgba(255,255,255,0) 48%), ${char.card.color}`,
               }}
             >
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
                   background:
-                    'radial-gradient(circle at 20% 12%, rgba(255,255,255,0.25), transparent 36%), radial-gradient(circle at 85% 85%, rgba(0,0,0,0.16), transparent 45%)',
+                    'radial-gradient(circle at 22% 12%, rgba(255,255,255,0.34), transparent 32%), radial-gradient(circle at 80% 88%, rgba(0,0,0,0.2), transparent 42%)',
                 }}
               />
 
               <div className="relative z-10 flex items-center gap-4">
                 <div
-                  className="grid h-14 w-14 place-items-center rounded-full text-2xl"
+                  className="grid h-14 w-14 place-items-center rounded-full text-2xl shadow-[inset_0_-4px_0_rgba(0,0,0,0.14),inset_0_3px_0_rgba(255,255,255,0.45)] transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:-rotate-3"
                   style={{
                     background: char.card.pillBg,
                     border: `1px solid ${char.card.innerLight}`,
-                    boxShadow: `inset 2px 2px 6px ${char.card.innerLight}, inset -3px -4px 8px ${char.card.innerDark}`,
                   }}
                 >
                   <span>{char.emoji}</span>
@@ -45,16 +45,23 @@ const CharacterGallery = () => {
                   <h3 className={`truncate text-lg font-black tracking-wide ${char.card.textClass}`}>
                     {char.cardTitle}
                   </h3>
-                  <p className={`text-sm font-bold ${char.card.textClass}`}>{char.specialHobby}</p>
+                  <p
+                    className={`mt-2 inline-flex rounded-full px-3 py-1.5 text-xs font-black shadow-[inset_0_-3px_0_rgba(0,0,0,0.12),inset_0_2px_0_rgba(255,255,255,0.35)] ${char.card.pillTextClass}`}
+                    style={{
+                      background: char.card.pillBg,
+                      border: `1px solid ${char.card.innerLight}`,
+                    }}
+                  >
+                    {char.specialHobby}
+                  </p>
                 </div>
               </div>
 
               <div
-                className={`relative z-10 mt-4 rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.12em] ${char.card.pillTextClass}`}
+                className={`relative z-10 mt-4 rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.12em] shadow-[inset_0_-4px_0_rgba(0,0,0,0.12),inset_0_3px_0_rgba(255,255,255,0.4)] ${char.card.pillTextClass}`}
                 style={{
                   background: char.card.pillBg,
                   border: `1px solid ${char.card.innerLight}`,
-                  boxShadow: `inset 2px 2px 6px ${char.card.innerLight}, inset -2px -2px 6px ${char.card.innerDark}`,
                 }}
               >
                 {char.colorTheme}
