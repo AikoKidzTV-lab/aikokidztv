@@ -713,7 +713,7 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="text-right">
+                  <div className="mr-4 text-right">
                     <p className="text-sm font-bold text-gray-700">Enable 5-Hour Daily Limit</p>
                     <p className={`text-xs font-semibold ${wellbeingUsage.limitEnabled ? 'text-emerald-600' : 'text-gray-400'}`}>
                       {wellbeingUsage.limitEnabled ? 'Smart Lock ON' : 'Smart Lock OFF'}
@@ -723,15 +723,15 @@ export default function ParentZone({ onExit, onLogout, onDeleteAccount, skipPinG
                     type="button"
                     onClick={handleLimitToggle}
                     aria-pressed={wellbeingUsage.limitEnabled}
-                    className={`relative h-6 w-12 rounded-full transition-all ${
+                    className={`relative h-7 w-14 shrink-0 rounded-full transition-all ${
                       wellbeingUsage.limitEnabled
                         ? 'bg-emerald-500'
                         : 'bg-gray-300'
                     }`}
                   >
                     <span
-                      className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                        wellbeingUsage.limitEnabled ? 'translate-x-6' : ''
+                      className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                        wellbeingUsage.limitEnabled ? 'translate-x-7' : ''
                       }`}
                     />
                   </button>

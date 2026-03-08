@@ -313,7 +313,7 @@ export default function LandingPageHabitat({
       window.cancelAnimationFrame(rafId);
       window.clearTimeout(timeoutId);
     };
-  }, [isKidsModeOn]);
+  }, []);
 
   React.useEffect(() => {
     let mounted = true;

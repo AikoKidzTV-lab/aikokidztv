@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, ChevronDown, Gem, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useKidsMode } from '../context/KidsModeContext';
 import { ADMIN_EMAIL } from '../utils/admin';
 
 const BELL_NOTIFICATION_EVENT = 'aiko:bell-notification';
@@ -32,7 +31,6 @@ function ProfileDropdownMenu({
   onOpenCosmicJourney,
   onGoToAdmin,
 }) {
-  const { isKidsModeOn, toggleKidsMode } = useKidsMode();
   if (!open) return null;
 
   const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
@@ -78,30 +76,6 @@ function ProfileDropdownMenu({
         </div>
 
         <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-2.5">
-          <div className="flex flex-col items-start gap-2 rounded-xl border border-pink-100 bg-gradient-to-r from-pink-50 to-amber-50 px-3.5 py-3">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-pink-700">
-              Kids Mode
-            </p>
-            <button
-              type="button"
-              onClick={toggleKidsMode}
-              aria-label="Toggle Kids Mode"
-              aria-pressed={isKidsModeOn}
-              className={`relative h-6 w-12 rounded-full transition ${
-                isKidsModeOn ? 'bg-pink-400' : 'bg-slate-300'
-              }`}
-            >
-              <span
-                className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                  isKidsModeOn ? 'translate-x-6' : ''
-                }`}
-              />
-            </button>
-            <p className="text-xs font-semibold text-slate-600">
-              {isKidsModeOn ? 'ON' : 'OFF'}
-            </p>
-          </div>
-
           <p className="mt-3 px-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
             Quick Links
           </p>
@@ -109,23 +83,32 @@ function ProfileDropdownMenu({
             {isAdmin && canSeeAdminPanel && (
               <button
                 onClick={run(onGoToAdmin)}
-                className="w-full rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-left text-sm font-bold text-violet-800 shadow-sm transition hover:bg-violet-100"
+                className="flex w-full flex-col items-start rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-left text-sm font-bold text-violet-800 shadow-sm transition hover:bg-violet-100"
               >
-                Admin Panel
+                <span>Admin Panel</span>
+                <span className="mt-0.5 text-xs font-semibold text-violet-600">
+                  Manage website content and settings.
+                </span>
               </button>
             )}
             <button
               onClick={run(onOpenParentZone)}
-              className="w-full rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-100 to-sky-100 px-3.5 py-2 text-left text-sm font-bold text-indigo-900 shadow-sm transition hover:-translate-y-0.5"
+              className="flex w-full flex-col items-start rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-100 to-sky-100 px-3.5 py-2 text-left text-sm font-bold text-indigo-900 shadow-sm transition hover:-translate-y-0.5"
             >
-              Parent Zone
+              <span>Parent Zone</span>
+              <span className="mt-0.5 text-xs font-semibold text-indigo-700">
+                Manage screen time and secure locks.
+              </span>
             </button>
             <button
               type="button"
               onClick={run(onOpenSignup || onOpenLogin)}
-              className="w-full rounded-xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-3.5 py-2 text-left text-sm font-bold text-pink-900 shadow-sm transition hover:brightness-105"
+              className="flex w-full flex-col items-start rounded-xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-3.5 py-2 text-left text-sm font-bold text-pink-900 shadow-sm transition hover:brightness-105"
             >
-              Create Account / Login with OTP
+              <span>Create Account / Login with OTP</span>
+              <span className="mt-0.5 text-xs font-semibold text-pink-700">
+                Save your gems, progress, and history.
+              </span>
             </button>
             <button
               type="button"

@@ -1,67 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import Swal from 'sweetalert2';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../supabaseClient';
-
-const showProfileToast = (icon, title) =>
-  Swal.fire({
-    toast: true,
-    icon,
-    title,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 2600,
-    timerProgressBar: true,
-    background: '#0f172a',
-    color: '#f8fafc',
-  });
 
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
-  const { user, profile, fetchProfile } = useAuth();
-  const [displayName, setDisplayName] = useState('');
-  const [nickname, setNickname] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    setDisplayName(String(profile?.full_name || profile?.display_name || ''));
-    setNickname(String(profile?.nickname || ''));
-  }, [profile?.display_name, profile?.full_name, profile?.nickname]);
-
-  const handleSaveProfile = async () => {
-    if (isLoading) return;
-    if (!user) return;
-
-    try {
-      setIsLoading(true);
-
-      const updates = {
-        full_name: displayName.trim() || null,
-        nickname: nickname.trim() || null,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      showProfileToast('success', 'Profile saved successfully.');
-      void Promise.resolve(fetchProfile?.(user.id)).catch((syncError) => {
-        console.warn('[ProfileSettings] Profile refresh failed after save:', syncError);
-      });
-    } catch (error) {
-      console.error('Error updating profile:', error?.message || error);
-      showProfileToast('error', error?.message || 'Could not save profile right now.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { user } = useAuth();
 
   if (!user?.id) {
     return (
@@ -70,7 +13,7 @@ export default function ProfileSettingsPage() {
           <div className="w-full rounded-[1.75rem] border border-slate-700 bg-slate-900/90 p-8 text-center text-slate-100 shadow-[0_20px_60px_rgba(2,6,23,0.5)]">
             <h1 className="text-2xl font-black text-white">Profile Settings</h1>
             <p className="mt-3 text-sm font-semibold text-slate-300">
-              Please log in to manage your profile details.
+              Please log in to view your account email.
             </p>
             <button
               type="button"
@@ -106,49 +49,16 @@ export default function ProfileSettingsPage() {
             </button>
           </div>
 
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void handleSaveProfile();
-            }}
-            className="mt-6 space-y-4"
-          >
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-black text-slate-200">Full Name</span>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                placeholder="Enter full name"
-                className="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white outline-none focus:border-cyan-400"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-black text-slate-200">Nickname</span>
-              <input
-                type="text"
-                value={nickname}
-                onChange={(event) => setNickname(event.target.value)}
-                placeholder="Enter nickname"
-                className="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white outline-none focus:border-cyan-400"
-              />
-            </label>
+          <div className="mt-6 space-y-4">
+            <div className="rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3">
+              <p className="text-sm font-black text-slate-200">Email ID</p>
+              <p className="mt-1 break-all text-base font-semibold text-white">{user.email || 'Not available'}</p>
+            </div>
 
             <p className="rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-xs font-semibold text-slate-200">
-              Names can be similar. For identity issues, please provide your registered email.
+              This account now uses email only. Name and nickname fields were removed to avoid profile sync and loading issues.
             </p>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="rounded-full border border-cyan-300 bg-gradient-to-r from-cyan-300 to-blue-300 px-5 py-2.5 text-sm font-black text-slate-900 shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isLoading ? 'Saving...' : 'Save Profile'}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>

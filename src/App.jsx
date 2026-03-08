@@ -928,7 +928,7 @@ function RouteScrollToTop() {
       window.cancelAnimationFrame(rafId);
       window.clearTimeout(timeoutId);
     };
-  }, [isKidsModeOn, location.hash, location.key, location.pathname, location.search]);
+  }, [location.hash, location.key, location.pathname, location.search]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || !('scrollRestoration' in window.history)) return undefined;
