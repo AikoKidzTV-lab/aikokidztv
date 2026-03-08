@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
@@ -27,6 +27,12 @@ const showToast = (icon, title) =>
     color: '#f8fafc',
   });
 
+const toast = {
+  success: (message) => showToast('success', message),
+  error: (message) => showToast('error', message),
+  info: (message) => showToast('info', message),
+};
+
 const CharacterGallery = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -34,9 +40,8 @@ const CharacterGallery = () => {
   const [userSubscriptions, setUserSubscriptions] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [subscriptionLoadError, setSubscriptionLoadError] = useState('');
-  const [isProcessingUnlock, setIsProcessingUnlock] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [processingCharacterKey, setProcessingCharacterKey] = useState('');
-  const unlockInFlightRef = useRef(false);
 
   const fetchSubscriptions = useCallback(async (userId) => {
     if (!userId) {
@@ -91,94 +96,89 @@ const CharacterGallery = () => {
     [activeSubscriptionSet]
   );
 
-  const unlockCharacterAndNavigate = useCallback(
-    async (character) => {
-      if (isProcessingUnlock || unlockInFlightRef.current) return;
+  const handleUnlock = async (charId) => {
+    if (isProcessing) return; // Prevent double clicks
 
-      const normalizedCharacterKey = String(character?.key || '').trim().toLowerCase();
-      if (!normalizedCharacterKey || !character?.route) return;
+    try {
+      setIsProcessing(true);
+      console.log("1. Starting unlock for character:", charId);
 
-      if (!user?.id) {
-        showToast('info', 'Please log in to unlock characters.');
-        openAuthModal('login');
-        return;
+      // Get current user strictly
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("User not authenticated.");
+      console.log("2. User ID:", user.id);
+
+      // Fetch fresh profile data to check gems
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('gems')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw new Error(`Profile fetch error: ${profileError.message}`);
+      console.log("3. Current Gems:", profile.gems);
+
+      if (!profile || profile.gems < 200) {
+        toast.error("Not enough gems! 💎");
+        return; // Exit early, finally block will run and stop loading
       }
 
-      unlockInFlightRef.current = true;
-      setIsProcessingUnlock(true);
-      setProcessingCharacterKey(normalizedCharacterKey);
+      // Deduct 200 Gems
+      const { error: deductError } = await supabase
+        .from('profiles')
+        .update({ gems: profile.gems - 200 })
+        .eq('id', user.id);
 
-      try {
-        const { data: dbProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, gems')
-          .eq('id', user.id)
-          .maybeSingle();
+      if (deductError) throw new Error(`Gem deduction error: ${deductError.message}`);
+      console.log("4. 200 Gems deducted successfully.");
 
-        if (profileError) {
-          throw profileError;
-        }
+      // Calculate Expiry (14 Days)
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 14);
 
-        const currentGems = Number(dbProfile?.gems || 0);
-        if (!Number.isFinite(currentGems) || currentGems < CHARACTER_SUBSCRIPTION_COST_GEMS) {
-          throw new Error('Not enough gems! Keep learning to earn more. \u{1F48E}');
-        }
+      // Upsert Subscription
+      const { error: subError } = await supabase
+        .from('character_subscriptions')
+        .upsert({
+          user_id: user.id,
+          character_id: charId,
+          status: 'active',
+          expires_at: expiryDate.toISOString()
+        }, { onConflict: 'user_id, character_id' });
 
-        const nextGems = Math.max(0, Math.floor(currentGems) - CHARACTER_SUBSCRIPTION_COST_GEMS);
-        const { data: deductRow, error: deductError } = await supabase
-          .from('profiles')
-          .update({ gems: nextGems })
-          .eq('id', user.id)
-          .select('id, gems')
-          .maybeSingle();
+      if (subError) throw new Error(`Subscription save error: ${subError.message}`);
+      console.log("5. Subscription saved to DB successfully.");
 
-        if (deductError) {
-          throw deductError;
-        }
-        if (!deductRow?.id) {
-          throw new Error('Failed to deduct gems. Please try again.');
-        }
+      // Success! Update UI
+      toast.success("Character Unlocked! 🎉");
 
-        const { error: subscriptionError } = await supabase
-          .from('character_subscriptions')
-          .upsert(
-            {
-              user_id: user.id,
-              character_id: normalizedCharacterKey,
-              status: 'active',
-              expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-            },
-            { onConflict: 'user_id,character_id' }
-          );
+      // NOTE TO BUILDER: Trigger your local state update here so the UI reflects the unlock without refreshing
+      // e.g., fetchSubscriptions() or appending to local array.
 
-        if (subscriptionError) {
-          await supabase
-            .from('profiles')
-            .update({ gems: currentGems })
-            .eq('id', user.id);
-          throw subscriptionError;
-        }
+    } catch (error) {
+      console.error("❌ UNLOCK FAILED:", error);
+      toast.error(error.message || "Failed to unlock. Please try again.");
+    } finally {
+      setIsProcessing(false); // THIS IS NON-NEGOTIABLE. ALWAYS STOP LOADING.
+      console.log("6. Process finished. isProcessing set to false.");
+    }
+  };
 
-        setUserSubscriptions((current) => {
-          if (current.some((id) => String(id || '').trim().toLowerCase() === normalizedCharacterKey)) {
-            return current;
-          }
-          return [...current, normalizedCharacterKey];
-        });
+  useEffect(() => {
+    if (!user?.id || isProcessing) return;
 
-        showToast('success', `${character.name} unlocked for ${CHARACTER_SUBSCRIPTION_DAYS} days! \u{1F389}`);
-        navigate(character.route);
-      } catch (error) {
-        console.error('[CharacterGallery] Unlock failed:', error);
-        showToast('error', error?.message || 'Failed to unlock this character.');
-      } finally {
-        setIsProcessingUnlock(false);
-        setProcessingCharacterKey('');
-        unlockInFlightRef.current = false;
-      }
-    },
-    [isProcessingUnlock, navigate, openAuthModal, user?.id]
-  );
+    let isActive = true;
+    const syncSubscriptions = async () => {
+      const result = await fetchSubscriptions(user.id);
+      if (!isActive || !result?.ok) return;
+      setUserSubscriptions(result.characterIds || []);
+    };
+
+    void syncSubscriptions();
+    return () => {
+      isActive = false;
+    };
+  }, [fetchSubscriptions, isProcessing, user?.id]);
 
   const handleCardClick = useCallback(
     (event, character) => {
@@ -187,16 +187,19 @@ const CharacterGallery = () => {
         return;
       }
 
-      if (isProcessingUnlock) {
+      if (isProcessing) {
         event.preventDefault();
         return;
       }
 
       if (isCharacterUnlocked(character?.key)) return;
       event.preventDefault();
-      void unlockCharacterAndNavigate(character);
+      const charId = String(character?.key || '').trim().toLowerCase();
+      if (!charId) return;
+      setProcessingCharacterKey(charId);
+      void handleUnlock(charId);
     },
-    [isCharacterUnlocked, isInitialLoading, isProcessingUnlock, unlockCharacterAndNavigate]
+    [handleUnlock, isCharacterUnlocked, isInitialLoading, isProcessing]
   );
 
   return (
@@ -229,7 +232,7 @@ const CharacterGallery = () => {
               const unlocked = isCharacterUnlocked(char.key);
               const normalizedCharacterKey = String(char.key || '').trim().toLowerCase();
               const isCardProcessing =
-                isProcessingUnlock && processingCharacterKey === normalizedCharacterKey;
+                isProcessing && processingCharacterKey === normalizedCharacterKey;
 
               return (
                 <div
