@@ -67,7 +67,7 @@ export default function ChikoTechLabPage() {
               onClick={handleBackToLearningZone}
               className="rounded-xl border border-teal-300/25 bg-teal-500/12 px-4 py-2 text-sm font-black text-teal-100 shadow-none hover:bg-teal-500/18"
             >
-              ← Back to Learning Zone
+              ← Back to Home
             </button>
             <h1 className="text-2xl font-black tracking-tight text-cyan-200 sm:text-3xl">
               CHIKO&apos;s Kool Tech Lab 🤖

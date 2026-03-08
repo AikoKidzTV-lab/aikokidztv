@@ -58,7 +58,7 @@ export default function KinuGeniusMischiefLabPage() {
               onClick={handleBackToLearningZone}
               className="rounded-xl border border-blue-300/25 bg-blue-400/12 px-4 py-2 text-sm font-black text-blue-100 shadow-none hover:bg-blue-400/18"
             >
-              ← Back to Learning Zone
+              ← Back to Home
             </button>
             <h1 className="text-2xl font-black tracking-tight text-blue-100 sm:text-3xl">
               KINU&apos;s Genius &amp; Mischief Lab 🧠⚡

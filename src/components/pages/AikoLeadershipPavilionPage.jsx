@@ -44,7 +44,7 @@ export default function AikoLeadershipPavilionPage() {
               onClick={handleBackToLearningZone}
               className="rounded-xl border border-yellow-300/25 bg-yellow-400/15 px-4 py-2 text-sm font-black text-yellow-100 shadow-none hover:bg-yellow-400/20"
             >
-              ← Back to Learning Zone
+              ← Back to Home
             </button>
             <h1 className="text-2xl font-black tracking-tight text-yellow-100 sm:text-3xl">
               AIKO&apos;s Leadership Pavilion ☀️👑
