@@ -16,6 +16,37 @@ const CODE_ACTIONS = [
   { id: 'turn', label: '🔄 Turn', token: '🔄' },
 ];
 
+const ROBOT_JOKES = [
+  {
+    setup: 'Why did the robot go to the doctor?',
+    punchline: 'Because it had a virus!',
+  },
+  {
+    setup: 'Why was the robot tired after school?',
+    punchline: 'It had too many bytes of homework!',
+  },
+  {
+    setup: 'Why did the robot bring a ladder to the lab?',
+    punchline: 'To reach the high-tech shelf!',
+  },
+  {
+    setup: 'Why did the robot wear sunglasses?',
+    punchline: 'Its future was too bright!',
+  },
+  {
+    setup: 'Why did the tiny robot join the band?',
+    punchline: 'Because it had great micro-beats!',
+  },
+];
+
+const TECH_FACTS = [
+  'The first computer mouse was made of wood!',
+  'The first webcam was used to watch a coffee pot.',
+  'Some robots can help explore dangerous places where humans cannot go safely.',
+  'The word "robot" comes from a word that means forced work.',
+  'Many early computers were so large they filled entire rooms.',
+];
+
 const MAZE_SIZE = 7;
 const WALLS = new Set([2, 4, 10, 14, 18, 22, 27, 31, 35, 40, 44]);
 
@@ -24,6 +55,9 @@ export default function ChikoTechLabPage() {
   const [assemblyParts, setAssemblyParts] = useState([]);
   const [codeSequence, setCodeSequence] = useState([]);
   const [showHologram, setShowHologram] = useState(false);
+  const [robotJokeIndex, setRobotJokeIndex] = useState(0);
+  const [showRobotPunchline, setShowRobotPunchline] = useState(false);
+  const [techFactIndex, setTechFactIndex] = useState(0);
 
   useEffect(() => {
     const hologramTimer = window.setTimeout(() => {
@@ -43,7 +77,7 @@ export default function ChikoTechLabPage() {
   );
 
   const handleAddPart = (partName) => {
-    setAssemblyParts((current) => (current.includes(partName) ? current : [...current, partName]));
+    setAssemblyParts((current) => [...current, partName]);
   };
 
   const handleAddCodeToken = (token) => {
@@ -101,9 +135,9 @@ export default function ChikoTechLabPage() {
                   <p className="text-sm font-semibold text-slate-400">Click parts from the left to assemble your bot.</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {assemblyParts.map((part) => (
+                    {assemblyParts.map((part, index) => (
                       <span
-                        key={part}
+                        key={`${part}-${index}`}
                         className="rounded-full border border-teal-300/60 bg-teal-400/20 px-3 py-1 text-xs font-black text-teal-100"
                       >
                         {part}
@@ -111,6 +145,15 @@ export default function ChikoTechLabPage() {
                     ))}
                   </div>
                 )}
+              </div>
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => setAssemblyParts([])}
+                  className="rounded-lg border border-slate-500/40 bg-slate-700/55 px-2.5 py-1 text-xs font-bold text-slate-200 shadow-none hover:bg-slate-700/70"
+                >
+                  Clear Bot
+                </button>
               </div>
             </div>
           </div>
@@ -178,6 +221,65 @@ export default function ChikoTechLabPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-teal-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <h2 className="text-lg font-black text-teal-200 sm:text-xl">Robot Joke of the Day 🤖</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setRobotJokeIndex((prev) => (prev + 1) % ROBOT_JOKES.length);
+                setShowRobotPunchline(false);
+              }}
+              className="rounded-xl border border-teal-300/25 bg-teal-500/12 px-3 py-2 text-xs font-black text-teal-100 shadow-none hover:bg-teal-500/18"
+            >
+              Next 🔄
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-cyan-200/20 bg-slate-800/65 p-4 shadow-none">
+            <p className="text-xl font-black leading-relaxed text-cyan-100 sm:text-2xl">
+              {ROBOT_JOKES[robotJokeIndex].setup}
+            </p>
+
+            {showRobotPunchline && (
+              <p className="mt-4 rounded-lg border border-teal-300/25 bg-teal-500/12 px-4 py-3 text-sm font-black text-teal-100">
+                {ROBOT_JOKES[robotJokeIndex].punchline}
+              </p>
+            )}
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setShowRobotPunchline(true)}
+                className="rounded-xl border border-teal-200/20 bg-teal-500/10 px-4 py-2 text-sm font-black text-teal-100 shadow-none hover:bg-teal-500/15"
+              >
+                Tell me!
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-teal-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <h2 className="text-lg font-black text-teal-200 sm:text-xl">Tech Fact Finder 💡</h2>
+            <button
+              type="button"
+              onClick={() => setTechFactIndex((prev) => (prev + 1) % TECH_FACTS.length)}
+              className="rounded-xl border border-teal-300/25 bg-teal-500/12 px-3 py-2 text-xs font-black text-teal-100 shadow-none hover:bg-teal-500/18"
+            >
+              Next 🔄
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-cyan-200/20 bg-slate-800/65 p-4 shadow-none">
+            <div className="rounded-lg border border-cyan-300/45 bg-slate-900/80 px-4 py-5">
+              <p className="text-lg font-black leading-relaxed text-cyan-100 sm:text-xl">
+                {TECH_FACTS[techFactIndex]}
+              </p>
             </div>
           </div>
         </section>
