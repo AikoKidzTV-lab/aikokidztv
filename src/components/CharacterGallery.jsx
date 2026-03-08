@@ -5,12 +5,12 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import { CHARACTER_PROFILES } from '../constants/characters';
 import { useAuth } from '../context/AuthContext';
 import { useAuthModal } from '../context/AuthModalContext';
+import { supabase } from '../supabaseClient';
 import {
   CHARACTER_SUBSCRIPTION_CHARACTER_IDS,
   CHARACTER_SUBSCRIPTION_COST_GEMS,
   CHARACTER_SUBSCRIPTION_DAYS,
   fetchActiveCharacterSubscriptions,
-  purchaseAllCharacterSubscriptions,
 } from '../utils/characterSubscriptions';
 
 const LOCKED_BADGE_LABEL = '\u{1F512} Locked';
@@ -100,42 +100,82 @@ const CharacterGallery = () => {
     [activeSubscriptionSet]
   );
 
-  const handleUnlockAllCharacters = async () => {
-    if (isProcessing) return;
+  const handleGlobalUnlock = async () => {
+    if (isProcessing) return; // Prevent spam clicks
 
-    if (!user?.id) {
-      toast.info('Please log in to unlock all characters.');
-      openAuthModal('login');
-      return;
-    }
-
-    setIsProcessing(true);
     try {
-      const result = await purchaseAllCharacterSubscriptions({
-        userId: user.id,
-        characterIds: CHARACTER_SUBSCRIPTION_CHARACTER_IDS,
-      });
+      setIsProcessing(true);
+      console.log('1. Starting 1400 Gem Global Unlock...');
 
-      if (!result?.ok) {
-        throw new Error(result?.message || 'Unlock failed. Please try again.');
+      // 1. Authenticate User
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError || !authUser) throw new Error('Authentication failed.');
+
+      // 2. Check Gem Balance
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('gems')
+        .eq('id', authUser.id)
+        .single();
+
+      if (profileError) throw new Error(`Failed to fetch profile: ${profileError.message}`);
+      if (!profile || profile.gems < 1400) {
+        toast.error('Not enough gems! \u{1F48E} Need 1400.');
+        return; // Exits to finally block
       }
 
-      const unlockedCharacterIds =
-        Array.isArray(result.characterIds) && result.characterIds.length > 0
-          ? result.characterIds
-          : CHARACTER_SUBSCRIPTION_CHARACTER_IDS;
+      // 3. Deduct Gems
+      const { error: deductError } = await supabase
+        .from('profiles')
+        .update({ gems: profile.gems - 1400 })
+        .eq('id', authUser.id);
 
-      setUserSubscriptions((current) => Array.from(new Set([...current, ...unlockedCharacterIds])));
-      setSubscriptionLoadError('');
-      toast.success(`All characters unlocked for ${CHARACTER_SUBSCRIPTION_DAYS} days! \u{1F389}`);
+      if (deductError) throw new Error(`Gem deduction failed: ${deductError.message}`);
+      console.log('2. 1400 Gems deducted successfully.');
 
-      void Promise.resolve(fetchProfile?.(user.id)).catch((syncError) => {
+      // 4. UPSERT 6 Characters (Handles existing cards automatically)
+      const characters = ['aiko', 'niko', 'kinu', 'mimi', 'miko', 'chiko'];
+      const expiresAt = new Date(Date.now() + 56 * 24 * 60 * 60 * 1000).toISOString();
+
+      const payload = characters.map((char) => ({
+        user_id: authUser.id,
+        character_id: char,
+        status: 'active',
+        expires_at: expiresAt,
+      }));
+
+      // CRITICAL: onConflict prevents the crash if user already owns a character
+      const { error: subError } = await supabase
+        .from('character_subscriptions')
+        .upsert(payload, { onConflict: 'user_id, character_id' });
+
+      if (subError) throw new Error(`Subscription save failed: ${subError.message}`);
+      console.log('3. Subscriptions updated in DB.');
+
+      // 5. Success UI Update
+      toast.success('All 6 Characters Unlocked for 56 Days! \u{1F389}');
+
+      // Refresh local unlock state so cards appear unlocked immediately.
+      const refreshedSubscriptions = await fetchSubscriptions(authUser.id);
+      if (refreshedSubscriptions?.ok) {
+        setUserSubscriptions(refreshedSubscriptions.characterIds || []);
+        setSubscriptionLoadError('');
+      } else {
+        setUserSubscriptions((current) => Array.from(new Set([...current, ...characters])));
+      }
+
+      void Promise.resolve(fetchProfile?.(authUser.id)).catch((syncError) => {
         console.warn('[CharacterGallery] Profile refresh failed after unlock:', syncError);
       });
     } catch (error) {
-      toast.error(error?.message || 'Failed to unlock all characters. Please try again.');
+      console.error('\u274C GLOBAL UNLOCK ERROR:', error);
+      toast.error(error?.message || 'Something went wrong.');
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false); // ALWAYS RESET BUTTON STATE
+      console.log('4. isProcessing reset to false.');
     }
   };
 
@@ -211,7 +251,7 @@ const CharacterGallery = () => {
               </p>
               <button
                 type="button"
-                onClick={handleUnlockAllCharacters}
+                onClick={handleGlobalUnlock}
                 disabled={isProcessing}
                 className="mt-4 rounded-full border border-amber-700 bg-amber-500 px-5 py-2.5 text-sm font-black text-slate-900 shadow-sm hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-70"
               >
