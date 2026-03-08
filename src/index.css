@@ -115,6 +115,17 @@ p, li, dt, dd {
   background: color-mix(in srgb, var(--text-color) 55%, transparent);
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .bg-dark {
   background-color: var(--bg-color) !important;
 }

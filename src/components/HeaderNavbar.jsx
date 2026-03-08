@@ -74,42 +74,41 @@ function ProfileDropdownMenu({
         </div>
       </div>
 
-      <div className="mt-3 space-y-2">
+      <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-2.5">
         <p className="px-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
           Quick Links
         </p>
-        {isAdmin && canSeeAdminPanel && (
+        <div className="mt-2 h-[280px] space-y-1.5 overflow-y-auto pr-1 scrollbar-hide">
+          {isAdmin && canSeeAdminPanel && (
+            <button
+              onClick={run(onGoToAdmin)}
+              className="w-full rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-left text-sm font-bold text-violet-800 shadow-sm transition hover:bg-violet-100"
+            >
+              Admin Panel
+            </button>
+          )}
           <button
-            onClick={run(onGoToAdmin)}
-            className="w-full rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-left font-bold text-violet-800 shadow-sm transition hover:bg-violet-100"
+            onClick={run(onOpenParentZone)}
+            className="w-full rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-100 to-sky-100 px-3.5 py-2 text-left text-sm font-bold text-indigo-900 shadow-sm transition hover:-translate-y-0.5"
           >
-            Admin Panel
-            <span className="block text-xs font-semibold opacity-80">Manage dashboard & content</span>
+            Parent Zone
           </button>
-        )}
-        <button
-          onClick={run(onOpenParentZone)}
-          className="w-full rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-100 to-sky-100 px-4 py-3 text-left font-bold text-indigo-900 shadow-sm transition hover:-translate-y-0.5"
-        >
-          Parent Zone
-          <span className="block text-xs font-semibold opacity-80">Protected by 4-digit PIN (resettable)</span>
-        </button>
-        <button
-          type="button"
-          onClick={run(onOpenSignup || onOpenLogin)}
-          className="w-full rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-4 py-3 text-left font-bold text-pink-900 shadow-sm transition hover:brightness-105"
-        >
-          Create Account / Login with OTP
-          <span className="block text-xs font-semibold opacity-80">Use email OTP in the auth modal</span>
-        </button>
-        <button
-          type="button"
-          onClick={run(onOpenCosmicJourney)}
-          className="w-full rounded-2xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-4 py-3 text-left text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
-        >
-          {'\u{1F680}'} Cosmic Journey
-          <span className="block text-xs font-semibold text-indigo-100">Open secure space exploration zone</span>
-        </button>
+          <button
+            type="button"
+            onClick={run(onOpenSignup || onOpenLogin)}
+            className="w-full rounded-xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-3.5 py-2 text-left text-sm font-bold text-pink-900 shadow-sm transition hover:brightness-105"
+          >
+            Create Account / Login with OTP
+          </button>
+          <button
+            type="button"
+            onClick={run(onOpenCosmicJourney)}
+            className="w-full rounded-xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-3.5 py-2 text-left text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
+          >
+            {'\u{1F680}'} Cosmic Journey
+            <span className="block text-xs font-semibold text-indigo-100">Open secure space exploration zone</span>
+          </button>
+        </div>
       </div>
     </div>
   );
