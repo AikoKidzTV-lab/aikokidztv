@@ -14,30 +14,30 @@ const LegalModal = ({ isOpen, onClose, title, children }) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/85"
         />
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-[12px] flex flex-col shadow-none"
+          className="relative flex max-h-[80vh] w-full max-w-2xl flex-col rounded-2xl border border-white/10 bg-neutral-950 shadow-none"
         >
-          <div className="flex justify-between items-center p-6 border-b border-white/10 bg-white/5">
+          <div className="flex items-center justify-between border-b border-white/10 bg-neutral-950 px-8 py-6 sm:px-10">
             <h3 className="text-xl font-bold text-white">{title}</h3>
             <button
               onClick={onClose}
-              className="rounded-full p-2 text-gray-100 shadow-none hover:bg-white/10 transition-colors"
+              className="rounded-full p-2 text-white shadow-none transition-colors hover:bg-white/10"
             >
-              <X size={20} className="text-gray-400" />
+              <X size={20} className="text-white/80" />
             </button>
           </div>
-          <div className="p-6 overflow-y-auto text-gray-100 space-y-4 leading-relaxed [&_p]:text-gray-100 [&_li]:text-gray-100">
+          <div className="overflow-y-auto px-8 py-6 text-left text-white sm:px-10 [&_li]:text-white [&_p]:text-white">
             {children}
           </div>
-          <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end">
+          <div className="flex justify-end border-t border-white/10 bg-neutral-950 px-8 py-4 sm:px-10">
             <button
               onClick={onClose}
-              className="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-gray-100 shadow-none transition-colors hover:bg-white/20"
+              className="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white shadow-none transition-colors hover:bg-white/15"
             >
               Close
             </button>
