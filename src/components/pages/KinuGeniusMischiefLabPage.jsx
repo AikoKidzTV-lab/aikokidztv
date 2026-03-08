@@ -1,16 +1,150 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const PRANK_SPOTS = [
-  { id: 'bush', label: 'Bush 🌳' },
-  { id: 'cloud', label: 'Cloud ☁️' },
-  { id: 'box', label: 'Box 📦' },
+const nextIndex = (currentIndex, totalItems) => (currentIndex + 1) % totalItems;
+
+const contraptionChallenges = [
+  {
+    prompt: 'The ball needs to bounce!',
+    startEmoji: '⚽',
+    toolEmoji: '🌀',
+    endEmoji: '🎯',
+    actionLabel: 'Place Spring 🌀',
+    successMessage: 'BOING! 🔔',
+  },
+  {
+    prompt: 'The paper plane needs a turbo boost!',
+    startEmoji: '🛩️',
+    toolEmoji: '💨',
+    endEmoji: '🎈',
+    actionLabel: 'Add Turbo 💨',
+    successMessage: 'WHOOSH! Sky mission ready!',
+  },
+  {
+    prompt: 'The drum beat needs a power zap!',
+    startEmoji: '🥁',
+    toolEmoji: '⚡',
+    endEmoji: '🎵',
+    actionLabel: 'Charge It ⚡',
+    successMessage: 'KABOOM! Beat unlocked!',
+  },
+  {
+    prompt: 'The robot helper needs a silly gear!',
+    startEmoji: '🤖',
+    toolEmoji: '⚙️',
+    endEmoji: '📦',
+    actionLabel: 'Drop Gear ⚙️',
+    successMessage: 'CLANK! Robot fix complete!',
+  },
+  {
+    prompt: 'The paint rocket needs a bright launch!',
+    startEmoji: '🎨',
+    toolEmoji: '🚀',
+    endEmoji: '🌈',
+    actionLabel: 'Launch Rocket 🚀',
+    successMessage: 'ZOOM! Colors everywhere!',
+  },
 ];
 
-const SILLY_SOLUTIONS = [
-  { id: 'castle', label: 'Giant Bouncy Castle 🏰', message: 'Boing! Boing! Safe landing!' },
-  { id: 'boots', label: 'Rocket Boots 🚀', message: 'Zoom! You crossed in style!' },
-  { id: 'car', label: 'Floating Car 🚗', message: 'Vroom in the sky. Bridge problem solved!' },
+const prankChallenges = [
+  {
+    prompt: "I hid NIKO's ball! Where is it?",
+    answerId: 'cloud',
+    successMessage: 'You found it! ⚽🎉',
+    failureMessage: 'Nope, not here! 😜',
+    spots: [
+      { id: 'bush', label: 'Bush 🌳' },
+      { id: 'cloud', label: 'Cloud ☁️' },
+      { id: 'box', label: 'Box 📦' },
+    ],
+  },
+  {
+    prompt: "I hid MIMI's paintbrush! Where is it?",
+    answerId: 'jar',
+    successMessage: 'You caught my prank! 🖌️🎉',
+    failureMessage: 'Hehe, keep looking!',
+    spots: [
+      { id: 'book', label: 'Book Stack 📚' },
+      { id: 'jar', label: 'Paint Jar 🫙' },
+      { id: 'hat', label: 'Top Hat 🎩' },
+    ],
+  },
+  {
+    prompt: "I hid CHIKO's screwdriver! Where is it?",
+    answerId: 'toolbox',
+    successMessage: 'You found the toolbox trick! 🪛🎉',
+    failureMessage: 'Not there. Try again!',
+    spots: [
+      { id: 'pillow', label: 'Pillow 🛏️' },
+      { id: 'toolbox', label: 'Toolbox 🧰' },
+      { id: 'plant', label: 'Plant 🪴' },
+    ],
+  },
+  {
+    prompt: "I hid AIKO's notebook! Where is it?",
+    answerId: 'drawer',
+    successMessage: 'Notebook discovered! 📓🎉',
+    failureMessage: 'Sneaky, but not that spot!',
+    spots: [
+      { id: 'drawer', label: 'Drawer 🗄️' },
+      { id: 'moon', label: 'Moon Lamp 🌙' },
+      { id: 'basket', label: 'Basket 🧺' },
+    ],
+  },
+  {
+    prompt: "I hid MIKO's star toy! Where is it?",
+    answerId: 'planet',
+    successMessage: 'You spotted the cosmic prank! ⭐🎉',
+    failureMessage: 'Nope. Search the galaxy again!',
+    spots: [
+      { id: 'planet', label: 'Planet 🪐' },
+      { id: 'locker', label: 'Locker 🚪' },
+      { id: 'curtain', label: 'Curtain 🎭' },
+    ],
+  },
+];
+
+const sillySolutionChallenges = [
+  {
+    prompt: 'How to cross a broken bridge? 🌉',
+    options: [
+      { id: 'castle', label: 'Giant Bouncy Castle 🏰', message: 'Boing! Boing! Safe landing!' },
+      { id: 'boots', label: 'Rocket Boots 🚀', message: 'Zoom! You crossed in style!' },
+      { id: 'car', label: 'Floating Car 🚗', message: 'Vroom in the sky. Bridge problem solved!' },
+    ],
+  },
+  {
+    prompt: 'How to reach a cookie on the moon? 🌙',
+    options: [
+      { id: 'ladder', label: 'Mega Ladder 🪜', message: 'Climb, climb, cookie time!' },
+      { id: 'catapult', label: 'Cookie Catapult 🥠', message: 'Wheee! Snack mission launched!' },
+      { id: 'jetpack', label: 'Marshmallow Jetpack 🎒', message: 'Puff! You floated to the cookie!' },
+    ],
+  },
+  {
+    prompt: 'How to cool down a grumpy dragon? 🐉',
+    options: [
+      { id: 'fan', label: 'Super Fan 🌬️', message: 'Fwoosh! Dragon is chill now!' },
+      { id: 'popsicle', label: 'Mega Popsicle 🍭', message: 'Crunch! Dragon became cheerful!' },
+      { id: 'sprinkler', label: 'Rainbow Sprinkler 🌈', message: 'Splash! Fire mood gone!' },
+    ],
+  },
+  {
+    prompt: 'How to deliver music to a sleepy whale? 🐋',
+    options: [
+      { id: 'submarine', label: 'Singing Submarine 🚢', message: 'Blub blub! Concert delivered!' },
+      { id: 'bubble', label: 'Bubble Speaker 🫧', message: 'Pop! The whale heard every note!' },
+      { id: 'trumpet', label: 'Golden Trumpet 🎺', message: 'Toot! Underwater jam session started!' },
+    ],
+  },
+  {
+    prompt: 'How to paint a cloud without getting wet? ☁️',
+    options: [
+      { id: 'umbrella', label: 'Painter Umbrella ☂️', message: 'Drip-proof and masterpiece ready!' },
+      { id: 'drone', label: 'Art Drone 🚁', message: 'Buzz! The cloud got painted from above!' },
+      { id: 'boots', label: 'Sky Boots 👢', message: 'Tap tap! You walked right up to the cloud!' },
+    ],
+  },
 ];
 
 const drawingPrompts = [
@@ -46,12 +180,19 @@ const kinuJokes = [
 
 export default function KinuGeniusMischiefLabPage() {
   const navigate = useNavigate();
-  const [springPlaced, setSpringPlaced] = useState(false);
+  const [currentContraptionIndex, setCurrentContraptionIndex] = useState(0);
+  const [contraptionActivated, setContraptionActivated] = useState(false);
+  const [currentPrankIndex, setCurrentPrankIndex] = useState(0);
   const [prankResult, setPrankResult] = useState('');
+  const [currentSolutionIndex, setCurrentSolutionIndex] = useState(0);
   const [solutionResult, setSolutionResult] = useState('');
   const [promptIndex, setPromptIndex] = useState(0);
   const [jokeIndex, setJokeIndex] = useState(0);
   const [showPunchline, setShowPunchline] = useState(false);
+
+  const currentContraption = contraptionChallenges[currentContraptionIndex];
+  const currentPrankChallenge = prankChallenges[currentPrankIndex];
+  const currentSolutionChallenge = sillySolutionChallenges[currentSolutionIndex];
 
   useEffect(() => {
     if (!prankResult) return undefined;
@@ -66,20 +207,35 @@ export default function KinuGeniusMischiefLabPage() {
     }, 120);
   };
 
-  const handlePlaceSpring = () => {
-    setSpringPlaced(true);
+  const handleActivateContraption = () => {
+    setContraptionActivated(true);
+  };
+
+  const handleNextContraption = () => {
+    setCurrentContraptionIndex((prev) => nextIndex(prev, contraptionChallenges.length));
+    setContraptionActivated(false);
   };
 
   const handlePrankSpotClick = (spotId) => {
-    if (spotId === 'cloud') {
-      setPrankResult('You found it! ⚽🎉');
+    if (spotId === currentPrankChallenge.answerId) {
+      setPrankResult(currentPrankChallenge.successMessage);
       return;
     }
-    setPrankResult('Nope, not here! 😜');
+    setPrankResult(currentPrankChallenge.failureMessage);
+  };
+
+  const handleNextPrank = () => {
+    setCurrentPrankIndex((prev) => nextIndex(prev, prankChallenges.length));
+    setPrankResult('');
   };
 
   const handleSillySolutionClick = (message) => {
     setSolutionResult(message);
+  };
+
+  const handleNextSolution = () => {
+    setCurrentSolutionIndex((prev) => nextIndex(prev, sillySolutionChallenges.length));
+    setSolutionResult('');
   };
 
   return (
@@ -101,32 +257,41 @@ export default function KinuGeniusMischiefLabPage() {
         </header>
 
         <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-blue-200 sm:text-xl">Crazy Contraptions</h2>
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <h2 className="text-lg font-black text-blue-200 sm:text-xl">Crazy Contraptions</h2>
+            <button
+              type="button"
+              onClick={handleNextContraption}
+              className="rounded-xl border border-blue-300/25 bg-blue-400/12 px-3 py-2 text-xs font-black text-blue-100 shadow-none hover:bg-blue-400/18"
+            >
+              Next 🔄
+            </button>
+          </div>
           <div className="mt-4 rounded-2xl border border-blue-200/20 bg-slate-800/65 p-4 shadow-none">
-            <p className="text-base font-bold text-blue-100">The ball needs to bounce!</p>
+            <p className="text-base font-bold text-blue-100">{currentContraption.prompt}</p>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <span className="rounded-lg border border-blue-300/50 bg-blue-500/10 px-3 py-2 text-2xl">⚽</span>
+              <span className="rounded-lg border border-blue-300/50 bg-blue-500/10 px-3 py-2 text-2xl">{currentContraption.startEmoji}</span>
               <span className="text-xl text-blue-300">→</span>
               <span className="rounded-lg border border-dashed border-blue-400/50 bg-slate-900/70 px-3 py-2 text-lg text-blue-200">
-                {springPlaced ? '🌀' : '...'}
+                {contraptionActivated ? currentContraption.toolEmoji : '...'}
               </span>
               <span className="text-xl text-blue-300">→</span>
-              <span className="rounded-lg border border-blue-300/50 bg-blue-500/10 px-3 py-2 text-2xl">🎯</span>
+              <span className="rounded-lg border border-blue-300/50 bg-blue-500/10 px-3 py-2 text-2xl">{currentContraption.endEmoji}</span>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={handlePlaceSpring}
+                onClick={handleActivateContraption}
                 className="rounded-xl border border-blue-300/25 bg-blue-400/15 px-5 py-3 text-base font-black text-blue-100 shadow-none hover:bg-blue-400/20"
               >
-                Place Spring 🌀
+                {currentContraption.actionLabel}
               </button>
 
-              {springPlaced && (
+              {contraptionActivated && (
                 <p className="rounded-xl border border-emerald-200/25 bg-emerald-500/12 px-4 py-2 text-sm font-black text-emerald-200">
-                  BOING! 🔔
+                  {currentContraption.successMessage}
                 </p>
               )}
             </div>
@@ -134,13 +299,22 @@ export default function KinuGeniusMischiefLabPage() {
         </section>
 
         <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-blue-200 sm:text-xl">Hide &amp; Seek Prank</h2>
-          <p className="mt-2 text-sm font-bold text-slate-300">I hid NIKO&apos;s ball! Where is it?</p>
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <h2 className="text-lg font-black text-blue-200 sm:text-xl">Hide &amp; Seek Prank</h2>
+            <button
+              type="button"
+              onClick={handleNextPrank}
+              className="rounded-xl border border-blue-300/25 bg-blue-400/12 px-3 py-2 text-xs font-black text-blue-100 shadow-none hover:bg-blue-400/18"
+            >
+              Next 🔄
+            </button>
+          </div>
+          <p className="mt-2 text-sm font-bold text-slate-300">{currentPrankChallenge.prompt}</p>
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {PRANK_SPOTS.map((spot) => (
+            {currentPrankChallenge.spots.map((spot) => (
               <button
-                key={spot.id}
+                key={`${currentPrankChallenge.answerId}-${spot.id}`}
                 type="button"
                 onClick={() => handlePrankSpotClick(spot.id)}
                 className="rounded-xl border border-blue-300/25 bg-blue-400/12 px-5 py-5 text-lg font-black text-blue-100 shadow-none hover:bg-blue-400/18"
@@ -158,15 +332,24 @@ export default function KinuGeniusMischiefLabPage() {
         </section>
 
         <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
-          <h2 className="text-lg font-black text-blue-200 sm:text-xl">Silly Solutions</h2>
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <h2 className="text-lg font-black text-blue-200 sm:text-xl">Silly Solutions</h2>
+            <button
+              type="button"
+              onClick={handleNextSolution}
+              className="rounded-xl border border-blue-300/25 bg-blue-400/12 px-3 py-2 text-xs font-black text-blue-100 shadow-none hover:bg-blue-400/18"
+            >
+              Next 🔄
+            </button>
+          </div>
 
           <div className="mt-4 rounded-2xl border border-blue-200/20 bg-slate-800/65 p-4 shadow-none">
-            <p className="text-base font-black text-blue-100">How to cross a broken bridge? 🌉</p>
+            <p className="text-base font-black text-blue-100">{currentSolutionChallenge.prompt}</p>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {SILLY_SOLUTIONS.map((option) => (
+              {currentSolutionChallenge.options.map((option) => (
                 <button
-                  key={option.id}
+                  key={`${currentSolutionChallenge.prompt}-${option.id}`}
                   type="button"
                   onClick={() => handleSillySolutionClick(option.message)}
                   className="rounded-xl border border-blue-300/25 bg-blue-400/12 px-4 py-4 text-base font-black text-blue-100 shadow-none hover:bg-blue-400/18"
