@@ -1,7 +1,7 @@
 import { supabase } from '../supabaseClient';
 
 export const CHARACTER_SUBSCRIPTION_COST_GEMS = 200;
-export const CHARACTER_SUBSCRIPTION_DAYS = 7;
+export const CHARACTER_SUBSCRIPTION_DAYS = 14;
 
 const toSafeWholeNumber = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -140,7 +140,7 @@ export const purchaseCharacterSubscription = async ({ userId, characterId }) => 
     return {
       ok: false,
       code: 'insufficient_gems',
-      message: 'Not enough gems! Keep learning to earn more.',
+      message: 'Not enough gems! Keep learning to earn more. \u{1F48E}',
       gems: currentGems,
       required: CHARACTER_SUBSCRIPTION_COST_GEMS,
     };

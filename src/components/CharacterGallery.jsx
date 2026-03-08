@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { CHARACTER_PROFILES } from '../constants/characters';
@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAuthModal } from '../context/AuthModalContext';
 import {
   CHARACTER_SUBSCRIPTION_COST_GEMS,
+  CHARACTER_SUBSCRIPTION_DAYS,
   fetchActiveCharacterSubscriptions,
   purchaseCharacterSubscription,
 } from '../utils/characterSubscriptions';
@@ -27,13 +28,14 @@ const showToast = (icon, title) =>
   });
 
 const CharacterGallery = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const { openAuthModal } = useAuthModal();
   const [userSubscriptions, setUserSubscriptions] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [subscriptionLoadError, setSubscriptionLoadError] = useState('');
-  const [selectedLockedCharacter, setSelectedLockedCharacter] = useState(null);
   const [isProcessingUnlock, setIsProcessingUnlock] = useState(false);
+  const [processingCharacterKey, setProcessingCharacterKey] = useState('');
   const unlockInFlightRef = useRef(false);
 
   const fetchSubscriptions = useCallback(async (userId) => {
@@ -89,6 +91,62 @@ const CharacterGallery = () => {
     [activeSubscriptionSet]
   );
 
+  const unlockCharacterAndNavigate = useCallback(
+    async (character) => {
+      if (isProcessingUnlock || unlockInFlightRef.current) return;
+
+      const normalizedCharacterKey = String(character?.key || '').trim().toLowerCase();
+      if (!normalizedCharacterKey || !character?.route) return;
+
+      if (!user?.id) {
+        showToast('info', 'Please log in to unlock characters.');
+        openAuthModal('login');
+        return;
+      }
+
+      const profileGems = Number(profile?.gems);
+      if (Number.isFinite(profileGems) && profileGems < CHARACTER_SUBSCRIPTION_COST_GEMS) {
+        showToast('error', 'Not enough gems! Keep learning to earn more. \u{1F48E}');
+        return;
+      }
+
+      unlockInFlightRef.current = true;
+      setIsProcessingUnlock(true);
+      setProcessingCharacterKey(normalizedCharacterKey);
+
+      try {
+        const result = await purchaseCharacterSubscription({
+          userId: user.id,
+          characterId: normalizedCharacterKey,
+        });
+
+        if (!result?.ok) {
+          if (result?.code === 'insufficient_gems') {
+            throw new Error('Not enough gems! Keep learning to earn more. \u{1F48E}');
+          }
+          throw new Error(result?.message || 'Failed to unlock this character.');
+        }
+
+        setUserSubscriptions((current) => {
+          if (current.some((id) => String(id || '').trim().toLowerCase() === normalizedCharacterKey)) {
+            return current;
+          }
+          return [...current, normalizedCharacterKey];
+        });
+
+        showToast('success', `${character.name} unlocked for ${CHARACTER_SUBSCRIPTION_DAYS} days! \u{1F389}`);
+        navigate(character.route);
+      } catch (error) {
+        showToast('error', error?.message || 'Failed to unlock this character.');
+      } finally {
+        setIsProcessingUnlock(false);
+        setProcessingCharacterKey('');
+        unlockInFlightRef.current = false;
+      }
+    },
+    [isProcessingUnlock, navigate, openAuthModal, profile?.gems, user?.id]
+  );
+
   const handleCardClick = useCallback(
     (event, character) => {
       if (isInitialLoading) {
@@ -96,59 +154,17 @@ const CharacterGallery = () => {
         return;
       }
 
-      if (isCharacterUnlocked(character?.key)) return;
-      event.preventDefault();
-      setSelectedLockedCharacter(character);
-    },
-    [isCharacterUnlocked, isInitialLoading]
-  );
-
-  const closeUnlockModal = useCallback(() => {
-    if (isProcessingUnlock) return;
-    setSelectedLockedCharacter(null);
-  }, [isProcessingUnlock]);
-
-  const handleUnlockCharacter = useCallback(async () => {
-    if (isProcessingUnlock || unlockInFlightRef.current) return;
-
-    const targetCharacter = selectedLockedCharacter;
-    if (!targetCharacter?.key) return;
-
-    if (!user?.id) {
-      showToast('info', 'Please log in to unlock characters.');
-      openAuthModal('login');
-      return;
-    }
-
-    unlockInFlightRef.current = true;
-    setIsProcessingUnlock(true);
-
-    try {
-      const result = await purchaseCharacterSubscription({
-        userId: user.id,
-        characterId: targetCharacter.key,
-      });
-
-      if (!result?.ok) {
-        throw new Error(result?.message || 'Failed to unlock this character.');
+      if (isProcessingUnlock) {
+        event.preventDefault();
+        return;
       }
 
-      const normalizedCharacterKey = String(targetCharacter.key || '').trim().toLowerCase();
-      setUserSubscriptions((current) => {
-        if (current.some((id) => String(id || '').trim().toLowerCase() === normalizedCharacterKey)) {
-          return current;
-        }
-        return [...current, normalizedCharacterKey];
-      });
-      setSelectedLockedCharacter(null);
-      showToast('success', `${targetCharacter.name} unlocked for 7 days! \u{1F389}`);
-    } catch (error) {
-      showToast('error', error?.message || 'Failed to unlock this character.');
-    } finally {
-      setIsProcessingUnlock(false);
-      unlockInFlightRef.current = false;
-    }
-  }, [isProcessingUnlock, openAuthModal, selectedLockedCharacter, user?.id]);
+      if (isCharacterUnlocked(character?.key)) return;
+      event.preventDefault();
+      void unlockCharacterAndNavigate(character);
+    },
+    [isCharacterUnlocked, isInitialLoading, isProcessingUnlock, unlockCharacterAndNavigate]
+  );
 
   return (
     <section className="w-full mb-16">
@@ -167,7 +183,7 @@ const CharacterGallery = () => {
             </h2>
             <p className="text-base font-semibold text-slate-700">
               {user?.id
-                ? 'Tap a card to open its dedicated page.'
+                ? 'Tap any card to open it. Locked cards unlock instantly in one click.'
                 : `Tap a card to unlock for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems.`}
             </p>
             {user?.id && subscriptionLoadError && (
@@ -178,6 +194,9 @@ const CharacterGallery = () => {
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {CHARACTER_PROFILES.map((char) => {
               const unlocked = isCharacterUnlocked(char.key);
+              const normalizedCharacterKey = String(char.key || '').trim().toLowerCase();
+              const isCardProcessing =
+                isProcessingUnlock && processingCharacterKey === normalizedCharacterKey;
 
               return (
                 <div
@@ -195,9 +214,13 @@ const CharacterGallery = () => {
                   >
                     <div className="absolute right-3 top-3 z-20">
                       {unlocked ? (
-                          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-emerald-700">
-                            Unlocked {'\u{1F513}'}
-                          </span>
+                        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-emerald-700">
+                          Unlocked {'\u{1F513}'}
+                        </span>
+                      ) : isCardProcessing ? (
+                        <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-sky-700">
+                          {'\u23F3'} Unlocking...
+                        </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-amber-700">
                           {LOCKED_BADGE_LABEL}
@@ -250,57 +273,6 @@ const CharacterGallery = () => {
             })}
           </div>
         </>
-      )}
-
-      {selectedLockedCharacter && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-yellow-200 bg-gradient-to-b from-slate-900 to-slate-800 p-6 text-white shadow-[0_26px_80px_rgba(2,6,23,0.58)]">
-            <h3 className="text-2xl font-black text-yellow-300">
-              Unlock {selectedLockedCharacter.name}! {'\u2728'}
-            </h3>
-            <p className="mt-3 text-sm font-semibold text-slate-200">
-              Get full access to {selectedLockedCharacter.name}&apos;s zone for 7 days.
-            </p>
-
-            {!user?.id && (
-              <p className="mt-2 text-xs font-bold text-amber-300">
-                Log in first to buy this unlock with Gems.
-              </p>
-            )}
-
-            <div className="mt-6 grid gap-3">
-              <button
-                type="button"
-                onClick={handleUnlockCharacter}
-                disabled={isProcessingUnlock}
-                className="w-full rounded-2xl border border-yellow-300 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-200 px-4 py-3 text-sm font-black text-slate-900 shadow-[0_0_24px_rgba(250,204,21,0.45)] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isProcessingUnlock
-                  ? 'Unlocking...'
-                  : `Unlock for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems \u{1F48E}`}
-              </button>
-
-              {!user?.id && (
-                <button
-                  type="button"
-                  onClick={() => openAuthModal('login')}
-                  className="w-full rounded-2xl border border-indigo-200 bg-indigo-500/20 px-4 py-3 text-sm font-black text-indigo-100"
-                >
-                  Log In to Continue
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={closeUnlockModal}
-                disabled={isProcessingUnlock}
-                className="w-full rounded-2xl border border-slate-500 bg-slate-700/70 px-4 py-3 text-sm font-bold text-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                Maybe Later
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </section>
   );

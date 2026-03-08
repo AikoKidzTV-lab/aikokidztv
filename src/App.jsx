@@ -50,6 +50,7 @@ import NikoFriendshipHavenPage from './components/pages/NikoFriendshipHavenPage'
 import AikoLeadershipPavilionPage from './components/pages/AikoLeadershipPavilionPage';
 import {
   CHARACTER_SUBSCRIPTION_COST_GEMS,
+  CHARACTER_SUBSCRIPTION_DAYS,
   fetchActiveCharacterSubscriptions,
   purchaseCharacterSubscription,
 } from './utils/characterSubscriptions';
@@ -991,7 +992,7 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
         Array.from(new Set([...current, String(characterId || '').trim().toLowerCase()]))
       );
       setGuardError('');
-      showAppToast('success', `${characterName} unlocked for 7 days! \u{1F389}`);
+      showAppToast('success', `${characterName} unlocked for ${CHARACTER_SUBSCRIPTION_DAYS} days! \u{1F389}`);
     } catch (error) {
       showAppToast('error', error?.message || 'Unlock failed. Please try again.');
     } finally {
@@ -1028,7 +1029,7 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
             Unlock {characterName}! {'\u2728'}
           </h1>
           <p className="mt-3 text-sm font-semibold text-slate-200">
-            Get full access to {characterName}&apos;s zone for 7 days.
+            Get full access to {characterName}&apos;s zone for {CHARACTER_SUBSCRIPTION_DAYS} days.
           </p>
           <div className="mt-4 inline-flex items-center rounded-full border border-amber-200/70 bg-amber-200/10 px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-amber-200">
             {'\u{1F512}'} {CHARACTER_SUBSCRIPTION_COST_GEMS} Gems
