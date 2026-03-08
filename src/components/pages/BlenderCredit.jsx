@@ -16,7 +16,7 @@ export default function BlenderCredit() {
       </div>
 
       <div className="relative mx-auto flex min-h-screen max-w-5xl items-center justify-center px-4 py-12">
-        <div className="w-full max-w-3xl rounded-3xl border border-white/70 bg-white/70 p-8 shadow-xl backdrop-blur-md sm:p-10">
+        <div className="w-full max-w-3xl rounded-3xl border border-white/80 bg-white/68 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.15)] backdrop-blur-2xl sm:p-10">
           <div className="mb-4 text-center text-sm font-black uppercase tracking-[0.2em] text-purple-700">
             Blender Studio Credit
           </div>
@@ -29,7 +29,7 @@ export default function BlenderCredit() {
             <Link
               to="/"
               onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
-              className="rounded-2xl border border-purple-300 bg-purple-600 px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-purple-700"
+              className="rounded-2xl border border-white/80 bg-white/72 px-6 py-3 text-sm font-black text-slate-900 shadow-sm backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white"
             >
               🔙 Back to Home
             </Link>

@@ -4,10 +4,10 @@ export default function StoryReader() {
   return (
     <section className="min-h-screen bg-[radial-gradient(circle_at_top,_#fef3c7_0%,_#fde68a_22%,_#fbcfe8_52%,_#bfdbfe_100%)] px-4 py-10 text-slate-900 sm:py-14">
       <div className="mx-auto max-w-3xl">
-        <div className="rounded-[2rem] border border-white/80 bg-white/95 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl sm:p-8">
+        <div className="rounded-[2rem] border border-white/80 bg-white/68 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.16)] backdrop-blur-2xl sm:p-8">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-pink-700">Founder Story</p>
-            <div className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-900">
+            <div className="rounded-full border border-white/80 bg-white/72 px-4 py-2 text-sm font-bold text-emerald-900 shadow-sm backdrop-blur-xl">
               Free Access Easter Egg
             </div>
           </div>
