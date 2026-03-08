@@ -5,11 +5,11 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import { CHARACTER_PROFILES } from '../constants/characters';
 import { useAuth } from '../context/AuthContext';
 import { useAuthModal } from '../context/AuthModalContext';
+import { supabase } from '../supabaseClient';
 import {
   CHARACTER_SUBSCRIPTION_COST_GEMS,
   CHARACTER_SUBSCRIPTION_DAYS,
   fetchActiveCharacterSubscriptions,
-  purchaseCharacterSubscription,
 } from '../utils/characterSubscriptions';
 
 const LOCKED_BADGE_LABEL = `\u{1F512} ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems`;
@@ -29,7 +29,7 @@ const showToast = (icon, title) =>
 
 const CharacterGallery = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { openAuthModal } = useAuthModal();
   const [userSubscriptions, setUserSubscriptions] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -104,27 +104,59 @@ const CharacterGallery = () => {
         return;
       }
 
-      const profileGems = Number(profile?.gems);
-      if (Number.isFinite(profileGems) && profileGems < CHARACTER_SUBSCRIPTION_COST_GEMS) {
-        showToast('error', 'Not enough gems! Keep learning to earn more. \u{1F48E}');
-        return;
-      }
-
       unlockInFlightRef.current = true;
       setIsProcessingUnlock(true);
       setProcessingCharacterKey(normalizedCharacterKey);
 
       try {
-        const result = await purchaseCharacterSubscription({
-          userId: user.id,
-          characterId: normalizedCharacterKey,
-        });
+        const { data: dbProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, gems')
+          .eq('id', user.id)
+          .maybeSingle();
 
-        if (!result?.ok) {
-          if (result?.code === 'insufficient_gems') {
-            throw new Error('Not enough gems! Keep learning to earn more. \u{1F48E}');
-          }
-          throw new Error(result?.message || 'Failed to unlock this character.');
+        if (profileError) {
+          throw profileError;
+        }
+
+        const currentGems = Number(dbProfile?.gems || 0);
+        if (!Number.isFinite(currentGems) || currentGems < CHARACTER_SUBSCRIPTION_COST_GEMS) {
+          throw new Error('Not enough gems! Keep learning to earn more. \u{1F48E}');
+        }
+
+        const nextGems = Math.max(0, Math.floor(currentGems) - CHARACTER_SUBSCRIPTION_COST_GEMS);
+        const { data: deductRow, error: deductError } = await supabase
+          .from('profiles')
+          .update({ gems: nextGems })
+          .eq('id', user.id)
+          .select('id, gems')
+          .maybeSingle();
+
+        if (deductError) {
+          throw deductError;
+        }
+        if (!deductRow?.id) {
+          throw new Error('Failed to deduct gems. Please try again.');
+        }
+
+        const { error: subscriptionError } = await supabase
+          .from('character_subscriptions')
+          .upsert(
+            {
+              user_id: user.id,
+              character_id: normalizedCharacterKey,
+              status: 'active',
+              expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            },
+            { onConflict: 'user_id,character_id' }
+          );
+
+        if (subscriptionError) {
+          await supabase
+            .from('profiles')
+            .update({ gems: currentGems })
+            .eq('id', user.id);
+          throw subscriptionError;
         }
 
         setUserSubscriptions((current) => {
@@ -137,6 +169,7 @@ const CharacterGallery = () => {
         showToast('success', `${character.name} unlocked for ${CHARACTER_SUBSCRIPTION_DAYS} days! \u{1F389}`);
         navigate(character.route);
       } catch (error) {
+        console.error('[CharacterGallery] Unlock failed:', error);
         showToast('error', error?.message || 'Failed to unlock this character.');
       } finally {
         setIsProcessingUnlock(false);
@@ -144,7 +177,7 @@ const CharacterGallery = () => {
         unlockInFlightRef.current = false;
       }
     },
-    [isProcessingUnlock, navigate, openAuthModal, profile?.gems, user?.id]
+    [isProcessingUnlock, navigate, openAuthModal, user?.id]
   );
 
   const handleCardClick = useCallback(
