@@ -1,7 +1,8 @@
 import { supabase } from '../supabaseClient';
 
-export const CHARACTER_SUBSCRIPTION_COST_GEMS = 200;
-export const CHARACTER_SUBSCRIPTION_DAYS = 14;
+export const CHARACTER_SUBSCRIPTION_COST_GEMS = 1400;
+export const CHARACTER_SUBSCRIPTION_DAYS = 56;
+export const CHARACTER_SUBSCRIPTION_CHARACTER_IDS = ['aiko', 'niko', 'kinu', 'mimi', 'miko', 'chiko'];
 
 const toSafeWholeNumber = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -103,21 +104,31 @@ export const hasActiveCharacterSubscription = async ({ userId, characterId }) =>
   return { ok: true, active: Boolean(data?.character_id) };
 };
 
-export const purchaseCharacterSubscription = async ({ userId, characterId }) => {
+export const purchaseAllCharacterSubscriptions = async ({
+  userId,
+  characterIds = CHARACTER_SUBSCRIPTION_CHARACTER_IDS,
+}) => {
   if (!userId) {
     return {
       ok: false,
       code: 'auth_required',
-      message: 'Please log in to unlock characters.',
+      message: 'Please log in to unlock all characters.',
     };
   }
 
-  const normalizedCharacterId = String(characterId || '').trim().toLowerCase();
-  if (!normalizedCharacterId) {
+  const normalizedCharacterIds = Array.isArray(characterIds)
+    ? [...new Set(
+      characterIds
+        .map((value) => String(value || '').trim().toLowerCase())
+        .filter(Boolean)
+    )]
+    : [];
+
+  if (normalizedCharacterIds.length === 0) {
     return {
       ok: false,
-      code: 'invalid_character',
-      message: 'Invalid character unlock request.',
+      code: 'invalid_character_list',
+      message: 'Invalid character unlock configuration.',
     };
   }
 
@@ -164,12 +175,12 @@ export const purchaseCharacterSubscription = async ({ userId, characterId }) => 
   const { error: upsertError } = await supabase
     .from('character_subscriptions')
     .upsert(
-      {
+      normalizedCharacterIds.map((characterId) => ({
         user_id: userId,
-        character_id: normalizedCharacterId,
+        character_id: characterId,
         status: 'active',
         expires_at: expiresAt,
-      },
+      })),
       { onConflict: 'user_id,character_id' }
     );
 
@@ -178,7 +189,7 @@ export const purchaseCharacterSubscription = async ({ userId, characterId }) => 
       ok: true,
       gems: nextGems,
       expiresAt,
-      characterId: normalizedCharacterId,
+      characterIds: normalizedCharacterIds,
     };
   }
 
@@ -191,6 +202,6 @@ export const purchaseCharacterSubscription = async ({ userId, characterId }) => 
   return {
     ok: false,
     code: 'subscription_error',
-    message: upsertError.message || 'Failed to activate subscription. Gems restored.',
+    message: upsertError.message || 'Failed to activate all character subscriptions. Gems restored.',
   };
 };

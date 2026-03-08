@@ -52,7 +52,7 @@ export default function ProfileSettingsPage() {
       }
 
       showProfileToast('success', 'Profile saved successfully.');
-      await Promise.resolve(fetchProfile?.(user.id)).catch((syncError) => {
+      void Promise.resolve(fetchProfile?.(user.id)).catch((syncError) => {
         console.warn('[ProfileSettings] Profile refresh failed after save:', syncError);
       });
     } catch (error) {
@@ -114,12 +114,12 @@ export default function ProfileSettingsPage() {
             className="mt-6 space-y-4"
           >
             <label className="block">
-              <span className="mb-1.5 block text-sm font-black text-slate-200">Display Name</span>
+              <span className="mb-1.5 block text-sm font-black text-slate-200">Full Name</span>
               <input
                 type="text"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
-                placeholder="Enter display name"
+                placeholder="Enter full name"
                 className="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white outline-none focus:border-cyan-400"
               />
             </label>

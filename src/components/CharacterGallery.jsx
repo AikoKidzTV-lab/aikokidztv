@@ -1,18 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { CHARACTER_PROFILES } from '../constants/characters';
 import { useAuth } from '../context/AuthContext';
 import { useAuthModal } from '../context/AuthModalContext';
-import { supabase } from '../supabaseClient';
 import {
+  CHARACTER_SUBSCRIPTION_CHARACTER_IDS,
   CHARACTER_SUBSCRIPTION_COST_GEMS,
   CHARACTER_SUBSCRIPTION_DAYS,
   fetchActiveCharacterSubscriptions,
+  purchaseAllCharacterSubscriptions,
 } from '../utils/characterSubscriptions';
 
-const LOCKED_BADGE_LABEL = `\u{1F512} ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems`;
+const LOCKED_BADGE_LABEL = '\u{1F512} Locked';
 
 const showToast = (icon, title) =>
   Swal.fire({
@@ -34,14 +35,12 @@ const toast = {
 };
 
 const CharacterGallery = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, fetchProfile } = useAuth();
   const { openAuthModal } = useAuthModal();
   const [userSubscriptions, setUserSubscriptions] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [subscriptionLoadError, setSubscriptionLoadError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingCharacterKey, setProcessingCharacterKey] = useState('');
 
   const fetchSubscriptions = useCallback(async (userId) => {
     if (!userId) {
@@ -84,11 +83,16 @@ const CharacterGallery = () => {
     return () => {
       isActive = false;
     };
-  }, [user?.id]);
+  }, [fetchSubscriptions, user?.id]);
 
   const activeSubscriptionSet = useMemo(
     () => new Set(userSubscriptions.map((id) => String(id || '').trim().toLowerCase())),
     [userSubscriptions]
+  );
+
+  const hasGlobalUnlock = useMemo(
+    () => CHARACTER_SUBSCRIPTION_CHARACTER_IDS.every((characterId) => activeSubscriptionSet.has(characterId)),
+    [activeSubscriptionSet]
   );
 
   const isCharacterUnlocked = useCallback(
@@ -96,71 +100,42 @@ const CharacterGallery = () => {
     [activeSubscriptionSet]
   );
 
-  const handleUnlock = async (charId) => {
-    if (isProcessing) return; // Prevent double clicks
+  const handleUnlockAllCharacters = async () => {
+    if (isProcessing) return;
 
+    if (!user?.id) {
+      toast.info('Please log in to unlock all characters.');
+      openAuthModal('login');
+      return;
+    }
+
+    setIsProcessing(true);
     try {
-      setIsProcessing(true);
-      console.log("1. Starting unlock for character:", charId);
+      const result = await purchaseAllCharacterSubscriptions({
+        userId: user.id,
+        characterIds: CHARACTER_SUBSCRIPTION_CHARACTER_IDS,
+      });
 
-      // Get current user strictly
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw new Error("User not authenticated.");
-      console.log("2. User ID:", user.id);
-
-      // Fetch fresh profile data to check gems
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('gems')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) throw new Error(`Profile fetch error: ${profileError.message}`);
-      console.log("3. Current Gems:", profile.gems);
-
-      if (!profile || profile.gems < 200) {
-        toast.error("Not enough gems! 💎");
-        return; // Exit early, finally block will run and stop loading
+      if (!result?.ok) {
+        throw new Error(result?.message || 'Unlock failed. Please try again.');
       }
 
-      // Deduct 200 Gems
-      const { error: deductError } = await supabase
-        .from('profiles')
-        .update({ gems: profile.gems - 200 })
-        .eq('id', user.id);
+      const unlockedCharacterIds =
+        Array.isArray(result.characterIds) && result.characterIds.length > 0
+          ? result.characterIds
+          : CHARACTER_SUBSCRIPTION_CHARACTER_IDS;
 
-      if (deductError) throw new Error(`Gem deduction error: ${deductError.message}`);
-      console.log("4. 200 Gems deducted successfully.");
+      setUserSubscriptions((current) => Array.from(new Set([...current, ...unlockedCharacterIds])));
+      setSubscriptionLoadError('');
+      toast.success(`All characters unlocked for ${CHARACTER_SUBSCRIPTION_DAYS} days! \u{1F389}`);
 
-      // Calculate Expiry (14 Days)
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 14);
-
-      // Upsert Subscription
-      const { error: subError } = await supabase
-        .from('character_subscriptions')
-        .upsert({
-          user_id: user.id,
-          character_id: charId,
-          status: 'active',
-          expires_at: expiryDate.toISOString()
-        }, { onConflict: 'user_id, character_id' });
-
-      if (subError) throw new Error(`Subscription save error: ${subError.message}`);
-      console.log("5. Subscription saved to DB successfully.");
-
-      // Success! Update UI
-      toast.success("Character Unlocked! 🎉");
-      
-      // Update local state to reflect the unlock immediately
-      setUserSubscriptions(prev => [...prev, charId]);
-
+      void Promise.resolve(fetchProfile?.(user.id)).catch((syncError) => {
+        console.warn('[CharacterGallery] Profile refresh failed after unlock:', syncError);
+      });
     } catch (error) {
-      console.error("❌ UNLOCK FAILED:", error);
-      toast.error(error.message || "Failed to unlock. Please try again.");
+      toast.error(error?.message || 'Failed to unlock all characters. Please try again.');
     } finally {
-      setIsProcessing(false); // THIS IS NON-NEGOTIABLE. ALWAYS STOP LOADING.
-      console.log("6. Process finished. isProcessing set to false.");
+      setIsProcessing(false);
     }
   };
 
@@ -182,24 +157,25 @@ const CharacterGallery = () => {
 
   const handleCardClick = useCallback(
     (event, character) => {
-      if (isInitialLoading) {
-        event.preventDefault();
-        return;
-      }
-
-      if (isProcessing) {
+      if (isInitialLoading || isProcessing) {
         event.preventDefault();
         return;
       }
 
       if (isCharacterUnlocked(character?.key)) return;
       event.preventDefault();
-      const charId = String(character?.key || '').trim().toLowerCase();
-      if (!charId) return;
-      setProcessingCharacterKey(charId);
-      void handleUnlock(charId);
+
+      if (!user?.id) {
+        toast.info('Please log in to unlock all characters.');
+        openAuthModal('login');
+        return;
+      }
+
+      if (!hasGlobalUnlock) {
+        toast.info(`Unlock All Characters for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems to open every card.`);
+      }
     },
-    [handleUnlock, isCharacterUnlocked, isInitialLoading, isProcessing]
+    [hasGlobalUnlock, isCharacterUnlocked, isInitialLoading, isProcessing, openAuthModal, user?.id]
   );
 
   return (
@@ -207,37 +183,51 @@ const CharacterGallery = () => {
       {isInitialLoading ? (
         <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-[2rem] border border-slate-200/80 bg-white/70 p-6">
           <div className="h-12 w-12 rounded-full border-4 border-slate-300 border-t-indigo-500" />
-          <p className="text-sm font-bold text-slate-600">
-            Loading character access...
-          </p>
+          <p className="text-sm font-bold text-slate-600">Loading character access...</p>
         </div>
       ) : (
         <>
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">
-              Learning Zone Character Cards
-            </h2>
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Learning Zone Character Cards</h2>
             <p className="text-base font-semibold text-slate-700">
               {user?.id
-                ? 'Tap any card to open it. Locked cards unlock instantly in one click.'
-                : `Tap a card to unlock for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems.`}
+                ? (hasGlobalUnlock
+                    ? 'All 6 characters are unlocked. Tap any card to enter.'
+                    : `Unlock all 6 characters together for ${CHARACTER_SUBSCRIPTION_DAYS} days.`)
+                : 'Log in to unlock all 6 characters with one purchase.'}
             </p>
             {user?.id && subscriptionLoadError && (
               <p className="mt-2 text-xs font-bold text-red-600">{subscriptionLoadError}</p>
             )}
           </div>
 
+          {user?.id && !hasGlobalUnlock && (
+            <div className="mb-8 rounded-2xl border border-amber-300/80 bg-amber-50 p-5 text-center shadow-sm">
+              <p className="text-sm font-black text-amber-900">
+                One purchase unlocks AIKO, NIKO, KINU, MIMI, MIKO, and CHIKO instantly.
+              </p>
+              <p className="mt-1 text-xs font-semibold text-amber-800">
+                Access lasts for {CHARACTER_SUBSCRIPTION_DAYS} days.
+              </p>
+              <button
+                type="button"
+                onClick={handleUnlockAllCharacters}
+                disabled={isProcessing}
+                className="mt-4 rounded-full border border-amber-700 bg-amber-500 px-5 py-2.5 text-sm font-black text-slate-900 shadow-sm hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isProcessing
+                  ? 'Unlocking All Characters...'
+                  : `Unlock All Characters for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems`}
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {CHARACTER_PROFILES.map((char) => {
               const unlocked = isCharacterUnlocked(char.key);
-              const normalizedCharacterKey = String(char.key || '').trim().toLowerCase();
-              const isCardProcessing =
-                isProcessing && processingCharacterKey === normalizedCharacterKey;
 
               return (
-                <div
-                  key={char.key}
-                >
+                <div key={char.key}>
                   <Link
                     to={char.route}
                     onClick={(event) => handleCardClick(event, char)}
@@ -252,10 +242,6 @@ const CharacterGallery = () => {
                       {unlocked ? (
                         <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-emerald-700">
                           Unlocked {'\u{1F513}'}
-                        </span>
-                      ) : isCardProcessing ? (
-                        <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-sky-700">
-                          {'\u23F3'} Unlocking...
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-amber-700">
@@ -287,9 +273,7 @@ const CharacterGallery = () => {
                         <h3 className={`truncate text-lg font-black tracking-wide ${char.card.textClass}`}>
                           {char.cardTitle}
                         </h3>
-                        <p className={`text-sm font-bold ${char.card.textClass}`}>
-                          {char.specialHobby}
-                        </p>
+                        <p className={`text-sm font-bold ${char.card.textClass}`}>{char.specialHobby}</p>
                       </div>
                     </div>
 

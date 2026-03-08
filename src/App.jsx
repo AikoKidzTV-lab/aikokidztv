@@ -50,10 +50,11 @@ import NikoFriendshipHavenPage from './components/pages/NikoFriendshipHavenPage'
 import AikoLeadershipPavilionPage from './components/pages/AikoLeadershipPavilionPage';
 import ProfileSettingsPage from './components/pages/ProfileSettingsPage';
 import {
+  CHARACTER_SUBSCRIPTION_CHARACTER_IDS,
   CHARACTER_SUBSCRIPTION_COST_GEMS,
   CHARACTER_SUBSCRIPTION_DAYS,
   fetchActiveCharacterSubscriptions,
-  purchaseCharacterSubscription,
+  purchaseAllCharacterSubscriptions,
 } from './utils/characterSubscriptions';
 
 const themes = [
@@ -912,7 +913,7 @@ const showAppToast = (icon, title) =>
 
 function CharacterSubscriptionRouteGuard({ characterId, characterName, children }) {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, fetchProfile } = useAuth();
   const { openAuthModal } = useAuthModal();
   const [userSubscriptions, setUserSubscriptions] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -960,44 +961,54 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
     return () => {
       isActive = false;
     };
-  }, [user?.id]);
+  }, [fetchSubscriptions, user?.id]);
 
-  const isCharacterUnlocked = React.useCallback(
-    (charId) => {
-      const normalizedCharId = String(charId || '').trim().toLowerCase();
-      if (!normalizedCharId) return false;
-      return userSubscriptions.some(
-        (subscriptionId) => String(subscriptionId || '').trim().toLowerCase() === normalizedCharId
-      );
-    },
+  const activeSubscriptionSet = React.useMemo(
+    () => new Set(userSubscriptions.map((id) => String(id || '').trim().toLowerCase())),
     [userSubscriptions]
   );
 
-  const handleUnlock = async () => {
+  const normalizedCharacterId = React.useMemo(
+    () => String(characterId || '').trim().toLowerCase(),
+    [characterId]
+  );
+
+  const isCharacterUnlocked = React.useMemo(
+    () => normalizedCharacterId && activeSubscriptionSet.has(normalizedCharacterId),
+    [activeSubscriptionSet, normalizedCharacterId]
+  );
+
+  const handleUnlockAllCharacters = async () => {
     if (isProcessingUnlock) return;
 
     if (!user?.id) {
-      showAppToast('info', 'Please log in to unlock characters.');
+      showAppToast('info', 'Please log in to unlock all characters.');
       openAuthModal('login');
       return;
     }
 
     setIsProcessingUnlock(true);
     try {
-      const result = await purchaseCharacterSubscription({
+      const result = await purchaseAllCharacterSubscriptions({
         userId: user.id,
-        characterId,
+        characterIds: CHARACTER_SUBSCRIPTION_CHARACTER_IDS,
       });
 
       if (!result?.ok) {
         throw new Error(result?.message || 'Unlock failed. Please try again.');
       }
 
-      setUserSubscriptions((current) =>
-        Array.from(new Set([...current, String(characterId || '').trim().toLowerCase()]))
-      );
+      const unlockedCharacterIds =
+        Array.isArray(result.characterIds) && result.characterIds.length > 0
+          ? result.characterIds
+          : CHARACTER_SUBSCRIPTION_CHARACTER_IDS;
+
+      setUserSubscriptions((current) => Array.from(new Set([...current, ...unlockedCharacterIds])));
       setGuardError('');
-      showAppToast('success', `${characterName} unlocked for ${CHARACTER_SUBSCRIPTION_DAYS} days! \u{1F389}`);
+      showAppToast('success', `All characters unlocked for ${CHARACTER_SUBSCRIPTION_DAYS} days! \u{1F389}`);
+      void Promise.resolve(fetchProfile?.(user.id)).catch((syncError) => {
+        console.warn('[CharacterRouteGuard] Profile refresh failed after unlock:', syncError);
+      });
     } catch (error) {
       showAppToast('error', error?.message || 'Unlock failed. Please try again.');
     } finally {
@@ -1005,7 +1016,7 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
     }
   };
 
-  if (isCharacterUnlocked(characterId)) {
+  if (isCharacterUnlocked) {
     return children;
   }
 
@@ -1031,10 +1042,10 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
         <div className="w-full rounded-[1.75rem] border border-yellow-300/40 bg-slate-900/90 p-8 text-center text-slate-100 shadow-[0_20px_60px_rgba(2,6,23,0.5)]">
           <div className="mb-4 text-5xl">{'\u{1F512}'}</div>
           <h1 className="text-2xl font-black text-white">
-            Unlock {characterName}! {'\u2728'}
+            Unlock All Learning Zone Characters! {'\u2728'}
           </h1>
           <p className="mt-3 text-sm font-semibold text-slate-200">
-            Get full access to {characterName}&apos;s zone for {CHARACTER_SUBSCRIPTION_DAYS} days.
+            This route is locked for {characterName}. Unlock all 6 characters together for {CHARACTER_SUBSCRIPTION_DAYS} days.
           </p>
           <div className="mt-4 inline-flex items-center rounded-full border border-amber-200/70 bg-amber-200/10 px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-amber-200">
             {'\u{1F512}'} {CHARACTER_SUBSCRIPTION_COST_GEMS} Gems
@@ -1047,13 +1058,13 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
-              onClick={handleUnlock}
+              onClick={handleUnlockAllCharacters}
               disabled={isProcessingUnlock}
               className="rounded-full border border-yellow-200 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-200 px-5 py-2.5 text-sm font-black text-slate-900 shadow-sm hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isProcessingUnlock
-                ? 'Unlocking...'
-                : `Unlock for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems \u{1F48E}`}
+                ? 'Unlocking All Characters...'
+                : `Unlock All Characters for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems`}
             </button>
             {!user?.id && (
               <button
