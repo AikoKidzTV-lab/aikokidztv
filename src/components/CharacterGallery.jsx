@@ -152,8 +152,8 @@ const CharacterGallery = () => {
       // Success! Update UI
       toast.success("Character Unlocked! 🎉");
       
-      // NOTE TO BUILDER: Trigger your local state update here so the UI reflects the unlock without refreshing
-      // e.g., fetchSubscriptions() or appending to local array.
+      // Update local state to reflect the unlock immediately
+      setUserSubscriptions(prev => [...prev, charId]);
 
     } catch (error) {
       console.error("❌ UNLOCK FAILED:", error);
