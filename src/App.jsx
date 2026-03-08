@@ -48,6 +48,7 @@ import MimiCuriousArtLabPage from './components/pages/MimiCuriousArtLabPage';
 import KinuGeniusMischiefLabPage from './components/pages/KinuGeniusMischiefLabPage';
 import NikoFriendshipHavenPage from './components/pages/NikoFriendshipHavenPage';
 import AikoLeadershipPavilionPage from './components/pages/AikoLeadershipPavilionPage';
+import ProfileSettingsPage from './components/pages/ProfileSettingsPage';
 import {
   CHARACTER_SUBSCRIPTION_COST_GEMS,
   CHARACTER_SUBSCRIPTION_DAYS,
@@ -731,6 +732,10 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
         onOpenCosmicJourney={() => requestParentZoneAccess('/parent-zone/cosmic-journey')}
         isAdmin={isAdmin}
         onGoToAdmin={onGoToAdmin}
+        onGoToProfileSettings={() => {
+          navigate('/profile-settings');
+          window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        }}
         onGoToVideos={onGoToVideos}
         onGoToPoems={onGoToPoems}
         isForcedOffline={isForcedOffline}
@@ -1162,6 +1167,7 @@ function App() {
                 <Route path="/coloring" element={<ColoringBook />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/blender-credit" element={<BlenderCredit />} />
+              <Route path="/profile-settings" element={<ProfileSettingsPage />} />
               <Route path="/aiko-bio" element={<AikoBioPage />} />
               <Route path="/niko-bio" element={<NikoBioPage />} />
               <Route path="/kinu-bio" element={<KinuBioPage />} />

@@ -94,31 +94,18 @@ function ProfileDropdownMenu({
           Parent Zone
           <span className="block text-xs font-semibold opacity-80">Protected by 4-digit PIN (resettable)</span>
         </button>
-        {!isLoggedIn && (
-          <>
-            <button
-              onClick={run(onOpenLogin)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left font-bold text-slate-800 shadow-sm transition hover:bg-slate-50"
-            >
-              Login
-              <span className="block text-xs font-semibold opacity-80">Open authentication modal</span>
-            </button>
-            <button
-              onClick={run(onOpenSignup)}
-              className="w-full rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-4 py-3 text-left font-bold text-pink-900 shadow-sm transition hover:brightness-105"
-            >
-              Sign Up / Create Account
-              <span className="block text-xs font-semibold opacity-80">Start with email, password, or OTP</span>
-            </button>
-          </>
-        )}
-      </div>
-
-      <div className="mt-3 rounded-2xl border border-slate-200 bg-white/85 p-3">
+        <button
+          type="button"
+          onClick={run(onOpenSignup || onOpenLogin)}
+          className="w-full rounded-2xl border border-pink-200 bg-gradient-to-r from-pink-100 to-amber-100 px-4 py-3 text-left font-bold text-pink-900 shadow-sm transition hover:brightness-105"
+        >
+          Create Account / Login with OTP
+          <span className="block text-xs font-semibold opacity-80">Use email OTP in the auth modal</span>
+        </button>
         <button
           type="button"
           onClick={run(onOpenCosmicJourney)}
-          className="w-full rounded-xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-3 py-2.5 text-left text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
+          className="w-full rounded-2xl border border-indigo-300 bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 px-4 py-3 text-left text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
         >
           {'\u{1F680}'} Cosmic Journey
           <span className="block text-xs font-semibold text-indigo-100">Open secure space exploration zone</span>
@@ -136,6 +123,7 @@ export default function HeaderNavbar({
   onOpenCosmicJourney,
   isAdmin,
   onGoToAdmin,
+  onGoToProfileSettings,
   onGoToVideos,
   onGoToPoems,
   isForcedOffline,
@@ -153,6 +141,10 @@ export default function HeaderNavbar({
     () => notifications.reduce((count, notification) => count + (notification.unread ? 1 : 0), 0),
     [notifications]
   );
+  const handleOpenProfileSettings = () => {
+    onGoToProfileSettings?.();
+    setOpenProfile(false);
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -339,11 +331,13 @@ export default function HeaderNavbar({
           </div>
 
           <div className="relative">
-            <button
-              onClick={() => setOpenProfile((v) => !v)}
-              className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1.5 shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-              aria-label={user ? 'Open profile menu' : 'Open login and profile menu'}
-            >
+            <div className="flex items-center rounded-full border border-slate-200 bg-white px-1 py-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700">
+              <button
+                type="button"
+                onClick={handleOpenProfileSettings}
+                className="flex items-center gap-2 rounded-full px-1 py-0.5"
+                aria-label={user ? 'Open profile settings' : 'Open profile settings'}
+              >
               <div className="grid h-8 w-8 place-items-center rounded-full border border-pink-200 bg-pink-100 font-bold text-pink-600 dark:border-slate-600 dark:bg-slate-700 dark:text-pink-200">
                 {avatarLetter}
               </div>
@@ -355,11 +349,19 @@ export default function HeaderNavbar({
                   {user?.email || 'Guest'}
                 </p>
               </div>
-              <ChevronDown
-                size={16}
-                className={`text-slate-500 transition-transform dark:text-slate-200 ${openProfile ? 'rotate-180' : ''}`}
-              />
-            </button>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpenProfile((v) => !v)}
+                className="grid h-8 w-8 place-items-center rounded-full text-slate-500 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-700"
+                aria-label={user ? 'Open profile menu' : 'Open login and profile menu'}
+              >
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform ${openProfile ? 'rotate-180' : ''}`}
+                />
+              </button>
+            </div>
 
             <ProfileDropdownMenu
               open={openProfile}
