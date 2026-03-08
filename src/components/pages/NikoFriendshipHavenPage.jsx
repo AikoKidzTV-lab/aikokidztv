@@ -1,6 +1,42 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const fitnessMissions = [
+  'Do 10 jumping jacks!',
+  'Touch your toes 5 times!',
+  'Hop on one foot 10 times!',
+  'Do 8 big arm circles!',
+  'March in place for 20 seconds!',
+];
+
+const foodFacts = [
+  {
+    food: 'Spinach',
+    emoji: '🥬',
+    fact: 'Gives you iron to help your muscles stay super strong!',
+  },
+  {
+    food: 'Banana',
+    emoji: '🍌',
+    fact: 'Gives your body quick energy for games and running.',
+  },
+  {
+    food: 'Carrot',
+    emoji: '🥕',
+    fact: 'Helps support healthy eyes for spotting the ball fast!',
+  },
+  {
+    food: 'Yogurt',
+    emoji: '🥣',
+    fact: 'Has calcium to help keep your bones strong and ready to move.',
+  },
+  {
+    food: 'Apple',
+    emoji: '🍎',
+    fact: 'A crunchy snack that helps you feel fresh and ready to play.',
+  },
+];
+
 export default function NikoFriendshipHavenPage() {
   const navigate = useNavigate();
   const [helperMessage, setHelperMessage] = useState('');
@@ -8,6 +44,9 @@ export default function NikoFriendshipHavenPage() {
   const [isBreathing, setIsBreathing] = useState(false);
   const [confidence, setConfidence] = useState(0);
   const [showConfidenceSuccess, setShowConfidenceSuccess] = useState(false);
+  const [missionIndex, setMissionIndex] = useState(0);
+  const [isAccomplished, setIsAccomplished] = useState(false);
+  const [foodIndex, setFoodIndex] = useState(0);
   const timersRef = useRef([]);
 
   useEffect(
@@ -161,6 +200,63 @@ export default function NikoFriendshipHavenPage() {
                 NIKO feels brave today! Best Friends Forever! 💖
               </div>
             )}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <h2 className="text-lg font-black text-red-200 sm:text-xl">60-Second Fitness Mission 🏆</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setMissionIndex((prev) => (prev + 1) % fitnessMissions.length);
+                setIsAccomplished(false);
+              }}
+              className="rounded-xl border border-red-300/25 bg-red-400/12 px-3 py-2 text-xs font-black text-red-100 shadow-none hover:bg-red-400/18"
+            >
+              Next 🔄
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-red-200/25 bg-gradient-to-br from-red-200 via-rose-100 to-orange-100 p-5 text-slate-900 shadow-none sm:p-6">
+            <p className="text-2xl font-black leading-relaxed text-red-900 sm:text-3xl">
+              {fitnessMissions[missionIndex]}
+            </p>
+
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => setIsAccomplished(true)}
+                className={`rounded-xl border px-5 py-3 text-sm font-black shadow-none ${
+                  isAccomplished
+                    ? 'border-emerald-400 bg-emerald-500 text-white'
+                    : 'border-red-300 bg-white text-red-900'
+                }`}
+              >
+                Mission Accomplished ✅
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <h2 className="text-lg font-black text-red-200 sm:text-xl">Power Food Facts 🍎</h2>
+            <button
+              type="button"
+              onClick={() => setFoodIndex((prev) => (prev + 1) % foodFacts.length)}
+              className="rounded-xl border border-red-300/25 bg-red-400/12 px-3 py-2 text-xs font-black text-red-100 shadow-none hover:bg-red-400/18"
+            >
+              Next 🔄
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-rose-200/30 bg-gradient-to-br from-rose-100 via-pink-100 to-red-100 p-5 text-slate-900 shadow-none sm:p-6">
+            <p className="text-6xl">{foodFacts[foodIndex].emoji}</p>
+            <p className="mt-3 text-2xl font-black text-red-900">{foodFacts[foodIndex].food}</p>
+            <p className="mt-2 text-base font-bold leading-relaxed text-rose-900">
+              {foodFacts[foodIndex].fact}
+            </p>
           </div>
         </section>
       </div>
