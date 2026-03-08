@@ -7,11 +7,46 @@ const HERO_MISSIONS = [
   'Drink a glass of water',
 ];
 
+const goodDeeds = [
+  'Help set the dinner table today!',
+  'Share your favorite toy with a friend!',
+  "Say 'Thank You' to your parents!",
+  'Help a younger kid pick up their things!',
+  'Smile and say something kind to someone today!',
+];
+
+const braveryScenarios = [
+  {
+    scenario: 'You see a new kid sitting all alone at the playground.',
+    action: 'Walk up, say Hello, and invite them to play! 🤝',
+  },
+  {
+    scenario: 'A friend drops their books in the hallway.',
+    action: 'Help pick them up and ask if they are okay. 💛',
+  },
+  {
+    scenario: 'Someone feels nervous before speaking in class.',
+    action: 'Cheer them on and remind them they can do it! 🌟',
+  },
+  {
+    scenario: 'You notice a classmate being left out of a team game.',
+    action: 'Ask them to join your team so everyone feels included. 🫶',
+  },
+  {
+    scenario: 'A little child is scared to try the big slide.',
+    action: 'Stand nearby, encourage them, and remind them to go at their own pace. 🦸‍♀️',
+  },
+];
+
 export default function AikoLeadershipPavilionPage() {
   const navigate = useNavigate();
   const [showAffirmation, setShowAffirmation] = useState(false);
   const [braveryResult, setBraveryResult] = useState('');
   const [completedMissions, setCompletedMissions] = useState([]);
+  const [deedIndex, setDeedIndex] = useState(0);
+  const [isDeedDone, setIsDeedDone] = useState(false);
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [showAction, setShowAction] = useState(false);
 
   useEffect(() => {
     if (!braveryResult) return undefined;
@@ -139,6 +174,80 @@ export default function AikoLeadershipPavilionPage() {
                 </button>
               );
             })}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Heroic Good Deeds 🌟</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setDeedIndex((prev) => (prev + 1) % goodDeeds.length);
+                setIsDeedDone(false);
+              }}
+              className="rounded-xl border border-yellow-300/25 bg-yellow-400/15 px-3 py-2 text-xs font-black text-yellow-100 shadow-none hover:bg-yellow-400/20"
+            >
+              Next 🔄
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-yellow-200/30 bg-gradient-to-br from-yellow-200 via-amber-100 to-yellow-100 p-5 text-slate-900 shadow-none sm:p-6">
+            <p className="text-2xl font-black leading-relaxed text-amber-900 sm:text-3xl">
+              {goodDeeds[deedIndex]}
+            </p>
+
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => setIsDeedDone(true)}
+                className={`rounded-xl border px-5 py-3 text-sm font-black shadow-none ${
+                  isDeedDone
+                    ? 'border-emerald-400 bg-gradient-to-r from-yellow-400 to-emerald-500 text-white'
+                    : 'border-yellow-300 bg-white text-amber-900'
+                }`}
+              >
+                I Did It! ✅
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+            <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Bravery Situations 🦸‍♀️</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setScenarioIndex((prev) => (prev + 1) % braveryScenarios.length);
+                setShowAction(false);
+              }}
+              className="rounded-xl border border-yellow-300/25 bg-yellow-400/15 px-3 py-2 text-xs font-black text-yellow-100 shadow-none hover:bg-yellow-400/20"
+            >
+              Next 🔄
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-yellow-200/20 bg-gradient-to-br from-amber-100 via-yellow-100 to-orange-100 p-5 text-slate-900 shadow-none sm:p-6">
+            <p className="text-xl font-black leading-relaxed text-amber-900 sm:text-2xl">
+              {braveryScenarios[scenarioIndex].scenario}
+            </p>
+
+            {showAction && (
+              <p className="mt-4 rounded-xl border border-yellow-300/40 bg-white/80 px-4 py-3 text-sm font-black text-amber-900">
+                {braveryScenarios[scenarioIndex].action}
+              </p>
+            )}
+
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => setShowAction(true)}
+                className="rounded-xl border border-yellow-300 bg-white px-5 py-3 text-sm font-black text-amber-900 shadow-none hover:bg-yellow-50"
+              >
+                What should a Leader do? 🤔
+              </button>
+            </div>
           </div>
         </section>
       </div>
