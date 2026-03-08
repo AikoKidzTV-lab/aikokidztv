@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { CHARACTER_PROFILES } from '../constants/characters';
@@ -34,10 +33,8 @@ const CharacterGallery = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [subscriptionLoadError, setSubscriptionLoadError] = useState('');
   const [selectedLockedCharacter, setSelectedLockedCharacter] = useState(null);
-  const [purchasingCharacterKey, setPurchasingCharacterKey] = useState('');
   const [isProcessingUnlock, setIsProcessingUnlock] = useState(false);
-  const [recentlyUnlockedCharacterKey, setRecentlyUnlockedCharacterKey] = useState('');
-  const unlockPulseTimeoutRef = useRef(null);
+  const unlockInFlightRef = useRef(false);
 
   const fetchSubscriptions = useCallback(async (userId) => {
     if (!userId) {
@@ -82,13 +79,6 @@ const CharacterGallery = () => {
     };
   }, [user?.id]);
 
-  useEffect(() => () => {
-    if (unlockPulseTimeoutRef.current) {
-      window.clearTimeout(unlockPulseTimeoutRef.current);
-      unlockPulseTimeoutRef.current = null;
-    }
-  }, []);
-
   const activeSubscriptionSet = useMemo(
     () => new Set(userSubscriptions.map((id) => String(id || '').trim().toLowerCase())),
     [userSubscriptions]
@@ -114,12 +104,12 @@ const CharacterGallery = () => {
   );
 
   const closeUnlockModal = useCallback(() => {
-    if (purchasingCharacterKey) return;
+    if (isProcessingUnlock) return;
     setSelectedLockedCharacter(null);
-  }, [purchasingCharacterKey]);
+  }, [isProcessingUnlock]);
 
   const handleUnlockCharacter = useCallback(async () => {
-    if (isProcessingUnlock) return;
+    if (isProcessingUnlock || unlockInFlightRef.current) return;
 
     const targetCharacter = selectedLockedCharacter;
     if (!targetCharacter?.key) return;
@@ -130,8 +120,9 @@ const CharacterGallery = () => {
       return;
     }
 
+    unlockInFlightRef.current = true;
     setIsProcessingUnlock(true);
-    setPurchasingCharacterKey(targetCharacter.key);
+
     try {
       const result = await purchaseCharacterSubscription({
         userId: user.id,
@@ -139,41 +130,25 @@ const CharacterGallery = () => {
       });
 
       if (!result?.ok) {
-        showToast('error', result?.message || 'Failed to unlock this character.');
-        return;
+        throw new Error(result?.message || 'Failed to unlock this character.');
       }
 
-      setUserSubscriptions((current) =>
-        Array.from(new Set([...current, String(targetCharacter.key || '').toLowerCase()]))
-      );
-      setRecentlyUnlockedCharacterKey(targetCharacter.key);
+      const normalizedCharacterKey = String(targetCharacter.key || '').trim().toLowerCase();
+      setUserSubscriptions((current) => {
+        if (current.some((id) => String(id || '').trim().toLowerCase() === normalizedCharacterKey)) {
+          return current;
+        }
+        return [...current, normalizedCharacterKey];
+      });
       setSelectedLockedCharacter(null);
       showToast('success', `${targetCharacter.name} unlocked for 7 days! \u{1F389}`);
-
-      if (typeof window !== 'undefined') {
-        if (unlockPulseTimeoutRef.current) {
-          window.clearTimeout(unlockPulseTimeoutRef.current);
-        }
-        unlockPulseTimeoutRef.current = window.setTimeout(() => {
-          setRecentlyUnlockedCharacterKey((current) =>
-            current === targetCharacter.key ? '' : current
-          );
-          unlockPulseTimeoutRef.current = null;
-        }, 1800);
-      }
     } catch (error) {
       showToast('error', error?.message || 'Failed to unlock this character.');
     } finally {
-      setPurchasingCharacterKey('');
       setIsProcessingUnlock(false);
+      unlockInFlightRef.current = false;
     }
   }, [isProcessingUnlock, openAuthModal, selectedLockedCharacter, user?.id]);
-
-  const isPurchasingSelectedCharacter = Boolean(
-    isProcessingUnlock &&
-      selectedLockedCharacter?.key &&
-      purchasingCharacterKey === selectedLockedCharacter.key
-  );
 
   return (
     <section className="w-full mb-16">
@@ -201,23 +176,17 @@ const CharacterGallery = () => {
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {CHARACTER_PROFILES.map((char, index) => {
+            {CHARACTER_PROFILES.map((char) => {
               const unlocked = isCharacterUnlocked(char.key);
-              const isRecentlyUnlocked = recentlyUnlockedCharacterKey === char.key;
 
               return (
-                <motion.div
+                <div
                   key={char.key}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.07 }}
                 >
                   <Link
                     to={char.route}
                     onClick={(event) => handleCardClick(event, char)}
-                    className={`group relative block overflow-hidden rounded-[35px] p-6 transition duration-300 hover:-translate-y-1 ${
-                      isRecentlyUnlocked ? 'ring-4 ring-emerald-300/90 animate-pulse' : ''
-                    }`}
+                    className="group relative block overflow-hidden rounded-[35px] p-6 hover:-translate-y-1"
                     style={{
                       background: char.card.color,
                       border: `1px solid ${char.card.shadowLight}`,
@@ -276,7 +245,7 @@ const CharacterGallery = () => {
                       {char.colorTheme}
                     </div>
                   </Link>
-                </motion.div>
+                </div>
               );
             })}
           </div>
@@ -303,10 +272,10 @@ const CharacterGallery = () => {
               <button
                 type="button"
                 onClick={handleUnlockCharacter}
-                disabled={isPurchasingSelectedCharacter}
-                className="w-full rounded-2xl border border-yellow-300 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-200 px-4 py-3 text-sm font-black text-slate-900 shadow-[0_0_24px_rgba(250,204,21,0.45)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isProcessingUnlock}
+                className="w-full rounded-2xl border border-yellow-300 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-200 px-4 py-3 text-sm font-black text-slate-900 shadow-[0_0_24px_rgba(250,204,21,0.45)] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isPurchasingSelectedCharacter
+                {isProcessingUnlock
                   ? 'Unlocking...'
                   : `Unlock for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems \u{1F48E}`}
               </button>
@@ -315,7 +284,7 @@ const CharacterGallery = () => {
                 <button
                   type="button"
                   onClick={() => openAuthModal('login')}
-                  className="w-full rounded-2xl border border-indigo-200 bg-indigo-500/20 px-4 py-3 text-sm font-black text-indigo-100 transition hover:bg-indigo-500/30"
+                  className="w-full rounded-2xl border border-indigo-200 bg-indigo-500/20 px-4 py-3 text-sm font-black text-indigo-100 hover:bg-indigo-500/30"
                 >
                   Log In to Continue
                 </button>
@@ -324,8 +293,8 @@ const CharacterGallery = () => {
               <button
                 type="button"
                 onClick={closeUnlockModal}
-                disabled={isPurchasingSelectedCharacter}
-                className="w-full rounded-2xl border border-slate-500 bg-slate-700/70 px-4 py-3 text-sm font-bold text-slate-100 transition hover:bg-slate-600/80 disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isProcessingUnlock}
+                className="w-full rounded-2xl border border-slate-500 bg-slate-700/70 px-4 py-3 text-sm font-bold text-slate-100 hover:bg-slate-600/80 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Maybe Later
               </button>

@@ -984,8 +984,7 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
       });
 
       if (!result?.ok) {
-        showAppToast('error', result?.message || 'Unlock failed. Please try again.');
-        return;
+        throw new Error(result?.message || 'Unlock failed. Please try again.');
       }
 
       setUserSubscriptions((current) =>
