@@ -13,11 +13,45 @@ const SILLY_SOLUTIONS = [
   { id: 'car', label: 'Floating Car 🚗', message: 'Vroom in the sky. Bridge problem solved!' },
 ];
 
+const drawingPrompts = [
+  'Draw a flying cat wearing sunglasses!',
+  'Draw a pizza slice playing a guitar!',
+  'Draw a robot octopus painting the ocean!',
+  'Draw a sleepy dragon reading comic books!',
+  'Draw a disco banana on a skateboard!',
+];
+
+const kinuJokes = [
+  {
+    setup: 'Why did the cow cross the road?',
+    punchline: 'To get to the udder side!',
+  },
+  {
+    setup: 'Why did the music note bring a ladder?',
+    punchline: 'It wanted to reach the high notes!',
+  },
+  {
+    setup: 'Why did the paintbrush blush?',
+    punchline: 'Because it saw the canvas without any colors on!',
+  },
+  {
+    setup: 'Why did the crayon become a comedian?',
+    punchline: 'Because it was great at drawing laughs!',
+  },
+  {
+    setup: 'Why did the guitar sit in the sunshine?',
+    punchline: 'It wanted to feel a little more string light!',
+  },
+];
+
 export default function KinuGeniusMischiefLabPage() {
   const navigate = useNavigate();
   const [springPlaced, setSpringPlaced] = useState(false);
   const [prankResult, setPrankResult] = useState('');
   const [solutionResult, setSolutionResult] = useState('');
+  const [promptIndex, setPromptIndex] = useState(0);
+  const [jokeIndex, setJokeIndex] = useState(0);
+  const [showPunchline, setShowPunchline] = useState(false);
 
   useEffect(() => {
     if (!prankResult) return undefined;
@@ -147,6 +181,62 @@ export default function KinuGeniusMischiefLabPage() {
                 {solutionResult}
               </p>
             )}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-blue-200 sm:text-xl">Crazy Drawing Prompt 🎨</h2>
+
+          <div className="mt-4 rounded-2xl border border-sky-200/50 bg-gradient-to-br from-sky-100 via-blue-100 to-cyan-100 p-5 text-slate-900 shadow-none sm:p-6">
+            <p className="text-2xl font-black leading-relaxed text-blue-900 sm:text-3xl">
+              {drawingPrompts[promptIndex]}
+            </p>
+
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => setPromptIndex((prev) => (prev + 1) % drawingPrompts.length)}
+                className="rounded-xl border border-sky-300 bg-blue-500 px-5 py-3 text-sm font-black text-white shadow-none hover:bg-blue-600"
+              >
+                Give me another idea! 🔄
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-blue-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
+          <h2 className="text-lg font-black text-blue-200 sm:text-xl">Silly Joke of the Day 😂</h2>
+
+          <div className="mt-4 rounded-2xl border border-sky-200/40 bg-gradient-to-br from-cyan-100 via-sky-100 to-blue-100 p-5 text-slate-900 shadow-none sm:p-6">
+            <p className="text-xl font-black leading-relaxed text-blue-900 sm:text-2xl">
+              {kinuJokes[jokeIndex].setup}
+            </p>
+
+            {showPunchline && (
+              <p className="mt-4 rounded-xl border border-blue-200 bg-white/80 px-4 py-3 text-sm font-black text-blue-800">
+                {kinuJokes[jokeIndex].punchline}
+              </p>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPunchline(true)}
+                className="rounded-xl border border-sky-300 bg-white px-5 py-3 text-sm font-black text-blue-900 shadow-none hover:bg-sky-50"
+              >
+                Tell me! 🎭
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setJokeIndex((prev) => (prev + 1) % kinuJokes.length);
+                  setShowPunchline(false);
+                }}
+                className="rounded-xl border border-blue-300 bg-blue-500 px-5 py-3 text-sm font-black text-white shadow-none hover:bg-blue-600"
+              >
+                Next Joke ➡️
+              </button>
+            </div>
           </div>
         </section>
       </div>
