@@ -56,7 +56,7 @@ export default function MimiCuriousArtLabPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-fuchsia-900 via-slate-900 to-rose-900 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <header className="rounded-2xl border border-pink-300/20 bg-slate-900/75 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <header className="rounded-2xl border border-pink-300/20 bg-slate-900/75 p-4 sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <button
               type="button"
@@ -71,7 +71,7 @@ export default function MimiCuriousArtLabPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-pink-200 sm:text-xl">Why/How Magic Book</h2>
 
           <div className="mt-4 rounded-2xl border border-pink-300/25 bg-gradient-to-br from-rose-100/95 to-pink-100/95 p-4 text-slate-800 sm:p-6">
@@ -123,7 +123,7 @@ export default function MimiCuriousArtLabPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-pink-200 sm:text-xl">The Puzzle Canvas</h2>
 
           <div className="mt-4 rounded-2xl border border-pink-200/20 bg-slate-800/65 p-5">
@@ -173,7 +173,7 @@ export default function MimiCuriousArtLabPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-pink-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-pink-200 sm:text-xl">Pattern Detective</h2>
 
           <div className="mt-4 rounded-2xl border border-pink-200/20 bg-slate-800/65 p-4">

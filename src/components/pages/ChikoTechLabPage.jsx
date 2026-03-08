@@ -60,7 +60,7 @@ export default function ChikoTechLabPage() {
   return (
     <div className="min-h-screen bg-slate-900 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <header className="rounded-2xl border border-teal-300/20 bg-slate-900/75 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <header className="rounded-2xl border border-teal-300/20 bg-slate-900/75 p-4 sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <button
               type="button"
@@ -75,7 +75,7 @@ export default function ChikoTechLabPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-teal-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-teal-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-teal-200 sm:text-xl">The Kool Bot-Builder</h2>
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className="rounded-xl border border-cyan-200/20 bg-slate-800/65 p-4">
@@ -116,7 +116,7 @@ export default function ChikoTechLabPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-teal-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-teal-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-teal-200 sm:text-xl">Code the Path</h2>
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="rounded-xl border border-cyan-200/20 bg-slate-800/65 p-4">
@@ -184,7 +184,7 @@ export default function ChikoTechLabPage() {
       </div>
 
       {showHologram && (
-        <div className="fixed bottom-4 right-4 z-50 w-[92vw] max-w-sm rounded-xl border border-teal-300/20 bg-slate-900/90 p-3 shadow-sm shadow-black/10 sm:bottom-6 sm:right-6">
+        <div className="fixed bottom-4 right-4 z-50 w-[92vw] max-w-sm rounded-xl border border-teal-300/20 bg-slate-900/90 p-3 sm:bottom-6 sm:right-6">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-bold text-cyan-100">
               Incoming Hologram from MIKO 🌿: Trees are cooler than robots!

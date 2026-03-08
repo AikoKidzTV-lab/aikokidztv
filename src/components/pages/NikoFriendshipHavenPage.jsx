@@ -58,7 +58,7 @@ export default function NikoFriendshipHavenPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-rose-950 to-slate-900 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <header className="rounded-2xl border border-red-300/20 bg-slate-900/75 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <header className="rounded-2xl border border-red-300/20 bg-slate-900/75 p-4 sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <button
               type="button"
@@ -73,7 +73,7 @@ export default function NikoFriendshipHavenPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-red-200 sm:text-xl">The Quiet Helper</h2>
           <p className="mt-2 text-sm font-bold text-slate-300">AIKO broke his toy. How can NIKO help?</p>
 
@@ -101,7 +101,7 @@ export default function NikoFriendshipHavenPage() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-red-200 sm:text-xl">Calm Breathing</h2>
 
           <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-red-200/20 bg-slate-800/65 p-5">
@@ -131,7 +131,7 @@ export default function NikoFriendshipHavenPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-red-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-red-200 sm:text-xl">Confidence Meter</h2>
 
           <div className="mt-4 rounded-2xl border border-red-200/20 bg-slate-800/65 p-4">

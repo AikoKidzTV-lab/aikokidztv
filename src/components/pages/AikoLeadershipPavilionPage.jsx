@@ -37,7 +37,7 @@ export default function AikoLeadershipPavilionPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-amber-950 to-slate-900 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <header className="rounded-2xl border border-yellow-300/20 bg-slate-900/75 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <header className="rounded-2xl border border-yellow-300/20 bg-slate-900/75 p-4 sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <button
               type="button"
@@ -52,7 +52,7 @@ export default function AikoLeadershipPavilionPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Daily Hero Affirmations</h2>
 
           <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-yellow-200/20 bg-slate-800/65 p-5">
@@ -73,7 +73,7 @@ export default function AikoLeadershipPavilionPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Bravery Tales</h2>
           <p className="mt-2 text-sm font-bold text-slate-300">
             AIKO hears a strange noise in the dark room. What should she do?
@@ -107,7 +107,7 @@ export default function AikoLeadershipPavilionPage() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 shadow-sm shadow-black/10 sm:p-6">
+        <section className="rounded-2xl border border-yellow-300/20 bg-slate-900/70 p-4 sm:p-6">
           <h2 className="text-lg font-black text-yellow-200 sm:text-xl">Real-Life Hero Missions</h2>
 
           <div className="mt-4 space-y-3 rounded-2xl border border-yellow-200/20 bg-slate-800/65 p-4">
