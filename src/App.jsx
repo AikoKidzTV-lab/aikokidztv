@@ -1008,7 +1008,7 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10">
         <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center">
           <div className="w-full rounded-[1.75rem] border border-slate-700 bg-slate-900/90 p-8 text-center text-slate-100 shadow-[0_20px_60px_rgba(2,6,23,0.5)]">
-            <div className="mb-4 text-5xl animate-pulse">{'\u{1F9FE}'}</div>
+            <div className="mb-4 text-5xl">{'\u{1F9FE}'}</div>
             <h1 className="text-2xl font-black text-white">Checking Access...</h1>
             <p className="mt-3 text-sm font-semibold text-slate-300">
               Verifying your {characterName} subscription.

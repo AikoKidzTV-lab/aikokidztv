@@ -154,7 +154,7 @@ const CharacterGallery = () => {
     <section className="w-full mb-16">
       {isInitialLoading ? (
         <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-[2rem] border border-slate-200/80 bg-white/70 p-6">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-500" />
+          <div className="h-12 w-12 rounded-full border-4 border-slate-300 border-t-indigo-500" />
           <p className="text-sm font-bold text-slate-600">
             Loading character access...
           </p>
@@ -186,7 +186,7 @@ const CharacterGallery = () => {
                   <Link
                     to={char.route}
                     onClick={(event) => handleCardClick(event, char)}
-                    className="group relative block overflow-hidden rounded-[35px] p-6 hover:-translate-y-1"
+                    className="group relative block overflow-hidden rounded-[35px] p-6"
                     style={{
                       background: char.card.color,
                       border: `1px solid ${char.card.shadowLight}`,
@@ -273,7 +273,7 @@ const CharacterGallery = () => {
                 type="button"
                 onClick={handleUnlockCharacter}
                 disabled={isProcessingUnlock}
-                className="w-full rounded-2xl border border-yellow-300 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-200 px-4 py-3 text-sm font-black text-slate-900 shadow-[0_0_24px_rgba(250,204,21,0.45)] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full rounded-2xl border border-yellow-300 bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-200 px-4 py-3 text-sm font-black text-slate-900 shadow-[0_0_24px_rgba(250,204,21,0.45)] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isProcessingUnlock
                   ? 'Unlocking...'
@@ -284,7 +284,7 @@ const CharacterGallery = () => {
                 <button
                   type="button"
                   onClick={() => openAuthModal('login')}
-                  className="w-full rounded-2xl border border-indigo-200 bg-indigo-500/20 px-4 py-3 text-sm font-black text-indigo-100 hover:bg-indigo-500/30"
+                  className="w-full rounded-2xl border border-indigo-200 bg-indigo-500/20 px-4 py-3 text-sm font-black text-indigo-100"
                 >
                   Log In to Continue
                 </button>
@@ -294,7 +294,7 @@ const CharacterGallery = () => {
                 type="button"
                 onClick={closeUnlockModal}
                 disabled={isProcessingUnlock}
-                className="w-full rounded-2xl border border-slate-500 bg-slate-700/70 px-4 py-3 text-sm font-bold text-slate-100 hover:bg-slate-600/80 disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full rounded-2xl border border-slate-500 bg-slate-700/70 px-4 py-3 text-sm font-bold text-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Maybe Later
               </button>
