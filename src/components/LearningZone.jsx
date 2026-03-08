@@ -195,9 +195,8 @@ export default function LearningZone({ onSelect }) {
   );
 
   const visibleCards = React.useMemo(() => {
-    if (!isKidsModeOn) return learningBoxes;
-    return learningBoxes.filter((box) => canAccessCard(box));
-  }, [isKidsModeOn, canAccessCard]);
+    return learningBoxes;
+  }, []);
 
   const speakCard = (box) => {
     const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
@@ -325,9 +324,9 @@ export default function LearningZone({ onSelect }) {
         </div>
       </div>
 
-      {isKidsModeOn && visibleCards.length === 0 && (
+      {isKidsModeOn && (
         <div className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm font-bold text-amber-900">
-          Kids Mode is ON. Locked premium items are hidden until a parent unlocks them.
+          Kids Mode is ON. Premium cards stay visible with lock icons so a parent can unlock them.
         </div>
       )}
 

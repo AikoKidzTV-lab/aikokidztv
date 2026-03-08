@@ -74,6 +74,24 @@ const DISPLAY_MODE_STORAGE_KEY = 'aiko_display_mode';
 const DAILY_LIMIT_MINUTES = 300;
 const LEARNING_ZONE_CORE_MODULES = new Set(['alphabets', 'numbers']);
 const LEARNING_ZONE_PREMIUM_MODULES = new Set(['colors', 'animals']);
+const KIDS_HOME_SCROLL_TARGET_IDS = ['learning-zone', 'story-studio'];
+
+const scrollWindowToTopNow = () => {
+  if (typeof window === 'undefined') return;
+  window.scrollTo(0, 0);
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+};
+
+const scrollKidsHomeTargetNow = () => {
+  if (typeof document === 'undefined') return false;
+  const target = KIDS_HOME_SCROLL_TARGET_IDS
+    .map((id) => document.getElementById(id))
+    .find(Boolean);
+
+  if (!target) return false;
+  target.scrollIntoView({ behavior: 'auto', block: 'start' });
+  return true;
+};
 
 const getTodayDateStamp = () => new Date().toISOString().slice(0, 10);
 
@@ -404,21 +422,39 @@ const MainContent = ({ onGoToAdmin, onGoToVideos, onGoToPoems }) => {
   const isAdmin = isAdminEmail(user?.email);
   const { isKidsModeOn } = useKidsMode();
   const usageAccumulatorMsRef = React.useRef(0);
-  const forceScrollTop = React.useCallback(() => {
-    if (typeof window === 'undefined') return;
-    const scrollTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    scrollTop();
-    window.requestAnimationFrame(scrollTop);
-    window.setTimeout(scrollTop, 0);
-  }, []);
+  const scrollHomeForCurrentMode = React.useCallback(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const applyScroll = () => {
+      if (isKidsModeOn) {
+        const didScrollToKidsTarget = scrollKidsHomeTargetNow();
+        if (!didScrollToKidsTarget) {
+          scrollWindowToTopNow();
+        }
+        return;
+      }
+      scrollWindowToTopNow();
+    };
+
+    applyScroll();
+    const rafId = window.requestAnimationFrame(applyScroll);
+    const timeoutId = window.setTimeout(applyScroll, 80);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [isKidsModeOn]);
   const navigateHomeToTop = React.useCallback(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
       window.history.replaceState(window.history.state, '', '/');
     }
     setLearningModule(null);
     navigate('/');
-    forceScrollTop();
-  }, [forceScrollTop, navigate]);
+    window.setTimeout(() => {
+      scrollHomeForCurrentMode();
+    }, 0);
+  }, [navigate, scrollHomeForCurrentMode]);
   const openSettingsModal = React.useCallback(() => setShowSettings(true), []);
   const closeSettingsModal = React.useCallback(() => setShowSettings(false), []);
 
@@ -860,31 +896,39 @@ function AdminRoutePage() {
 
 function RouteScrollToTop() {
   const location = useLocation();
+  const { isKidsModeOn } = useKidsMode();
 
   React.useLayoutEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
-    const scrollTopNow = () => {
-      window.scrollTo(0, 0);
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const applyRouteScroll = () => {
+      if (location.pathname === '/' && isKidsModeOn) {
+        const didScrollToKidsTarget = scrollKidsHomeTargetNow();
+        if (!didScrollToKidsTarget) {
+          scrollWindowToTopNow();
+        }
+        return;
+      }
+
+      scrollWindowToTopNow();
     };
 
-    // Always force each route to open from the top, never from a preserved section offset.
-    scrollTopNow();
-    const rafId = window.requestAnimationFrame(scrollTopNow);
-    const timeoutId = window.setTimeout(scrollTopNow, 0);
+    // Always control route scroll manually. Home is mode-aware, non-home routes are forced to top.
+    applyRouteScroll();
+    const rafId = window.requestAnimationFrame(applyRouteScroll);
+    const timeoutId = window.setTimeout(applyRouteScroll, 80);
 
     // Remove any stale hash like "/#story-studio" when returning home.
     if (location.pathname === '/' && location.hash) {
       window.history.replaceState(window.history.state, '', '/');
-      scrollTopNow();
+      applyRouteScroll();
     }
 
     return () => {
       window.cancelAnimationFrame(rafId);
       window.clearTimeout(timeoutId);
     };
-  }, [location.hash, location.key, location.pathname, location.search]);
+  }, [isKidsModeOn, location.hash, location.key, location.pathname, location.search]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || !('scrollRestoration' in window.history)) return undefined;

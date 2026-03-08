@@ -5,6 +5,7 @@ import GemPacksPricing from './GemPacksPricing';
 import LearningZone from './LearningZone';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { useKidsMode } from '../context/KidsModeContext';
 
 const HERO_BANNER_LIMIT = 5;
 const HERO_BANNER_FALLBACK_THUMBNAIL = '/logo.png.webp';
@@ -98,6 +99,7 @@ export default function LandingPageHabitat({
   onSelectLearningModule,
 }) {
   const { profile, fetchProfile } = useAuth();
+  const { isKidsModeOn } = useKidsMode();
   const go = (target) => onNav?.(target);
   const [watchEarnMessage, setWatchEarnMessage] = React.useState('');
   const [paymentToast, setPaymentToast] = React.useState(null);
@@ -288,8 +290,30 @@ export default function LandingPageHabitat({
       window.history.replaceState(window.history.state, '', '/');
     }
 
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, []);
+    const scrollHomeForMode = () => {
+      if (isKidsModeOn) {
+        const kidsTarget =
+          document.getElementById('learning-zone') ||
+          document.getElementById('story-studio');
+
+        if (kidsTarget) {
+          kidsTarget.scrollIntoView({ behavior: 'auto', block: 'start' });
+          return;
+        }
+      }
+
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    };
+
+    scrollHomeForMode();
+    const rafId = window.requestAnimationFrame(scrollHomeForMode);
+    const timeoutId = window.setTimeout(scrollHomeForMode, 80);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [isKidsModeOn]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -500,7 +524,7 @@ export default function LandingPageHabitat({
         </div>
 
         <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
-          <GemPacksPricing />
+          {!isKidsModeOn && <GemPacksPricing />}
 
           <div className="mt-14 space-y-10">
             <div
