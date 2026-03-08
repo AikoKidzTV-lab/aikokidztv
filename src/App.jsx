@@ -50,7 +50,7 @@ import NikoFriendshipHavenPage from './components/pages/NikoFriendshipHavenPage'
 import AikoLeadershipPavilionPage from './components/pages/AikoLeadershipPavilionPage';
 import {
   CHARACTER_SUBSCRIPTION_COST_GEMS,
-  hasActiveCharacterSubscription,
+  fetchActiveCharacterSubscriptions,
   purchaseCharacterSubscription,
 } from './utils/characterSubscriptions';
 
@@ -908,61 +908,64 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { openAuthModal } = useAuthModal();
-  const [status, setStatus] = useState('checking');
+  const [userSubscriptions, setUserSubscriptions] = useState([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isProcessingUnlock, setIsProcessingUnlock] = useState(false);
   const [guardError, setGuardError] = useState('');
+
+  const fetchSubscriptions = React.useCallback(async (userId) => {
+    if (!userId) {
+      return { ok: true, characterIds: [] };
+    }
+
+    return fetchActiveCharacterSubscriptions({ userId });
+  }, []);
 
   React.useEffect(() => {
     let isActive = true;
 
-    if (authLoading) {
-      setStatus('checking');
-      return () => {
-        isActive = false;
-      };
-    }
-
-    if (!user?.id) {
-      setStatus('locked');
+    const loadSubscriptions = async () => {
+      setIsInitialLoading(true);
       setGuardError('');
-      return () => {
-        isActive = false;
-      };
-    }
-
-    setStatus('checking');
-    setGuardError('');
-
-    const run = async () => {
       try {
-        const result = await hasActiveCharacterSubscription({
-          userId: user.id,
-          characterId,
-        });
+        const result = await fetchSubscriptions(user?.id);
 
         if (!isActive) return;
 
-        if (result?.ok && result?.active) {
-          setStatus('unlocked');
+        if (result?.ok) {
+          setUserSubscriptions(result.characterIds || []);
           return;
         }
 
-        setStatus('locked');
-        if (!result?.ok) {
-          setGuardError(result?.message || 'Could not verify character access.');
-        }
+        setUserSubscriptions([]);
+        setGuardError(result?.message || 'Could not verify character access.');
       } catch (error) {
         if (!isActive) return;
-        setStatus('locked');
+        setUserSubscriptions([]);
         setGuardError(error?.message || 'Could not verify character access.');
+      } finally {
+        if (isActive) {
+          setIsInitialLoading(false);
+        }
       }
     };
 
-    void run();
+    void loadSubscriptions();
     return () => {
       isActive = false;
     };
-  }, [authLoading, characterId, user?.id]);
+  }, [user?.id]);
+
+  const isCharacterUnlocked = React.useCallback(
+    (charId) => {
+      const normalizedCharId = String(charId || '').trim().toLowerCase();
+      if (!normalizedCharId) return false;
+      return userSubscriptions.some(
+        (subscriptionId) => String(subscriptionId || '').trim().toLowerCase() === normalizedCharId
+      );
+    },
+    [userSubscriptions]
+  );
 
   const handleUnlock = async () => {
     if (isProcessingUnlock) return;
@@ -985,8 +988,10 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
         return;
       }
 
+      setUserSubscriptions((current) =>
+        Array.from(new Set([...current, String(characterId || '').trim().toLowerCase()]))
+      );
       setGuardError('');
-      setStatus('unlocked');
       showAppToast('success', `${characterName} unlocked for 7 days! \u{1F389}`);
     } catch (error) {
       showAppToast('error', error?.message || 'Unlock failed. Please try again.');
@@ -995,11 +1000,11 @@ function CharacterSubscriptionRouteGuard({ characterId, characterName, children 
     }
   };
 
-  if (status === 'unlocked') {
+  if (isCharacterUnlocked(characterId)) {
     return children;
   }
 
-  if (status === 'checking') {
+  if (authLoading || isInitialLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10">
         <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center">

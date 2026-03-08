@@ -30,8 +30,8 @@ const showToast = (icon, title) =>
 const CharacterGallery = () => {
   const { user } = useAuth();
   const { openAuthModal } = useAuthModal();
-  const [activeSubscriptionIds, setActiveSubscriptionIds] = useState([]);
-  const [isLoadingSubscriptions, setIsLoadingSubscriptions] = useState(false);
+  const [userSubscriptions, setUserSubscriptions] = useState([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [subscriptionLoadError, setSubscriptionLoadError] = useState('');
   const [selectedLockedCharacter, setSelectedLockedCharacter] = useState(null);
   const [purchasingCharacterKey, setPurchasingCharacterKey] = useState('');
@@ -39,47 +39,46 @@ const CharacterGallery = () => {
   const [recentlyUnlockedCharacterKey, setRecentlyUnlockedCharacterKey] = useState('');
   const unlockPulseTimeoutRef = useRef(null);
 
+  const fetchSubscriptions = useCallback(async (userId) => {
+    if (!userId) {
+      return { ok: true, characterIds: [] };
+    }
+
+    return fetchActiveCharacterSubscriptions({ userId });
+  }, []);
+
   useEffect(() => {
-    let isMounted = true;
+    let isActive = true;
 
-    const loadActiveSubscriptions = async () => {
-      if (!user?.id) {
-        if (isMounted) {
-          setActiveSubscriptionIds([]);
-          setIsLoadingSubscriptions(false);
-          setSubscriptionLoadError('');
-        }
-        return;
-      }
-
-      setIsLoadingSubscriptions(true);
+    const loadUserSubscriptions = async () => {
+      setIsInitialLoading(true);
       setSubscriptionLoadError('');
 
       try {
-        const result = await fetchActiveCharacterSubscriptions({ userId: user.id });
-        if (!isMounted) return;
+        const result = await fetchSubscriptions(user?.id);
+        if (!isActive) return;
 
         if (result?.ok) {
-          setActiveSubscriptionIds(result.characterIds || []);
+          setUserSubscriptions(result.characterIds || []);
           return;
         }
 
-        setActiveSubscriptionIds([]);
+        setUserSubscriptions([]);
         setSubscriptionLoadError(result?.message || 'Failed to load subscriptions.');
       } catch (error) {
-        if (!isMounted) return;
-        setActiveSubscriptionIds([]);
+        if (!isActive) return;
+        setUserSubscriptions([]);
         setSubscriptionLoadError(error?.message || 'Failed to load subscriptions.');
       } finally {
-        if (isMounted) {
-          setIsLoadingSubscriptions(false);
+        if (isActive) {
+          setIsInitialLoading(false);
         }
       }
     };
 
-    void loadActiveSubscriptions();
+    void loadUserSubscriptions();
     return () => {
-      isMounted = false;
+      isActive = false;
     };
   }, [user?.id]);
 
@@ -91,8 +90,8 @@ const CharacterGallery = () => {
   }, []);
 
   const activeSubscriptionSet = useMemo(
-    () => new Set(activeSubscriptionIds.map((id) => String(id || '').trim().toLowerCase())),
-    [activeSubscriptionIds]
+    () => new Set(userSubscriptions.map((id) => String(id || '').trim().toLowerCase())),
+    [userSubscriptions]
   );
 
   const isCharacterUnlocked = useCallback(
@@ -102,9 +101,8 @@ const CharacterGallery = () => {
 
   const handleCardClick = useCallback(
     (event, character) => {
-      if (user?.id && isLoadingSubscriptions) {
+      if (isInitialLoading) {
         event.preventDefault();
-        showToast('info', 'Checking your unlocks. Please wait a moment.');
         return;
       }
 
@@ -112,7 +110,7 @@ const CharacterGallery = () => {
       event.preventDefault();
       setSelectedLockedCharacter(character);
     },
-    [isCharacterUnlocked, isLoadingSubscriptions, user?.id]
+    [isCharacterUnlocked, isInitialLoading]
   );
 
   const closeUnlockModal = useCallback(() => {
@@ -145,7 +143,7 @@ const CharacterGallery = () => {
         return;
       }
 
-      setActiveSubscriptionIds((current) =>
+      setUserSubscriptions((current) =>
         Array.from(new Set([...current, String(targetCharacter.key || '').toLowerCase()]))
       );
       setRecentlyUnlockedCharacterKey(targetCharacter.key);
@@ -179,103 +177,111 @@ const CharacterGallery = () => {
 
   return (
     <section className="w-full mb-16">
-      <div className="text-center mb-10">
-        <h2 className="text-3xl font-extrabold text-slate-900 mb-2">
-          Learning Zone Character Cards
-        </h2>
-        <p className="text-base font-semibold text-slate-700">
-          {user?.id
-            ? 'Tap a card to open its dedicated page.'
-            : `Tap a card to unlock for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems.`}
-        </p>
-        {user?.id && isLoadingSubscriptions && (
-          <p className="mt-2 text-xs font-bold text-slate-500">Checking active unlocks...</p>
-        )}
-        {user?.id && subscriptionLoadError && (
-          <p className="mt-2 text-xs font-bold text-red-600">{subscriptionLoadError}</p>
-        )}
-      </div>
+      {isInitialLoading ? (
+        <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-[2rem] border border-slate-200/80 bg-white/70 p-6">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-500" />
+          <p className="text-sm font-bold text-slate-600">
+            Loading character access...
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">
+              Learning Zone Character Cards
+            </h2>
+            <p className="text-base font-semibold text-slate-700">
+              {user?.id
+                ? 'Tap a card to open its dedicated page.'
+                : `Tap a card to unlock for ${CHARACTER_SUBSCRIPTION_COST_GEMS} Gems.`}
+            </p>
+            {user?.id && subscriptionLoadError && (
+              <p className="mt-2 text-xs font-bold text-red-600">{subscriptionLoadError}</p>
+            )}
+          </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {CHARACTER_PROFILES.map((char, index) => {
-          const unlocked = isCharacterUnlocked(char.key);
-          const isRecentlyUnlocked = recentlyUnlockedCharacterKey === char.key;
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {CHARACTER_PROFILES.map((char, index) => {
+              const unlocked = isCharacterUnlocked(char.key);
+              const isRecentlyUnlocked = recentlyUnlockedCharacterKey === char.key;
 
-          return (
-            <motion.div
-              key={char.key}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.07 }}
-            >
-              <Link
-                to={char.route}
-                onClick={(event) => handleCardClick(event, char)}
-                className={`group relative block overflow-hidden rounded-[35px] p-6 transition duration-300 hover:-translate-y-1 ${
-                  isRecentlyUnlocked ? 'ring-4 ring-emerald-300/90 animate-pulse' : ''
-                }`}
-                style={{
-                  background: char.card.color,
-                  border: `1px solid ${char.card.shadowLight}`,
-                  boxShadow: `16px 16px 32px ${char.card.shadowDark}, -16px -16px 32px ${char.card.shadowLight}, inset 4px 4px 8px ${char.card.innerLight}, inset -4px -4px 8px ${char.card.innerDark}`,
-                }}
-              >
-                <div className="absolute right-3 top-3 z-20">
-                  {unlocked ? (
-                      <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-emerald-700">
-                        Unlocked {'\u{1F513}'}
-                      </span>
-                  ) : (
-                    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-amber-700">
-                      {LOCKED_BADGE_LABEL}
-                    </span>
-                  )}
-                </div>
-
-                <div
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    background:
-                      'radial-gradient(circle at 20% 12%, rgba(255,255,255,0.25), transparent 36%), radial-gradient(circle at 85% 85%, rgba(0,0,0,0.16), transparent 45%)',
-                  }}
-                />
-
-                <div className="relative z-10 flex items-center gap-4">
-                  <div
-                    className="grid h-14 w-14 place-items-center rounded-full text-2xl"
+              return (
+                <motion.div
+                  key={char.key}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.07 }}
+                >
+                  <Link
+                    to={char.route}
+                    onClick={(event) => handleCardClick(event, char)}
+                    className={`group relative block overflow-hidden rounded-[35px] p-6 transition duration-300 hover:-translate-y-1 ${
+                      isRecentlyUnlocked ? 'ring-4 ring-emerald-300/90 animate-pulse' : ''
+                    }`}
                     style={{
-                      background: char.card.pillBg,
-                      border: `1px solid ${char.card.innerLight}`,
-                      boxShadow: `inset 2px 2px 6px ${char.card.innerLight}, inset -3px -4px 8px ${char.card.innerDark}`,
+                      background: char.card.color,
+                      border: `1px solid ${char.card.shadowLight}`,
+                      boxShadow: `16px 16px 32px ${char.card.shadowDark}, -16px -16px 32px ${char.card.shadowLight}, inset 4px 4px 8px ${char.card.innerLight}, inset -4px -4px 8px ${char.card.innerDark}`,
                     }}
                   >
-                    <span>{char.emoji}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className={`truncate text-lg font-black tracking-wide ${char.card.textClass}`}>
-                      {char.cardTitle}
-                    </h3>
-                    <p className={`text-sm font-bold ${char.card.textClass}`}>
-                      {char.specialHobby}
-                    </p>
-                  </div>
-                </div>
+                    <div className="absolute right-3 top-3 z-20">
+                      {unlocked ? (
+                          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-emerald-700">
+                            Unlocked {'\u{1F513}'}
+                          </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50/95 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.08em] text-amber-700">
+                          {LOCKED_BADGE_LABEL}
+                        </span>
+                      )}
+                    </div>
 
-                <div
-                  className={`relative z-10 mt-4 rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.12em] ${char.card.pillTextClass}`}
-                  style={{
-                    background: char.card.pillBg,
-                    border: `1px solid ${char.card.innerLight}`,
-                    boxShadow: `inset 2px 2px 6px ${char.card.innerLight}, inset -2px -2px 6px ${char.card.innerDark}`,
-                  }}
-                >
-                  {char.colorTheme}
-                </div>
-              </Link>
-            </motion.div>
-          );
-        })}
-      </div>
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{
+                        background:
+                          'radial-gradient(circle at 20% 12%, rgba(255,255,255,0.25), transparent 36%), radial-gradient(circle at 85% 85%, rgba(0,0,0,0.16), transparent 45%)',
+                      }}
+                    />
+
+                    <div className="relative z-10 flex items-center gap-4">
+                      <div
+                        className="grid h-14 w-14 place-items-center rounded-full text-2xl"
+                        style={{
+                          background: char.card.pillBg,
+                          border: `1px solid ${char.card.innerLight}`,
+                          boxShadow: `inset 2px 2px 6px ${char.card.innerLight}, inset -3px -4px 8px ${char.card.innerDark}`,
+                        }}
+                      >
+                        <span>{char.emoji}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className={`truncate text-lg font-black tracking-wide ${char.card.textClass}`}>
+                          {char.cardTitle}
+                        </h3>
+                        <p className={`text-sm font-bold ${char.card.textClass}`}>
+                          {char.specialHobby}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`relative z-10 mt-4 rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.12em] ${char.card.pillTextClass}`}
+                      style={{
+                        background: char.card.pillBg,
+                        border: `1px solid ${char.card.innerLight}`,
+                        boxShadow: `inset 2px 2px 6px ${char.card.innerLight}, inset -2px -2px 6px ${char.card.innerDark}`,
+                      }}
+                    >
+                      {char.colorTheme}
+                    </div>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {selectedLockedCharacter && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm">
