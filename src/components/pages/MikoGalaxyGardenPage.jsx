@@ -40,12 +40,12 @@ export default function MikoGalaxyGardenPage() {
   return (
     <div className="min-h-screen bg-slate-900 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <header className="rounded-2xl border border-green-300/20 bg-slate-900/75 p-4 sm:p-6">
+        <header className="rounded-2xl border border-green-300/20 bg-slate-900/75 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <button
               type="button"
               onClick={handleBackToLearningZone}
-              className="rounded-xl border border-green-300/25 bg-green-400/12 px-4 py-2 text-sm font-black text-green-100 hover:bg-green-400/18"
+              className="rounded-xl border border-green-300/25 bg-green-400/12 px-4 py-2 text-sm font-black text-green-100 shadow-none hover:bg-green-400/18"
             >
               ← Back to Learning Zone
             </button>
@@ -55,11 +55,11 @@ export default function MikoGalaxyGardenPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-green-300/20 bg-slate-900/70 p-4 sm:p-6">
+        <section className="rounded-2xl border border-green-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
           <h2 className="text-lg font-black text-green-200 sm:text-xl">The Galactic Seed</h2>
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <article className="rounded-xl border border-yellow-200/20 bg-slate-800/65 p-4">
+            <article className="rounded-xl border border-yellow-200/20 bg-slate-800/65 p-4 shadow-none">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-200">Gold in Galaxy ✨</p>
               <p className="mt-3 text-2xl leading-relaxed">🪙 ✨ 🪙 ✨ 🪙 ✨ 🪙 ✨ 🪙</p>
               <p className="mt-2 text-sm font-semibold text-slate-300">
@@ -67,7 +67,7 @@ export default function MikoGalaxyGardenPage() {
               </p>
             </article>
 
-            <article className="rounded-xl border border-green-200/20 bg-slate-800/65 p-4">
+            <article className="rounded-xl border border-green-200/20 bg-slate-800/65 p-4 shadow-none">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-green-200">Trees in Galaxy 🌳</p>
               <p className="mt-3 text-2xl leading-relaxed">🌌 ... 🌱 ... 🌌 ... (very rare)</p>
               <p className="mt-2 text-sm font-semibold text-slate-300">
@@ -80,11 +80,11 @@ export default function MikoGalaxyGardenPage() {
             <button
               type="button"
               onClick={() => setIsSeedPlanted(true)}
-              className="rounded-xl border border-green-300/25 bg-green-400/15 px-4 py-2 text-sm font-black text-green-100 hover:bg-green-400/20"
+              className="rounded-xl border border-green-300/25 bg-green-400/15 px-4 py-2 text-sm font-black text-green-100 shadow-none hover:bg-green-400/20"
             >
               Plant the Seed
             </button>
-            <div className="rounded-xl border border-green-200/20 bg-slate-800/65 px-4 py-2">
+            <div className="rounded-xl border border-green-200/20 bg-slate-800/65 px-4 py-2 shadow-none">
               <span
                 className={`inline-block text-3xl ${
                   isSeedPlanted ? 'scale-110' : 'scale-100'
@@ -96,11 +96,11 @@ export default function MikoGalaxyGardenPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-green-300/20 bg-slate-900/70 p-4 sm:p-6">
+        <section className="rounded-2xl border border-green-300/20 bg-slate-900/70 p-4 shadow-none sm:p-6">
           <h2 className="text-lg font-black text-green-200 sm:text-xl">Animal Rescue Safari</h2>
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-xl border border-green-200/20 bg-slate-800/65 p-4">
+            <div className="rounded-xl border border-green-200/20 bg-slate-800/65 p-4 shadow-none">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-green-200">Lost Animals</p>
               <div className="mt-3 space-y-2">
                 {LOST_ANIMALS.map((animal) => (
@@ -108,7 +108,7 @@ export default function MikoGalaxyGardenPage() {
                     key={animal.id}
                     type="button"
                     onClick={() => setActiveAnimal(animal.id)}
-                    className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-bold ${
+                    className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-bold shadow-none ${
                       activeAnimal === animal.id
                         ? 'border-green-300/25 bg-green-500/20 text-green-100'
                         : 'border-green-200/20 bg-green-500/10 text-slate-100 hover:bg-green-500/15'
@@ -120,7 +120,7 @@ export default function MikoGalaxyGardenPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-cyan-200/20 bg-slate-800/65 p-4">
+            <div className="rounded-xl border border-cyan-200/20 bg-slate-800/65 p-4 shadow-none">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">Habitats</p>
               <div className="mt-3 space-y-2">
                 {HABITATS.map((habitat) => (
@@ -128,7 +128,7 @@ export default function MikoGalaxyGardenPage() {
                     key={habitat.id}
                     type="button"
                     onClick={() => setActiveHabitat(habitat.id)}
-                    className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-bold ${
+                    className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-bold shadow-none ${
                       activeHabitat === habitat.id
                         ? 'border-cyan-300/25 bg-cyan-500/20 text-cyan-100'
                         : 'border-cyan-200/20 bg-cyan-500/10 text-slate-100 hover:bg-cyan-500/15'
@@ -148,7 +148,7 @@ export default function MikoGalaxyGardenPage() {
       </div>
 
       {showDebateToast && (
-        <div className="fixed bottom-4 right-4 z-50 w-[92vw] max-w-sm rounded-xl border border-green-300/20 bg-slate-900/90 p-3 sm:bottom-6 sm:right-6">
+        <div className="fixed bottom-4 right-4 z-50 w-[92vw] max-w-sm rounded-xl border border-green-300/20 bg-slate-900/90 p-3 shadow-none sm:bottom-6 sm:right-6">
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-bold text-green-100">
               Incoming Hologram from CHIKO 🤖: My flying robots are way cooler than your slow trees!
@@ -156,7 +156,7 @@ export default function MikoGalaxyGardenPage() {
             <button
               type="button"
               onClick={() => setShowDebateToast(false)}
-              className="rounded-md border border-green-300/25 bg-green-500/12 px-2 py-1 text-xs font-black text-green-100 hover:bg-green-500/18"
+              className="rounded-md border border-green-300/25 bg-green-500/12 px-2 py-1 text-xs font-black text-green-100 shadow-none hover:bg-green-500/18"
             >
               Close
             </button>
