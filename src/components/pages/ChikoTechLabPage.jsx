@@ -34,21 +34,35 @@ const WALL_SYMBOL = '\u{1F9F1}';
 const TARGET_SYMBOL = '\u{1F31F}';
 
 const MAZE_LEVELS = [
-  { level: 1, start: { x: 0, y: 0 }, target: { x: 4, y: 0 }, walls: [{ x: 2, y: 0 }, { x: 2, y: 1 }] },
-  { level: 2, start: { x: 0, y: 4 }, target: { x: 4, y: 0 }, walls: [{ x: 1, y: 4 }, { x: 1, y: 3 }, { x: 3, y: 1 }, { x: 3, y: 0 }, { x: 2, y: 2 }] },
-  { level: 3, start: { x: 0, y: 0 }, target: { x: 4, y: 4 }, walls: [{ x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 3 }, { x: 3, y: 4 }] },
-  { level: 4, start: { x: 0, y: 0 }, target: { x: 4, y: 4 }, walls: [{ x: 1, y: 1 }, { x: 1, y: 2 }, { x: 3, y: 2 }] },
-  { level: 5, start: { x: 0, y: 2 }, target: { x: 4, y: 2 }, walls: [{ x: 2, y: 0 }, { x: 2, y: 1 }, { x: 2, y: 3 }] },
-  { level: 6, start: { x: 4, y: 0 }, target: { x: 0, y: 4 }, walls: [{ x: 3, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 3 }] },
-  { level: 7, start: { x: 0, y: 4 }, target: { x: 4, y: 4 }, walls: [{ x: 1, y: 4 }, { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 }] },
-  { level: 8, start: { x: 0, y: 0 }, target: { x: 0, y: 4 }, walls: [{ x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }] },
-  { level: 9, start: { x: 2, y: 0 }, target: { x: 2, y: 4 }, walls: [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }, { x: 1, y: 3 }, { x: 2, y: 3 }] },
-  { level: 10, start: { x: 4, y: 4 }, target: { x: 0, y: 0 }, walls: [{ x: 3, y: 4 }, { x: 3, y: 3 }, { x: 1, y: 1 }, { x: 1, y: 0 }] },
-  { level: 11, start: { x: 0, y: 1 }, target: { x: 4, y: 3 }, walls: [{ x: 1, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }] },
-  { level: 12, start: { x: 4, y: 1 }, target: { x: 0, y: 3 }, walls: [{ x: 3, y: 1 }, { x: 3, y: 2 }, { x: 2, y: 2 }, { x: 1, y: 2 }] },
-  { level: 13, start: { x: 0, y: 0 }, target: { x: 4, y: 4 }, walls: [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 3, y: 3 }] },
-  { level: 14, start: { x: 4, y: 0 }, target: { x: 0, y: 4 }, walls: [{ x: 4, y: 1 }, { x: 3, y: 1 }, { x: 1, y: 3 }, { x: 0, y: 3 }] },
-  { level: 15, start: { x: 2, y: 4 }, target: { x: 4, y: 0 }, walls: [{ x: 1, y: 4 }, { x: 1, y: 3 }, { x: 2, y: 1 }, { x: 3, y: 1 }, { x: 3, y: 2 }] },
+  // LEVEL 1: The Simple Tunnel (Forces user to go Down, Right, Up)
+  { level: 1, start: {x: 0, y: 0}, target: {x: 4, y: 0}, walls: [{x: 1, y: 0}, {x: 1, y: 1}, {x: 1, y: 2}, {x: 3, y: 0}, {x: 3, y: 1}, {x: 3, y: 2}] },
+  
+  // LEVEL 2: The Zig-Zag (Corner to Corner)
+  { level: 2, start: {x: 0, y: 0}, target: {x: 4, y: 4}, walls: [{x: 1, y: 0}, {x: 1, y: 1}, {x: 1, y: 2}, {x: 3, y: 4}, {x: 3, y: 3}, {x: 3, y: 2}] },
+  
+  // LEVEL 3: The Big Block (Go around the edge)
+  { level: 3, start: {x: 2, y: 0}, target: {x: 2, y: 4}, walls: [{x: 1, y: 1}, {x: 2, y: 1}, {x: 3, y: 1}, {x: 1, y: 2}, {x: 2, y: 2}, {x: 3, y: 2}, {x: 1, y: 3}, {x: 2, y: 3}, {x: 3, y: 3}] },
+  
+  // LEVEL 4: The Snake Path
+  { level: 4, start: {x: 0, y: 4}, target: {x: 4, y: 0}, walls: [{x: 0, y: 3}, {x: 1, y: 3}, {x: 2, y: 3}, {x: 2, y: 1}, {x: 3, y: 1}, {x: 4, y: 1}] },
+  
+  // LEVEL 5: The Center Wall
+  { level: 5, start: {x: 0, y: 2}, target: {x: 4, y: 2}, walls: [{x: 2, y: 0}, {x: 2, y: 1}, {x: 2, y: 2}, {x: 2, y: 3}] },
+  
+  // LEVEL 6: Double Hooks
+  { level: 6, start: {x: 0, y: 0}, target: {x: 0, y: 4}, walls: [{x: 1, y: 0}, {x: 1, y: 1}, {x: 2, y: 3}, {x: 3, y: 3}, {x: 4, y: 3}, {x: 3, y: 1}, {x: 4, y: 1}] },
+  
+  // LEVEL 7: The Cross Gap
+  { level: 7, start: {x: 2, y: 0}, target: {x: 2, y: 4}, walls: [{x: 1, y: 2}, {x: 0, y: 2}, {x: 3, y: 2}, {x: 4, y: 2}] },
+  
+  // LEVEL 8: Corner Traps
+  { level: 8, start: {x: 0, y: 0}, target: {x: 4, y: 4}, walls: [{x: 0, y: 1}, {x: 1, y: 1}, {x: 3, y: 4}, {x: 3, y: 3}, {x: 4, y: 3}, {x: 2, y: 2}] },
+  
+  // LEVEL 9: Spiral In
+  { level: 9, start: {x: 0, y: 0}, target: {x: 2, y: 2}, walls: [{x: 1, y: 0}, {x: 1, y: 1}, {x: 1, y: 2}, {x: 1, y: 3}, {x: 2, y: 4}, {x: 3, y: 4}, {x: 3, y: 3}, {x: 3, y: 2}] },
+  
+  // LEVEL 10: The Gauntlet
+  { level: 10, start: {x: 0, y: 2}, target: {x: 4, y: 2}, walls: [{x: 1, y: 1}, {x: 1, y: 2}, {x: 3, y: 2}, {x: 3, y: 3}, {x: 2, y: 0}, {x: 2, y: 4}] }
 ];
 
 const ROBOT_JOKES = [
