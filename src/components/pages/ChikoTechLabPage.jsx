@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const ROBOT_PARTS = [
@@ -82,7 +82,6 @@ const TECH_FACTS = [
   'Many early computers were so large they filled entire rooms.',
 ];
 
-const toCellKey = (x, y) => `${x},${y}`;
 const isSameCell = (first, second) => first.x === second.x && first.y === second.y;
 const getLevelPrompt = (levelNumber) =>
   `Level ${levelNumber} of ${MAZE_LEVELS.length}: build a sequence and guide the robot to the star.`;
@@ -104,10 +103,6 @@ export default function ChikoTechLabPage() {
   const [techFactIndex, setTechFactIndex] = useState(0);
 
   const activeLevel = MAZE_LEVELS[currentLevel];
-  const wallLookup = useMemo(
-    () => new Set(activeLevel.walls.map(({ x, y }) => toCellKey(x, y))),
-    [activeLevel]
-  );
 
   useEffect(() => {
     const hologramTimer = window.setTimeout(() => {
@@ -140,19 +135,6 @@ export default function ChikoTechLabPage() {
     setAssemblyParts((current) => [...current, partName]);
   };
 
-  const handleAddCode = (direction) => {
-    if (status === 'RUNNING') return;
-
-    if (status === 'CRASHED' || status === 'SUCCESS') {
-      setRobotPos({ ...activeLevel.start });
-      setStatus('IDLE');
-      setStatusMessage(getLevelPrompt(activeLevel.level));
-      setActiveCommandIndex(-1);
-    }
-
-    setCodeSequence((current) => [...current, direction]);
-  };
-
   const handleClearCode = () => {
     if (runTimeoutRef.current) {
       window.clearTimeout(runTimeoutRef.current);
@@ -166,7 +148,7 @@ export default function ChikoTechLabPage() {
     setActiveCommandIndex(-1);
   };
 
-  const handleRunCode = () => {
+  const handleStartCode = () => {
     if (status === 'RUNNING') return;
 
     if (codeSequence.length === 0) {
@@ -181,7 +163,6 @@ export default function ChikoTechLabPage() {
     }
 
     const level = MAZE_LEVELS[currentLevel];
-    const wallSet = new Set(level.walls.map(({ x, y }) => toCellKey(x, y)));
     const commands = [...codeSequence];
 
     setRobotPos({ ...level.start });
@@ -234,7 +215,11 @@ export default function ChikoTechLabPage() {
           return;
         }
 
-        if (wallSet.has(toCellKey(nextPosition.x, nextPosition.y))) {
+        const hitWall = level.walls.some(
+          (wall) => wall.x === nextPosition.x && wall.y === nextPosition.y
+        );
+
+        if (hitWall) {
           runTimeoutRef.current = null;
           setStatus('CRASHED');
           setStatusMessage('Crash! The robot bumped into a wall.');
@@ -343,16 +328,20 @@ export default function ChikoTechLabPage() {
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 text-teal-950 shadow-none">
               <div className="grid grid-cols-5 gap-2 rounded-2xl border border-teal-200 bg-gradient-to-br from-cyan-50 via-white to-teal-100 p-3">
-                {Array.from({ length: GRID_SIZE }, (_, y) =>
-                  Array.from({ length: GRID_SIZE }, (_, x) => {
-                    const isWall = wallLookup.has(toCellKey(x, y));
-                    const isTarget = x === activeLevel.target.x && y === activeLevel.target.y;
-                    const isRobot = x === robotPos.x && y === robotPos.y;
-                    const isStart = x === activeLevel.start.x && y === activeLevel.start.y;
+                {Array.from({ length: GRID_SIZE }, (_, rowIndex) =>
+                  Array.from({ length: GRID_SIZE }, (_, colIndex) => {
+                    const isWall = MAZE_LEVELS[currentLevel].walls.some(
+                      (w) => w.x === colIndex && w.y === rowIndex
+                    );
+                    const isTarget =
+                      colIndex === activeLevel.target.x && rowIndex === activeLevel.target.y;
+                    const isRobot = colIndex === robotPos.x && rowIndex === robotPos.y;
+                    const isStart =
+                      colIndex === activeLevel.start.x && rowIndex === activeLevel.start.y;
 
                     return (
                       <div
-                        key={`${x}-${y}`}
+                        key={`${colIndex}-${rowIndex}`}
                         className={`relative flex aspect-square items-center justify-center rounded-xl border text-2xl shadow-sm ${
                           isWall
                             ? 'border-teal-800 bg-teal-700 text-white'
@@ -410,7 +399,7 @@ export default function ChikoTechLabPage() {
                               : 'border-teal-300 bg-teal-100 text-teal-950'
                           }`}
                         >
-                          {ACTION_BY_TOKEN[command]?.icon} {command}
+                          {ACTION_BY_TOKEN[command]?.icon}
                         </span>
                       ))}
                     </div>
@@ -423,7 +412,16 @@ export default function ChikoTechLabPage() {
                 <div />
                 <button
                   type="button"
-                  onClick={() => handleAddCode('UP')}
+                  onClick={() => {
+                    if (status === 'RUNNING') return;
+                    if (status === 'CRASHED' || status === 'SUCCESS') {
+                      setRobotPos({ ...MAZE_LEVELS[currentLevel].start });
+                      setStatus('IDLE');
+                      setStatusMessage(getLevelPrompt(MAZE_LEVELS[currentLevel].level));
+                      setActiveCommandIndex(-1);
+                    }
+                    setCodeSequence((prev) => [...prev, 'UP']);
+                  }}
                   disabled={status === 'RUNNING'}
                   className="rounded-xl border border-teal-200 bg-white px-3 py-3 text-center text-sm font-black text-teal-950 shadow-none hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -433,7 +431,16 @@ export default function ChikoTechLabPage() {
                 <div />
                 <button
                   type="button"
-                  onClick={() => handleAddCode('LEFT')}
+                  onClick={() => {
+                    if (status === 'RUNNING') return;
+                    if (status === 'CRASHED' || status === 'SUCCESS') {
+                      setRobotPos({ ...MAZE_LEVELS[currentLevel].start });
+                      setStatus('IDLE');
+                      setStatusMessage(getLevelPrompt(MAZE_LEVELS[currentLevel].level));
+                      setActiveCommandIndex(-1);
+                    }
+                    setCodeSequence((prev) => [...prev, 'LEFT']);
+                  }}
                   disabled={status === 'RUNNING'}
                   className="rounded-xl border border-teal-200 bg-white px-3 py-3 text-center text-sm font-black text-teal-950 shadow-none hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -442,7 +449,16 @@ export default function ChikoTechLabPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleAddCode('DOWN')}
+                  onClick={() => {
+                    if (status === 'RUNNING') return;
+                    if (status === 'CRASHED' || status === 'SUCCESS') {
+                      setRobotPos({ ...MAZE_LEVELS[currentLevel].start });
+                      setStatus('IDLE');
+                      setStatusMessage(getLevelPrompt(MAZE_LEVELS[currentLevel].level));
+                      setActiveCommandIndex(-1);
+                    }
+                    setCodeSequence((prev) => [...prev, 'DOWN']);
+                  }}
                   disabled={status === 'RUNNING'}
                   className="rounded-xl border border-teal-200 bg-white px-3 py-3 text-center text-sm font-black text-teal-950 shadow-none hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -451,7 +467,16 @@ export default function ChikoTechLabPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleAddCode('RIGHT')}
+                  onClick={() => {
+                    if (status === 'RUNNING') return;
+                    if (status === 'CRASHED' || status === 'SUCCESS') {
+                      setRobotPos({ ...MAZE_LEVELS[currentLevel].start });
+                      setStatus('IDLE');
+                      setStatusMessage(getLevelPrompt(MAZE_LEVELS[currentLevel].level));
+                      setActiveCommandIndex(-1);
+                    }
+                    setCodeSequence((prev) => [...prev, 'RIGHT']);
+                  }}
                   disabled={status === 'RUNNING'}
                   className="rounded-xl border border-teal-200 bg-white px-3 py-3 text-center text-sm font-black text-teal-950 shadow-none hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -463,11 +488,11 @@ export default function ChikoTechLabPage() {
               <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={handleRunCode}
+                  onClick={handleStartCode}
                   disabled={status === 'RUNNING'}
                   className="rounded-xl border border-cyan-400 bg-cyan-400 px-3 py-3 text-sm font-black text-slate-950 shadow-none hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  RUN CODE {'\u25B6\uFE0F'}
+                  START {'\u25B6\uFE0F'}
                 </button>
                 <button
                   type="button"
