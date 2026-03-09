@@ -34,9 +34,9 @@ const WALL_SYMBOL = '\u{1F9F1}';
 const TARGET_SYMBOL = '\u{1F31F}';
 
 const MAZE_LEVELS = [
-  { level: 1, start: { x: 0, y: 0 }, target: { x: 4, y: 0 }, walls: [] },
-  { level: 2, start: { x: 0, y: 0 }, target: { x: 4, y: 4 }, walls: [{ x: 2, y: 0 }, { x: 2, y: 1 }, { x: 2, y: 2 }] },
-  { level: 3, start: { x: 0, y: 4 }, target: { x: 4, y: 0 }, walls: [{ x: 1, y: 4 }, { x: 1, y: 3 }, { x: 3, y: 1 }, { x: 3, y: 0 }] },
+  { level: 1, start: { x: 0, y: 0 }, target: { x: 4, y: 0 }, walls: [{ x: 2, y: 0 }, { x: 2, y: 1 }] },
+  { level: 2, start: { x: 0, y: 4 }, target: { x: 4, y: 0 }, walls: [{ x: 1, y: 4 }, { x: 1, y: 3 }, { x: 3, y: 1 }, { x: 3, y: 0 }, { x: 2, y: 2 }] },
+  { level: 3, start: { x: 0, y: 0 }, target: { x: 4, y: 4 }, walls: [{ x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 3 }, { x: 3, y: 4 }] },
   { level: 4, start: { x: 0, y: 0 }, target: { x: 4, y: 4 }, walls: [{ x: 1, y: 1 }, { x: 1, y: 2 }, { x: 3, y: 2 }] },
   { level: 5, start: { x: 0, y: 2 }, target: { x: 4, y: 2 }, walls: [{ x: 2, y: 0 }, { x: 2, y: 1 }, { x: 2, y: 3 }] },
   { level: 6, start: { x: 4, y: 0 }, target: { x: 0, y: 4 }, walls: [{ x: 3, y: 1 }, { x: 2, y: 1 }, { x: 1, y: 3 }] },
