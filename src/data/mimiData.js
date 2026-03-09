@@ -1,199 +1,53 @@
-const buildEmojiDetectiveOptions = (baseEmoji, targetEmoji, targetIndex) =>
-  Array.from({ length: 12 }, (_, index) => (index === targetIndex ? targetEmoji : baseEmoji));
-
-export const magicBookData = [
-  {
-    question: 'Why does it rain? \u{1F327}\uFE0F',
-    answer: 'Because water rises into clouds and then falls back down as rain!',
-    steps: ['Sun heats water \u2600\uFE0F', 'Clouds form \u2601\uFE0F', 'Rain falls \u{1F327}\uFE0F'],
-  },
-  {
-    question: 'Why is the sky blue? \u{1F499}',
-    answer: 'Because sunlight scatters and blue light spreads the most in the sky!',
-    steps: [
-      'Sunlight enters the air \u2600\uFE0F',
-      'Tiny particles scatter blue light \u{1F4AB}',
-      'The sky looks blue \u{1F499}',
-    ],
-  },
-  {
-    question: 'How do plants grow? \u{1F331}',
-    answer: 'Plants use sunlight, water, and soil nutrients to grow strong and tall!',
-    steps: ['Roots drink water \u{1F4A7}', 'Leaves catch sunlight \u2600\uFE0F', 'The plant grows taller \u{1F331}'],
-  },
-  {
-    question: 'Why do shadows follow you? \u{1F463}',
-    answer: 'Because your body blocks light and makes a dark shape behind or beside you!',
-    steps: [
-      'Light shines from one side \u{1F526}',
-      'Your body blocks the light \u{1F64B}',
-      'A shadow appears on the ground \u{1F463}',
-    ],
-  },
-  {
-    question: 'Why does the moon change shape? \u{1F319}',
-    answer: 'Because we see different lit parts of the moon as it moves around Earth!',
-    steps: [
-      'The moon moves around Earth \u{1F30D}',
-      'Sunlight lights one side of the moon \u2600\uFE0F',
-      'We see different moon shapes \u{1F319}',
-    ],
-  },
-];
-
-export const puzzleCanvasData = [
-  {
-    prompt: 'Pick the shape that completes the roof sketch.',
-    solvedPrompt: 'The roof sketch is complete!',
-    targetShape: 'triangle',
-    targetIcon: '\u{1F53A}',
-    placeholderLabel: 'Roof shape missing...',
-    successMessage: 'Perfect! Roof fixed \u{1F389}',
-    failureMessage: 'Hmm, that shape does not fit the roof.',
-    options: [
-      { id: 'triangle', label: 'Triangle', icon: '\u{1F53A}' },
-      { id: 'circle', label: 'Circle', icon: '\u{1F535}' },
-      { id: 'square', label: 'Square', icon: '\u{1F7E6}' },
-    ],
-  },
-  {
-    prompt: 'Choose the shape for the bright sun spot.',
-    solvedPrompt: 'The sunny shape looks perfect!',
-    targetShape: 'circle',
-    targetIcon: '\u{1F535}',
-    placeholderLabel: 'Sun shape missing...',
-    successMessage: 'Yes! The sunny circle fits beautifully! \u2600\uFE0F',
-    failureMessage: 'Not quite. Try the round shape.',
-    options: [
-      { id: 'square', label: 'Square', icon: '\u{1F7E6}' },
-      { id: 'circle', label: 'Circle', icon: '\u{1F535}' },
-      { id: 'triangle', label: 'Triangle', icon: '\u{1F53A}' },
-    ],
-  },
-  {
-    prompt: 'Find the shape that finishes the gift box design.',
-    solvedPrompt: 'The gift box design is complete!',
-    targetShape: 'square',
-    targetIcon: '\u{1F7E6}',
-    placeholderLabel: 'Gift box shape missing...',
-    successMessage: 'Great job! The box piece fits! \u{1F381}',
-    failureMessage: 'That one does not make the box shape.',
-    options: [
-      { id: 'circle', label: 'Circle', icon: '\u{1F535}' },
-      { id: 'square', label: 'Square', icon: '\u{1F7E6}' },
-      { id: 'triangle', label: 'Triangle', icon: '\u{1F53A}' },
-    ],
-  },
-  {
-    prompt: 'Pick the shape that completes the kite art.',
-    solvedPrompt: 'The kite art is ready to fly!',
-    targetShape: 'diamond',
-    targetIcon: '\u{1F536}',
-    placeholderLabel: 'Kite shape missing...',
-    successMessage: 'Wonderful! The kite shape fits! \u{1FA81}',
-    failureMessage: 'Close, but the kite needs a diamond shape.',
-    options: [
-      { id: 'heart', label: 'Heart', icon: '\u{1F497}' },
-      { id: 'diamond', label: 'Diamond', icon: '\u{1F536}' },
-      { id: 'circle', label: 'Circle', icon: '\u{1F535}' },
-    ],
-  },
-  {
-    prompt: 'Choose the shape for the friendship badge.',
-    solvedPrompt: 'The friendship badge looks adorable!',
-    targetShape: 'heart',
-    targetIcon: '\u{1F497}',
-    placeholderLabel: 'Badge shape missing...',
-    successMessage: 'Aww! The heart shape is right! \u{1F496}',
-    failureMessage: 'Try the heart shape for this badge.',
-    options: [
-      { id: 'triangle', label: 'Triangle', icon: '\u{1F53A}' },
-      { id: 'diamond', label: 'Diamond', icon: '\u{1F536}' },
-      { id: 'heart', label: 'Heart', icon: '\u{1F497}' },
-    ],
-  },
-];
-
-export const patternData = [
-  {
-    sequence: ['\u{1F34E}', '\u{1F343}', '\u{1F34E}'],
-    choices: ['\u{1F343}', '\u{1F30A}', '\u2600\uFE0F'],
-    answer: '\u{1F343}',
-  },
-  {
-    sequence: ['\u2B50', '\u{1F319}', '\u2B50'],
-    choices: ['\u2601\uFE0F', '\u{1F319}', '\u{1FA90}'],
-    answer: '\u{1F319}',
-  },
-  {
-    sequence: ['\u{1F9E9}', '\u{1F3A8}', '\u{1F9E9}'],
-    choices: ['\u{1F3B5}', '\u{1F4DA}', '\u{1F3A8}'],
-    answer: '\u{1F3A8}',
-  },
-  {
-    sequence: ['\u{1F41D}', '\u{1F338}', '\u{1F41D}'],
-    choices: ['\u{1F353}', '\u{1F308}', '\u{1F338}'],
-    answer: '\u{1F338}',
-  },
-  {
-    sequence: ['\u{1F98B}', '\u{1F340}', '\u{1F98B}'],
-    choices: ['\u{1F31E}', '\u{1F340}', '\u{1F34E}'],
-    answer: '\u{1F340}',
-  },
-];
-
-export const emojiDetectiveData = [
-  {
-    targetEmoji: '\u{1F345}',
-    baseEmoji: '\u{1F34E}',
-    options: buildEmojiDetectiveOptions('\u{1F34E}', '\u{1F345}', 7),
-  },
-  {
-    targetEmoji: '\u{1F319}',
-    baseEmoji: '\u2B50',
-    options: buildEmojiDetectiveOptions('\u2B50', '\u{1F319}', 3),
-  },
-  {
-    targetEmoji: '\u{1F980}',
-    baseEmoji: '\u{1F41F}',
-    options: buildEmojiDetectiveOptions('\u{1F41F}', '\u{1F980}', 10),
-  },
-  {
-    targetEmoji: '\u{1F33B}',
-    baseEmoji: '\u{1F337}',
-    options: buildEmojiDetectiveOptions('\u{1F337}', '\u{1F33B}', 1),
-  },
-  {
-    targetEmoji: '\u2728',
-    baseEmoji: '\u{1F497}',
-    options: buildEmojiDetectiveOptions('\u{1F497}', '\u2728', 8),
-  },
-];
-
 export const riddleData = [
-  {
-    question: 'I have keys but no locks. I have space but no room. You can enter but not go outside. What am I?',
-    options: ['A Map', 'A Keyboard', 'A Door'],
-    answer: 'A Keyboard',
-  },
-  {
-    question: 'What has hands but cannot clap?',
-    options: ['A Clock', 'A Robot', 'A Table'],
-    answer: 'A Clock',
-  },
-  {
-    question: 'What gets wetter as it dries?',
-    options: ['A Towel', 'A Candle', 'A Pillow'],
-    answer: 'A Towel',
-  },
-  {
-    question: 'What has one eye but cannot see?',
-    options: ['A Needle', 'A Pirate', 'A Potato'],
-    answer: 'A Needle',
-  },
-  {
-    question: 'What is full of holes but still holds water?',
-    options: ['A Sponge', 'A Basket', 'A Shoe'],
-    answer: 'A Sponge',
-  },
+  { id: 1, question: "I have to be broken before you can use me. What am I?", answer: "An Egg", emoji: "🥚" },
+  { id: 2, question: "I’m tall when I’m young, and I’m short when I’m old. What am I?", answer: "A Candle", emoji: "🕯️" },
+  { id: 3, question: "What has hands but cannot clap?", answer: "A Clock", emoji: "⏰" },
+  { id: 4, question: "What has many keys but can't open a single lock?", answer: "A Piano", emoji: "🎹" },
+  { id: 5, question: "I have a tail and a head, but no body. What am I?", answer: "A Coin", emoji: "🪙" },
+  { id: 6, question: "What gets wetter as it dries?", answer: "A Towel", emoji: "🧴" },
+  { id: 7, question: "What has words, but never speaks?", answer: "A Book", emoji: "📖" },
+  { id: 8, question: "You buy me to eat, but never eat me. What am I?", answer: "A Plate", emoji: "🍽️" },
+  { id: 9, question: "What runs all around a backyard, yet never moves?", answer: "A Fence", emoji: "🏡" },
+  { id: 10, question: "What can you catch, but not throw?", answer: "A Cold", emoji: "🤧" },
+  { id: 11, question: "I have one eye, but can't see. What am I?", answer: "A Needle", emoji: "🪡" },
+  { id: 12, question: "What belongs to you, but other people use it more than you?", answer: "Your Name", emoji: "📛" },
+  { id: 13, question: "If you drop me I’m sure to crack, but give me a smile and I’ll always smile back.", answer: "A Mirror", emoji: "🪞" },
+  { id: 14, question: "What has a thumb and four fingers, but is not alive?", answer: "A Glove", emoji: "🧤" },
+  { id: 15, question: "I fly without wings, I cry without eyes. What am I?", answer: "A Cloud", emoji: "☁️" }
+];
+
+export const emojiPuzzleData = [
+  { id: 1, emojis: "🌧️ + 🏹", answer: "Rainbow" },
+  { id: 2, emojis: "🔥 + 🐶", answer: "Hotdog" },
+  { id: 3, emojis: "❄️ + 👨", answer: "Snowman" },
+  { id: 4, emojis: "🌻 + ☀️", answer: "Sunflower" },
+  { id: 5, emojis: "👁️ + 📱", answer: "iPhone" },
+  { id: 6, emojis: "🦇 + 👨", answer: "Batman" },
+  { id: 7, emojis: "🕷️ + 👨", answer: "Spider-Man" },
+  { id: 8, emojis: "🌙 + 💡", answer: "Moonlight" },
+  { id: 9, emojis: "🌊 + 🐎", answer: "Seahorse" },
+  { id: 10, emojis: "🥞 + 🍁", answer: "Pancakes & Syrup" },
+  { id: 11, emojis: "👑 + 🦁", answer: "Lion King" },
+  { id: 12, emojis: "🥶 + 🍦", answer: "Ice Cream" },
+  { id: 13, emojis: "🚀 + 🌌", answer: "Spaceship" },
+  { id: 14, emojis: "📖 + 🐛", answer: "Bookworm" },
+  { id: 15, emojis: "⭐ + 🐟", answer: "Starfish" }
+];
+
+export const curiousFactsData = [
+  { id: 1, question: "Why is the sky blue?", fact: "Sunlight scatters in the atmosphere, and blue light scatters the most!" },
+  { id: 2, question: "Do fishes sleep?", fact: "Yes! But they don't have eyelids, so they sleep with their eyes open." },
+  { id: 3, question: "Why do fireflies glow?", fact: "They mix chemicals in their tummy to create light and talk to other fireflies." },
+  { id: 4, question: "How many noses does a slug have?", fact: "A slug has FOUR noses to help it smell its food from far away!" },
+  { id: 5, question: "Can it rain diamonds?", fact: "Yes! On planets like Jupiter and Saturn, the weather is so extreme it rains diamonds." },
+  { id: 6, question: "Why do cats purr?", fact: "Cats purr when they are happy, but also to heal themselves when they are scared or hurt." },
+  { id: 7, question: "How long is a day on Venus?", fact: "A day on Venus is longer than a whole year on Venus! It spins extremely slowly." },
+  { id: 8, question: "Do trees talk?", fact: "Yes! Trees use an underground network of mushrooms to send messages and food to each other." },
+  { id: 9, question: "Why are flamingos pink?", fact: "They are born grey! They turn pink because they eat so many pink shrimp." },
+  { id: 10, question: "Are zebras white with black stripes?", fact: "Nope! Zebras actually have black skin, and their white stripes are the add-ons." },
+  { id: 11, question: "How many hearts does an octopus have?", fact: "An octopus has THREE hearts. Two pump blood to the gills, and one to the body." },
+  { id: 12, question: "Can water freeze and boil at the same time?", fact: "Yes! It's called the 'Triple Point' where temperature and pressure are perfectly balanced." },
+  { id: 13, question: "Why do we yawn?", fact: "Yawning helps cool down our brain and brings a big rush of oxygen into our body." },
+  { id: 14, question: "Are dinosaurs entirely extinct?", fact: "Not entirely! Birds are actually distant relatives of small, feathered dinosaurs." },
+  { id: 15, question: "How far away is space?", fact: "Space is only about 100 kilometers (62 miles) straight up! If you could drive a car upwards, you'd be there in an hour." }
 ];
