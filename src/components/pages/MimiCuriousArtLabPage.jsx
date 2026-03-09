@@ -1,195 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  emojiDetectiveData,
+  magicBookData,
+  patternData,
+  puzzleCanvasData,
+  riddleData,
+} from '../../data/mimiData';
 
 const nextIndex = (currentIndex, totalItems) => (currentIndex + 1) % totalItems;
-
-const magicBookData = [
-  {
-    question: 'Why does it rain? 🌧️',
-    answer: 'Because water rises into clouds and then falls back down as rain!',
-    steps: ['Sun heats water ☀️', 'Clouds form ☁️', 'Rain falls 🌧️'],
-  },
-  {
-    question: 'Why is the sky blue? 💙',
-    answer: 'Because sunlight scatters and blue light spreads the most in the sky!',
-    steps: ['Sunlight enters the air ☀️', 'Tiny particles scatter blue light 💫', 'The sky looks blue 💙'],
-  },
-  {
-    question: 'How do plants grow? 🌱',
-    answer: 'Plants use sunlight, water, and soil nutrients to grow strong and tall!',
-    steps: ['Roots drink water 💧', 'Leaves catch sunlight ☀️', 'The plant grows taller 🌱'],
-  },
-  {
-    question: 'Why do shadows follow you? 👣',
-    answer: 'Because your body blocks light and makes a dark shape behind or beside you!',
-    steps: ['Light shines from one side 🔦', 'Your body blocks the light 🙋', 'A shadow appears on the ground 👣'],
-  },
-  {
-    question: 'Why does the moon change shape? 🌙',
-    answer: 'Because we see different lit parts of the moon as it moves around Earth!',
-    steps: ['The moon moves around Earth 🌍', 'Sunlight lights one side of the moon ☀️', 'We see different moon shapes 🌙'],
-  },
-];
-
-const puzzleCanvasData = [
-  {
-    prompt: 'Pick the shape that completes the roof sketch.',
-    solvedPrompt: 'The roof sketch is complete!',
-    targetShape: 'triangle',
-    targetIcon: '🔺',
-    placeholderLabel: 'Roof shape missing...',
-    successMessage: 'Perfect! Roof fixed 🎉',
-    failureMessage: 'Hmm, that shape does not fit the roof.',
-    options: [
-      { id: 'triangle', label: 'Triangle', icon: '🔺' },
-      { id: 'circle', label: 'Circle', icon: '🔵' },
-      { id: 'square', label: 'Square', icon: '🟦' },
-    ],
-  },
-  {
-    prompt: 'Choose the shape for the bright sun spot.',
-    solvedPrompt: 'The sunny shape looks perfect!',
-    targetShape: 'circle',
-    targetIcon: '🔵',
-    placeholderLabel: 'Sun shape missing...',
-    successMessage: 'Yes! The sunny circle fits beautifully! ☀️',
-    failureMessage: 'Not quite. Try the round shape.',
-    options: [
-      { id: 'square', label: 'Square', icon: '🟦' },
-      { id: 'circle', label: 'Circle', icon: '🔵' },
-      { id: 'triangle', label: 'Triangle', icon: '🔺' },
-    ],
-  },
-  {
-    prompt: 'Find the shape that finishes the gift box design.',
-    solvedPrompt: 'The gift box design is complete!',
-    targetShape: 'square',
-    targetIcon: '🟦',
-    placeholderLabel: 'Gift box shape missing...',
-    successMessage: 'Great job! The box piece fits! 🎁',
-    failureMessage: 'That one does not make the box shape.',
-    options: [
-      { id: 'circle', label: 'Circle', icon: '🔵' },
-      { id: 'square', label: 'Square', icon: '🟦' },
-      { id: 'triangle', label: 'Triangle', icon: '🔺' },
-    ],
-  },
-  {
-    prompt: 'Pick the shape that completes the kite art.',
-    solvedPrompt: 'The kite art is ready to fly!',
-    targetShape: 'diamond',
-    targetIcon: '🔶',
-    placeholderLabel: 'Kite shape missing...',
-    successMessage: 'Wonderful! The kite shape fits! 🪁',
-    failureMessage: 'Close, but the kite needs a diamond shape.',
-    options: [
-      { id: 'heart', label: 'Heart', icon: '💗' },
-      { id: 'diamond', label: 'Diamond', icon: '🔶' },
-      { id: 'circle', label: 'Circle', icon: '🔵' },
-    ],
-  },
-  {
-    prompt: 'Choose the shape for the friendship badge.',
-    solvedPrompt: 'The friendship badge looks adorable!',
-    targetShape: 'heart',
-    targetIcon: '💗',
-    placeholderLabel: 'Badge shape missing...',
-    successMessage: 'Aww! The heart shape is right! 💖',
-    failureMessage: 'Try the heart shape for this badge.',
-    options: [
-      { id: 'triangle', label: 'Triangle', icon: '🔺' },
-      { id: 'diamond', label: 'Diamond', icon: '🔶' },
-      { id: 'heart', label: 'Heart', icon: '💗' },
-    ],
-  },
-];
-
-const patternData = [
-  {
-    sequence: ['🍎', '🍃', '🍎'],
-    choices: ['🍃', '🌊', '☀️'],
-    answer: '🍃',
-  },
-  {
-    sequence: ['⭐', '🌙', '⭐'],
-    choices: ['☁️', '🌙', '🪐'],
-    answer: '🌙',
-  },
-  {
-    sequence: ['🧩', '🎨', '🧩'],
-    choices: ['🎵', '📚', '🎨'],
-    answer: '🎨',
-  },
-  {
-    sequence: ['🐝', '🌸', '🐝'],
-    choices: ['🍓', '🌈', '🌸'],
-    answer: '🌸',
-  },
-  {
-    sequence: ['🦋', '🍀', '🦋'],
-    choices: ['🌞', '🍀', '🍎'],
-    answer: '🍀',
-  },
-];
-
-const buildEmojiDetectiveOptions = (baseEmoji, targetEmoji, targetIndex) =>
-  Array.from({ length: 12 }, (_, index) => (index === targetIndex ? targetEmoji : baseEmoji));
-
-const emojiDetectiveData = [
-  {
-    targetEmoji: '🍅',
-    baseEmoji: '🍎',
-    options: buildEmojiDetectiveOptions('🍎', '🍅', 7),
-  },
-  {
-    targetEmoji: '🌙',
-    baseEmoji: '⭐',
-    options: buildEmojiDetectiveOptions('⭐', '🌙', 3),
-  },
-  {
-    targetEmoji: '🦀',
-    baseEmoji: '🐟',
-    options: buildEmojiDetectiveOptions('🐟', '🦀', 10),
-  },
-  {
-    targetEmoji: '🌻',
-    baseEmoji: '🌷',
-    options: buildEmojiDetectiveOptions('🌷', '🌻', 1),
-  },
-  {
-    targetEmoji: '✨',
-    baseEmoji: '💗',
-    options: buildEmojiDetectiveOptions('💗', '✨', 8),
-  },
-];
-
-const riddleData = [
-  {
-    question: 'I have keys but no locks. I have space but no room. You can enter but not go outside. What am I?',
-    options: ['A Map', 'A Keyboard', 'A Door'],
-    answer: 'A Keyboard',
-  },
-  {
-    question: 'What has hands but cannot clap?',
-    options: ['A Clock', 'A Robot', 'A Table'],
-    answer: 'A Clock',
-  },
-  {
-    question: 'What gets wetter as it dries?',
-    options: ['A Towel', 'A Candle', 'A Pillow'],
-    answer: 'A Towel',
-  },
-  {
-    question: 'What has one eye but cannot see?',
-    options: ['A Needle', 'A Pirate', 'A Potato'],
-    answer: 'A Needle',
-  },
-  {
-    question: 'What is full of holes but still holds water?',
-    options: ['A Sponge', 'A Basket', 'A Shoe'],
-    answer: 'A Sponge',
-  },
-];
 
 export default function MimiCuriousArtLabPage() {
   const navigate = useNavigate();
@@ -264,7 +83,7 @@ export default function MimiCuriousArtLabPage() {
     if (emoji === currentPattern.answer) {
       setPatternValue(currentPattern.answer);
       setPatternSolved(true);
-      setPatternFeedback('Genius! ✨');
+      setPatternFeedback('Genius! âœ¨');
       return;
     }
 
@@ -283,7 +102,7 @@ export default function MimiCuriousArtLabPage() {
   const handleEmojiDetectivePick = (emoji) => {
     if (emoji === currentEmojiDetective.targetEmoji) {
       setEmojiDetectiveSolved(true);
-      setEmojiDetectiveFeedback('You found the odd one out! 🎉');
+      setEmojiDetectiveFeedback('You found the odd one out! ðŸŽ‰');
       return;
     }
 
@@ -301,12 +120,12 @@ export default function MimiCuriousArtLabPage() {
   const handleRiddleAnswer = (answer) => {
     if (answer === currentRiddle.answer) {
       setRiddleSolved(true);
-      setRiddleFeedback('Correct! You are a genius! 🌟');
+      setRiddleFeedback('Correct! You are a genius! ðŸŒŸ');
       return;
     }
 
     setRiddleSolved(false);
-    setRiddleFeedback('Oops! Try again! ❌');
+    setRiddleFeedback('Oops! Try again! âŒ');
   };
 
   const handleNextRiddle = () => {
@@ -325,10 +144,10 @@ export default function MimiCuriousArtLabPage() {
               onClick={handleBackToLearningZone}
               className="rounded-xl border border-pink-300/25 bg-pink-400/12 px-4 py-2 text-sm font-black text-pink-100 shadow-none hover:bg-pink-400/18"
             >
-              ← Back to Home
+              â† Back to Home
             </button>
             <h1 className="text-2xl font-black tracking-tight text-pink-100 sm:text-3xl">
-              MIMI&apos;s Curious Art Lab 🎨📖
+              MIMI&apos;s Curious Art Lab ðŸŽ¨ðŸ“–
             </h1>
           </div>
         </header>
@@ -341,7 +160,7 @@ export default function MimiCuriousArtLabPage() {
               onClick={handleNextMagicBook}
               className="rounded-xl border border-pink-300/25 bg-pink-500/12 px-3 py-2 text-xs font-black text-pink-100 shadow-none hover:bg-pink-500/18"
             >
-              Next 🔄
+              Next ðŸ”„
             </button>
           </div>
 
@@ -378,7 +197,7 @@ export default function MimiCuriousArtLabPage() {
                 </button>
               ) : (
                 <div className="rounded-xl border border-pink-300 bg-pink-100 px-4 py-3 text-sm font-black text-pink-950">
-                  All clues unlocked 📖
+                  All clues unlocked ðŸ“–
                 </div>
               )}
             </div>
@@ -393,7 +212,7 @@ export default function MimiCuriousArtLabPage() {
               onClick={handleNextPuzzleCanvas}
               className="rounded-xl border border-pink-300/25 bg-pink-500/12 px-3 py-2 text-xs font-black text-pink-100 shadow-none hover:bg-pink-500/18"
             >
-              Next 🔄
+              Next ðŸ”„
             </button>
           </div>
 
@@ -407,7 +226,7 @@ export default function MimiCuriousArtLabPage() {
                     : 'border-dashed border-pink-400 bg-white/60'
                 }`}
               >
-                <span className="text-5xl">{canvasSolved ? currentPuzzleCanvas.targetIcon : '❔'}</span>
+                <span className="text-5xl">{canvasSolved ? currentPuzzleCanvas.targetIcon : 'â”'}</span>
               </div>
               <div className="mt-4 rounded-md border border-pink-200 bg-pink-100 px-3 py-2 text-center text-xs font-black text-pink-950">
                 {canvasSolved ? currentPuzzleCanvas.solvedPrompt : currentPuzzleCanvas.placeholderLabel}
@@ -442,7 +261,7 @@ export default function MimiCuriousArtLabPage() {
               onClick={handleNextPattern}
               className="rounded-xl border border-pink-300/25 bg-pink-500/12 px-3 py-2 text-xs font-black text-pink-100 shadow-none hover:bg-pink-500/18"
             >
-              Next 🔄
+              Next ðŸ”„
             </button>
           </div>
 
@@ -482,13 +301,13 @@ export default function MimiCuriousArtLabPage() {
 
         <section className="rounded-2xl border border-pink-300/30 bg-fuchsia-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-white sm:text-xl">Emoji Detective 🔍</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Emoji Detective ðŸ”</h2>
             <button
               type="button"
               onClick={handleNextEmojiDetective}
               className="rounded-xl border border-pink-300/25 bg-pink-500/12 px-3 py-2 text-xs font-black text-pink-100 shadow-none hover:bg-pink-500/18"
             >
-              Next 🔄
+              Next ðŸ”„
             </button>
           </div>
 
@@ -520,13 +339,13 @@ export default function MimiCuriousArtLabPage() {
 
         <section className="rounded-2xl border border-pink-300/30 bg-fuchsia-900 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-lg font-black text-white sm:text-xl">Mimi&apos;s Riddle 🤔</h2>
+            <h2 className="text-lg font-black text-white sm:text-xl">Mimi&apos;s Riddle ðŸ¤”</h2>
             <button
               type="button"
               onClick={handleNextRiddle}
               className="rounded-xl border border-pink-300/25 bg-pink-500/12 px-3 py-2 text-xs font-black text-pink-100 shadow-none hover:bg-pink-500/18"
             >
-              Next 🔄
+              Next ðŸ”„
             </button>
           </div>
 
