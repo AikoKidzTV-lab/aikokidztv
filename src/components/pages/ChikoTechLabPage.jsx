@@ -334,30 +334,26 @@ export default function ChikoTechLabPage() {
                       (w) => w.x === colIndex && w.y === rowIndex
                     );
                     const isTarget =
-                      colIndex === activeLevel.target.x && rowIndex === activeLevel.target.y;
-                    const isRobot = colIndex === robotPos.x && rowIndex === robotPos.y;
+                      MAZE_LEVELS[currentLevel].target.x === colIndex &&
+                      MAZE_LEVELS[currentLevel].target.y === rowIndex;
+                    const isRobot = robotPos.x === colIndex && robotPos.y === rowIndex;
                     const isStart =
-                      colIndex === activeLevel.start.x && rowIndex === activeLevel.start.y;
+                      MAZE_LEVELS[currentLevel].start.x === colIndex &&
+                      MAZE_LEVELS[currentLevel].start.y === rowIndex;
 
                     return (
                       <div
                         key={`${colIndex}-${rowIndex}`}
-                        className={`relative flex aspect-square items-center justify-center rounded-xl border text-2xl shadow-sm ${
+                        className={`relative flex h-16 w-full items-center justify-center rounded-md border-2 text-2xl transition-all duration-300 md:h-20 md:text-3xl ${
                           isWall
-                            ? 'border-teal-800 bg-teal-700 text-white'
+                            ? 'bg-teal-900 border-teal-700 shadow-[inset_0_0_10px_rgba(0,0,0,0.5)]'
                             : isTarget
-                              ? 'border-cyan-400 bg-cyan-100 text-cyan-950'
-                              : 'border-teal-100 bg-white text-teal-700'
+                              ? 'bg-cyan-100 border-cyan-400'
+                              : 'bg-white border-teal-100'
                         }`}
                       >
-                        {isWall && WALL_SYMBOL}
-                        {!isWall && isTarget && TARGET_SYMBOL}
-                        {!isWall && isRobot && (
-                          <span className="absolute inset-0 flex items-center justify-center">
-                            {ROBOT_SYMBOL}
-                          </span>
-                        )}
-                        {!isWall && isStart && !isRobot && (
+                        {isRobot ? ROBOT_SYMBOL : isTarget ? TARGET_SYMBOL : isWall ? WALL_SYMBOL : ''}
+                        {!isWall && isStart && !isRobot && !isTarget && (
                           <span className="absolute left-1 top-1 text-[10px] font-black uppercase tracking-[0.08em] text-teal-500">
                             S
                           </span>
