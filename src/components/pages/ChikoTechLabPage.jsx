@@ -92,7 +92,7 @@ export default function ChikoTechLabPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
+    <div className="character-page-button-fix min-h-screen bg-slate-900 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <header className="rounded-2xl border border-teal-300/20 bg-slate-900/75 p-4 shadow-none sm:p-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">

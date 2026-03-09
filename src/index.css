@@ -346,6 +346,18 @@ button:disabled {
   transform: translateY(-6px) scale(1.04);
 }
 
+.character-page-button-fix button {
+  box-shadow: none;
+}
+
+.character-page-button-fix button:hover {
+  box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.28), 0 4px 6px -4px rgba(15, 23, 42, 0.22);
+}
+
+.character-page-button-fix button:active {
+  box-shadow: 0 4px 6px -4px rgba(15, 23, 42, 0.26), inset 0 2px 4px rgba(15, 23, 42, 0.22);
+}
+
 .kids-mode-on .kid-card:hover {
   transform: translateY(-8px) scale(1.03);
 }
