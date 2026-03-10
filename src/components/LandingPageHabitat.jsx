@@ -838,6 +838,12 @@ export default function LandingPageHabitat({
                   >
                     {exchangeFeedback.message}
                   </p>
+                  <Link
+                    to="/mega-vault"
+                    className="mt-2 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white"
+                  >
+                    Go to Mega Vault 🏰
+                  </Link>
                 </div>
                 {showTaskQuest ? (
                   <div className="col-span-2 rounded-3xl border border-white/85 bg-white/90 p-4 shadow-xl backdrop-blur">

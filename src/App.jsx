@@ -47,6 +47,7 @@ import KinuGeniusMischiefLabPage from './components/pages/KinuGeniusMischiefLabP
 import NikoFriendshipHavenPage from './components/pages/NikoFriendshipHavenPage';
 import AikoLeadershipPavilionPage from './components/pages/AikoLeadershipPavilionPage';
 import ProfileSettingsPage from './components/pages/ProfileSettingsPage';
+import MegaVaultPage from './pages/MegaVaultPage';
 
 const themes = [
   { key: 'light', label: 'Light Mode' },
@@ -1019,13 +1020,14 @@ function App() {
                 <Route path="/coloring" element={<ColoringBook />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/blender-credit" element={<BlenderCredit />} />
-              <Route path="/profile-settings" element={<ProfileSettingsPage />} />
-              <Route path="/aiko-bio" element={<AikoBioPage />} />
-              <Route path="/niko-bio" element={<NikoBioPage />} />
-              <Route path="/kinu-bio" element={<KinuBioPage />} />
-              <Route path="/mimi-bio" element={<MimiBioPage />} />
-              <Route path="/miko-bio" element={<MikoBioPage />} />
-              <Route path="/chiko-bio" element={<ChikoBioPage />} />
+                <Route path="/profile-settings" element={<ProfileSettingsPage />} />
+                <Route path="/mega-vault" element={<MegaVaultPage />} />
+                <Route path="/aiko-bio" element={<AikoBioPage />} />
+                <Route path="/niko-bio" element={<NikoBioPage />} />
+                <Route path="/kinu-bio" element={<KinuBioPage />} />
+                <Route path="/mimi-bio" element={<MimiBioPage />} />
+                <Route path="/miko-bio" element={<MikoBioPage />} />
+                <Route path="/chiko-bio" element={<ChikoBioPage />} />
               <Route
                 path="/learning-zone/aiko"
                 element={<AikoLeadershipPavilionPage />}
