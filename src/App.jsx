@@ -48,6 +48,7 @@ import NikoFriendshipHavenPage from './components/pages/NikoFriendshipHavenPage'
 import AikoLeadershipPavilionPage from './components/pages/AikoLeadershipPavilionPage';
 import ProfileSettingsPage from './components/pages/ProfileSettingsPage';
 import MegaVaultPage from './pages/MegaVaultPage';
+import VaultQuizPage from './pages/VaultQuizPage';
 
 const themes = [
   { key: 'light', label: 'Light Mode' },
@@ -1022,6 +1023,7 @@ function App() {
                 <Route path="/blender-credit" element={<BlenderCredit />} />
                 <Route path="/profile-settings" element={<ProfileSettingsPage />} />
                 <Route path="/mega-vault" element={<MegaVaultPage />} />
+                <Route path="/mega-vault/:packId" element={<VaultQuizPage />} />
                 <Route path="/aiko-bio" element={<AikoBioPage />} />
                 <Route path="/niko-bio" element={<NikoBioPage />} />
                 <Route path="/kinu-bio" element={<KinuBioPage />} />

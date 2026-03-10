@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../supabaseClient';
 import { megaVaultPacks } from '../data/megaVaultData';
@@ -14,6 +14,7 @@ const normalizeUnlockedPackIds = (rows) => {
 };
 
 export default function MegaVaultPage() {
+  const navigate = useNavigate();
   const { user, profile, fetchProfile, updateProfileBalances } = useAuth();
   const [unlockedPackIds, setUnlockedPackIds] = React.useState([]);
   const [loadingUnlocked, setLoadingUnlocked] = React.useState(false);
@@ -63,12 +64,10 @@ export default function MegaVaultPage() {
     };
   }, [user?.id]);
 
-  const handleOpenPack = React.useCallback((packTitle) => {
-    setFeedback({
-      message: `${packTitle} is unlocked and ready to open! 🔓`,
-      tone: 'success',
-    });
-  }, []);
+  const handleOpenPack = React.useCallback((packId) => {
+    if (!packId) return;
+    navigate(`/mega-vault/${packId}`);
+  }, [navigate]);
 
   const handleBuyPack = React.useCallback(async (pack) => {
     if (!pack?.id || processingPackId) return;
@@ -207,7 +206,7 @@ export default function MegaVaultPage() {
                   {isUnlocked ? (
                     <button
                       type="button"
-                      onClick={() => handleOpenPack(pack.title)}
+                      onClick={() => handleOpenPack(pack.id)}
                       className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white"
                     >
                       OPEN PACK 🔓
