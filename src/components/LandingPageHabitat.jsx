@@ -98,7 +98,7 @@ export default function LandingPageHabitat({
   onNav,
   onSelectLearningModule,
 }) {
-  const { profile, fetchProfile } = useAuth();
+  const { user: authUser, profile, fetchProfile, updateProfileBalances } = useAuth();
   const { isKidsModeOn } = useKidsMode();
   const go = (target) => onNav?.(target);
   const [watchEarnMessage, setWatchEarnMessage] = React.useState('');
@@ -112,11 +112,13 @@ export default function LandingPageHabitat({
   const [showTaskQuest, setShowTaskQuest] = React.useState(false);
   const [isClaimingYoutubeReward, setIsClaimingYoutubeReward] = React.useState(false);
   const [isClaimingTaskQuestReward, setIsClaimingTaskQuestReward] = React.useState(false);
+  const [exchangeFeedback, setExchangeFeedback] = React.useState({ message: '', tone: 'neutral' });
   const [hasClickedSubscribe, setHasClickedSubscribe] = React.useState(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY) === 'true';
   });
   const paymentToastTimerRef = React.useRef(null);
+  const exchangeFeedbackTimerRef = React.useRef(null);
 
   const claimedRewards = React.useMemo(
     () => (Array.isArray(profile?.claimed_rewards) ? profile.claimed_rewards : []),
@@ -277,9 +279,76 @@ export default function LandingPageHabitat({
     }
   }, [allTaskHabitsChecked, claimRewardGems, pushBellNotification, showPaymentToast]);
 
+  const showExchangeFeedback = React.useCallback((message, tone) => {
+    setExchangeFeedback({ message, tone });
+    if (exchangeFeedbackTimerRef.current) {
+      clearTimeout(exchangeFeedbackTimerRef.current);
+    }
+    exchangeFeedbackTimerRef.current = setTimeout(() => {
+      setExchangeFeedback({ message: '', tone: 'neutral' });
+    }, 2000);
+  }, []);
+
+  const handleConvertToRainbowGems = React.useCallback(async () => {
+    const currentPurpleGems = Number(profile?.gems || 0);
+    const currentRainbowGems = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
+
+    if (currentPurpleGems < 100) {
+      showExchangeFeedback('Not enough Purple Gems! 💎', 'error');
+      return;
+    }
+
+    const userId = user?.id || authUser?.id || null;
+    if (!userId) {
+      showExchangeFeedback('Please log in to exchange gems.', 'error');
+      onOpenLogin?.();
+      return;
+    }
+
+    const newPurpleGems = Math.max(0, currentPurpleGems - 100);
+    const newRainbowGems = Math.max(0, currentRainbowGems + 10);
+
+    updateProfileBalances?.({
+      gems: newPurpleGems,
+      rainbow_gems: newRainbowGems,
+      rainbowGems: newRainbowGems,
+    });
+    showExchangeFeedback('Success! +10 🌈 added!', 'success');
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ gems: newPurpleGems, rainbow_gems: newRainbowGems })
+      .eq('id', userId);
+
+    if (error) {
+      updateProfileBalances?.({
+        gems: currentPurpleGems,
+        rainbow_gems: currentRainbowGems,
+        rainbowGems: currentRainbowGems,
+      });
+      showExchangeFeedback(error.message || 'Exchange failed. Please try again.', 'error');
+      return;
+    }
+
+    void fetchProfile?.(userId);
+  }, [
+    authUser?.id,
+    fetchProfile,
+    onOpenLogin,
+    profile?.gems,
+    profile?.rainbowGems,
+    profile?.rainbow_gems,
+    showExchangeFeedback,
+    updateProfileBalances,
+    user?.id,
+  ]);
+
   React.useEffect(() => () => {
     if (paymentToastTimerRef.current) {
       clearTimeout(paymentToastTimerRef.current);
+    }
+    if (exchangeFeedbackTimerRef.current) {
+      clearTimeout(exchangeFeedbackTimerRef.current);
     }
   }, []);
 
@@ -747,6 +816,28 @@ export default function LandingPageHabitat({
                     />
                   </div>
                   <p className="mt-2 text-xs font-semibold !text-slate-600">Current gem balance | Mega balance</p>
+                </div>
+                <div className="col-span-2 rounded-3xl border border-white/80 bg-white/70 p-4 shadow-xl backdrop-blur">
+                  <p className="text-xs font-black uppercase tracking-wider !text-slate-500">Mega Vault Bank 🏦</p>
+                  <p className="mt-2 text-sm font-bold !text-slate-700">Trade your Purple Gems for Premium Rainbow Gems!</p>
+                  <button
+                    type="button"
+                    onClick={handleConvertToRainbowGems}
+                    className="mt-3 rounded-xl bg-fuchsia-600 px-4 py-2 text-sm font-black text-white"
+                  >
+                    Convert 100 💎 to 10 🌈
+                  </button>
+                  <p
+                    className={`mt-2 min-h-[1.25rem] text-sm font-semibold ${
+                      exchangeFeedback.tone === 'success'
+                        ? '!text-emerald-700'
+                        : exchangeFeedback.tone === 'error'
+                          ? '!text-rose-700'
+                          : '!text-slate-600'
+                    }`}
+                  >
+                    {exchangeFeedback.message}
+                  </p>
                 </div>
                 {showTaskQuest ? (
                   <div className="col-span-2 rounded-3xl border border-white/85 bg-white/90 p-4 shadow-xl backdrop-blur">

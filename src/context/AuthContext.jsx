@@ -9,6 +9,7 @@ const AuthContext = createContext({
   authError: null,
   signOut: async () => {},
   fetchProfile: async () => null,
+  updateProfileBalances: () => {},
 });
 
 const normalizeProfile = (rawProfile = null, userId = null) => {
@@ -66,6 +67,24 @@ export const AuthProvider = ({ children }) => {
       return fallback;
     }
   }, []);
+
+  const updateProfileBalances = useCallback(({ gems, rainbowGems, rainbow_gems } = {}) => {
+    setProfile((currentProfile) => {
+      const normalizedCurrent = normalizeProfile(currentProfile, currentProfile?.id || user?.id || null);
+      const nextGems = Number(gems);
+      const nextRainbow = Number(rainbowGems ?? rainbow_gems);
+
+      const nextProfile = {
+        ...normalizedCurrent,
+        gems: Number.isFinite(nextGems) ? Math.max(0, Math.floor(nextGems)) : normalizedCurrent.gems,
+        rainbow_gems: Number.isFinite(nextRainbow)
+          ? Math.max(0, Math.floor(nextRainbow))
+          : normalizedCurrent.rainbow_gems,
+      };
+
+      return normalizeProfile(nextProfile, normalizedCurrent.id || user?.id || null);
+    });
+  }, [user?.id]);
 
   useEffect(() => {
     let isActive = true;
@@ -144,7 +163,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isOffline: false, authError, signOut, fetchProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        loading,
+        isOffline: false,
+        authError,
+        signOut,
+        fetchProfile,
+        updateProfileBalances,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
