@@ -1,13 +1,34 @@
 ﻿export const magicBookData = [
   { id: 1, question: "Why does it rain? 🌧️", steps: ["1. Sun heats water ☀️", "2. Water turns to vapor 💨", "3. Clouds get heavy ☁️", "4. Rain falls! 💧"] },
   { id: 2, question: "Why do leaves change color? 🍁", steps: ["1. Trees stop eating 🛑", "2. Green chlorophyll fades 🌿", "3. Yellow & Red colors show 🎨", "4. Leaves fall! 🍂"] },
-  { id: 3, question: "How do birds fly? 🦅", steps: ["1. Special curved wings 🪽", "2. Strong chest muscles 💪", "3. Hollow, light bones 🦴", "4. Push air down to go up! ⬆️"] }
+  { id: 3, question: "How do birds fly? 🦅", steps: ["1. Special curved wings 🪽", "2. Strong chest muscles 💪", "3. Hollow, light bones 🦴", "4. Push air down to go up! ⬆️"] },
+  { id: 4, question: "How are rainbows made? 🌈", steps: ["1. It rains 🌧️", "2. Sun comes out ☀️", "3. Light hits the water drops 💧", "4. Light bends into 7 colors! 🎨"] },
+  { id: 5, question: "Why is there Day and Night? 🌍", steps: ["1. Earth is a spinning ball 🌎", "2. The Sun shines on one side ☀️", "3. That side has Day 🏙️", "4. The hidden side has Night 🌃"] },
+  { id: 6, question: "How do plants eat? 🌱", steps: ["1. Roots drink water 💧", "2. Leaves catch sunlight ☀️", "3. They breathe in bad air (CO2) 🌬️", "4. They mix it to make plant food! 🥗"] },
+  { id: 7, question: "Why does ice melt? 🧊", steps: ["1. Ice is very cold solid water ❄️", "2. Heat from the air touches it 🔥", "3. The ice gets warm 🌡️", "4. It turns back into a liquid puddle! 💧"] },
+  { id: 8, question: "How does a spider make a web? 🕸️", steps: ["1. Spider eats bugs 🪲", "2. Body turns food into liquid silk 🧪", "3. Silk comes out of spinnerets 🕷️", "4. Air dries it into strong threads! 🧶"] },
+  { id: 9, question: "Why does the Moon shine? 🌕", steps: ["1. The Moon has no light of its own 🌑", "2. The Sun shines very bright ☀️", "3. Sun's light hits the Moon 🔦", "4. The Moon bounces the light to Earth! 🪞"] },
+  { id: 10, question: "How do fish breathe underwater? 🐟", steps: ["1. Water has tiny oxygen bubbles 🫧", "2. Fish swallows water 🌊", "3. Water goes through special gills 🫁", "4. Gills catch the oxygen! 💨"] },
+  { id: 11, question: "Why do boats float? ⛵", steps: ["1. Boats are heavy but hollow inside 📦", "2. They push a lot of water away 🌊", "3. Water pushes back up (Buoyancy) ⬆️", "4. The upward push keeps it floating! 🦆"] },
+  { id: 12, question: "How do caterpillars become butterflies? 🦋", steps: ["1. Caterpillar eats lots of leaves 🐛", "2. It hangs upside down and spins a chrysalis 🥚", "3. It rests and changes inside 🧬", "4. It breaks out with beautiful wings! ✨"] }
 ];
 
 export const puzzleCanvasData = [
   { id: 1, challenge: "Roof shape missing...", shapeImage: "🏠", options: ["Triangle 🔺", "Circle 🔵", "Square 🟦"], correct: "Triangle 🔺" },
   { id: 2, challenge: "Sun shape missing...", shapeImage: "☀️", options: ["Square 🟦", "Circle 🔵", "Star ⭐"], correct: "Circle 🔵" },
-  { id: 3, challenge: "Door shape missing...", shapeImage: "🚪", options: ["Rectangle 🟩", "Circle 🔵", "Triangle 🔺"], correct: "Rectangle 🟩" }
+  { id: 3, challenge: "Door shape missing...", shapeImage: "🚪", options: ["Rectangle 🟩", "Circle 🔵", "Triangle 🔺"], correct: "Rectangle 🟩" },
+  { id: 4, challenge: "Car wheel missing...", shapeImage: "🚗", options: ["Triangle 🔺", "Square 🟦", "Circle 🔵"], correct: "Circle 🔵" },
+  { id: 5, challenge: "Ice cream cone missing...", shapeImage: "🍦", options: ["Circle 🔵", "Triangle 🔺", "Rectangle 🟩"], correct: "Triangle 🔺" },
+  { id: 6, challenge: "Computer screen missing...", shapeImage: "💻", options: ["Rectangle 🟩", "Circle 🔵", "Triangle 🔺"], correct: "Rectangle 🟩" },
+  { id: 7, challenge: "Pizza slice missing...", shapeImage: "🍕", options: ["Square 🟦", "Triangle 🔺", "Circle 🔵"], correct: "Triangle 🔺" },
+  { id: 8, challenge: "Full moon missing...", shapeImage: "🌕", options: ["Circle 🔵", "Square 🟦", "Rectangle 🟩"], correct: "Circle 🔵" },
+  { id: 9, challenge: "Kite shape missing...", shapeImage: "🪁", options: ["Diamond 🔶", "Circle 🔵", "Rectangle 🟩"], correct: "Diamond 🔶" },
+  { id: 10, challenge: "Stop sign missing...", shapeImage: "🛑", options: ["Triangle 🔺", "Octagon 🛑", "Circle 🔵"], correct: "Octagon 🛑" },
+  { id: 11, challenge: "Party hat missing...", shapeImage: "🥳", options: ["Square 🟦", "Circle 🔵", "Triangle 🔺"], correct: "Triangle 🔺" },
+  { id: 12, challenge: "Donut hole missing...", shapeImage: "🍩", options: ["Triangle 🔺", "Rectangle 🟩", "Circle 🔵"], correct: "Circle 🔵" },
+  { id: 13, challenge: "Playing card missing...", shapeImage: "🃏", options: ["Rectangle 🟩", "Circle 🔵", "Triangle 🔺"], correct: "Rectangle 🟩" },
+  { id: 14, challenge: "Sandwich half missing...", shapeImage: "🥪", options: ["Square 🟦", "Triangle 🔺", "Circle 🔵"], correct: "Triangle 🔺" },
+  { id: 15, challenge: "Gift box missing...", shapeImage: "🎁", options: ["Square 🟦", "Circle 🔵", "Triangle 🔺"], correct: "Square 🟦" }
 ];
 
 export const patternData = [
