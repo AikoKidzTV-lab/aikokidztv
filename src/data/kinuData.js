@@ -193,6 +193,52 @@ export const colorMixes = [
   { question: "Can you make Red by mixing other colors?", answer: "No! Red is a Primary color. You just have to buy it! 🖍️", emoji: "🍎" }
 ];
 
+export const musicalBeats = [
+  "Clap your hands 3 times, then stomp your feet 2 times! 👏 👣",
+  "Make a drum sound on the table: Tap, Tap, BOOM! 🥁",
+  "Snap your fingers (or pretend to) to the beat of your favorite song! 🫰",
+  "Say 'Boom-Chicka-Boom' as fast as you can 5 times! 🎶",
+  "Take a deep breath and hum the ABC song without opening your mouth! 🤐🎵",
+  "Pat your head and rub your tummy to a musical rhythm! 🤷‍♂️",
+  "Pretend you are playing a giant piano with your feet! 🎹👣",
+  "Make a shushing sound like the ocean waves: Shhhhh... Shhhhh... 🌊",
+  "Click your tongue to sound like a horse trotting! 🐎",
+  "Whistle or blow air out to make wind sounds! 🌬️",
+  "Tap your shoulders, then your knees: 1, 2, 3, 4! 🥁",
+  "Try to make a beatboxing sound: Boots and Cats! 🎤",
+  "Sing your favorite song, but replace all the words with 'Meow'! 🐱🎶",
+  "Rub your hands together really fast to sound like rain falling! 🌧️",
+  "Gently tap two pencils together like tiny drumsticks! 🥢",
+  "Make a low humming sound like a giant spaceship taking off! 🚀",
+  "Slap your thighs to the beat of 'We Will Rock You'! 🎸",
+  "Say 'Zoom, Swoosh, Pop!' in a fast, musical rhythm! ✨",
+  "Pretend to play a trumpet: Doot doot doo! 🎺",
+  "Take a deep breath and sing one note for as long as you possibly can! 🗣️🎵"
+];
+
+export const creativeIdeas = [
+  "Find an empty cardboard box and imagine it's a spaceship! 📦🚀",
+  "Make up a brand new word that means 'super happy' and tell your friends! 🗣️",
+  "Build the tallest tower you can using pillows and cushions! 🏰",
+  "Look at the clouds and tell a story about the shapes you see! ☁️📖",
+  "Create a secret handshake with a friend or family member! 🤝",
+  "Try to balance a soft book on your head and walk across the room! 📚🚶‍♂️",
+  "Make a shadow puppet using your hands and a flashlight! 🔦🐇",
+  "Write a short silly song about your favorite food! 🍔🎤",
+  "Invent a new superhero. What is their name and what do they wear? 🦸‍♀️",
+  "Pretend the floor is hot lava and navigate across the room safely! 🌋🪑",
+  "Draw a 'Treasure Map' of your house and hide a toy for someone to find! 🗺️🪙",
+  "Build a cozy reading fort using blankets and chairs! ⛺",
+  "Invent a brand new holiday. What do we celebrate and what do we eat? 🎉",
+  "Create a 3-step dance routine for your favorite song! 💃🕺",
+  "Write a short letter to an alien explaining what Earth is like! 👽🌍",
+  "Close your eyes and imagine you have wings. Where do you fly first? 🦅",
+  "Collect 5 random safe items from your room and invent a story connecting them! 🧸✏️",
+  "Make a paper airplane and see how far it can fly! ✈️📄",
+  "Pretend you are a news reporter broadcasting live from your living room! 🎙️📺",
+  "Design a menu for a magical restaurant. What weird foods do they serve? 🍝✨"
+];
+
 export const kinuJokes = [
   {
     setup: 'Why did the cow cross the road?',
