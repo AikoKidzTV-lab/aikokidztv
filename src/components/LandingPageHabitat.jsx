@@ -314,20 +314,30 @@ export default function LandingPageHabitat({
 
     const nowIso = new Date().toISOString();
     const currentGems = Number(profile?.gems || 0);
-    const newGemsTotal = currentGems + 50;
+    const currentRainbowGems = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
+    const newGemsTotal = currentGems + 25;
+    const newRainbowBalance = currentRainbowGems + 5;
     const previousLastFreeClaimDate = effectiveLastFreeClaimDate;
 
-    updateProfileBalances?.({ gems: newGemsTotal });
+    updateProfileBalances?.({
+      gems: newGemsTotal,
+      rainbow_gems: newRainbowBalance,
+      rainbowGems: newRainbowBalance,
+    });
     setDailyClaimOverride(nowIso);
-    showDailyChestFeedback('Yay! +50 💎 added!');
+    showDailyChestFeedback('Yay! +25 💎 and +5 🌈 added!');
 
     const { error } = await supabase
       .from('profiles')
-      .update({ gems: newGemsTotal, last_free_claim_date: nowIso })
+      .update({ gems: newGemsTotal, rainbow_gems: newRainbowBalance, last_free_claim_date: nowIso })
       .eq('id', userId);
 
     if (error) {
-      updateProfileBalances?.({ gems: currentGems });
+      updateProfileBalances?.({
+        gems: currentGems,
+        rainbow_gems: currentRainbowGems,
+        rainbowGems: currentRainbowGems,
+      });
       setDailyClaimOverride(previousLastFreeClaimDate ?? null);
       showDailyChestFeedback(error.message || 'Could not claim today. Please try again.');
       return;
@@ -341,6 +351,8 @@ export default function LandingPageHabitat({
     hasClaimedDailyChestToday,
     onOpenLogin,
     profile?.gems,
+    profile?.rainbowGems,
+    profile?.rainbow_gems,
     showDailyChestFeedback,
     updateProfileBalances,
     user?.id,
@@ -803,7 +815,7 @@ export default function LandingPageHabitat({
                         : 'border border-fuchsia-700 bg-fuchsia-700 !text-white'
                     }`}
                   >
-                    {hasClaimedDailyChestToday ? '⏳ Come back tomorrow' : '🎁 Open Daily Chest (+50 💎)'}
+                    {hasClaimedDailyChestToday ? '⏳ Come back tomorrow' : '🎁 Open Daily Chest (+25 💎 & +5 🌈)'}
                   </button>
                   <p className="mt-2 min-h-[1.25rem] text-sm font-semibold !text-emerald-700">{dailyChestMessage}</p>
                 </div>
