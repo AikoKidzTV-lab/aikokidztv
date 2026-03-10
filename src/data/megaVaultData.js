@@ -76,5 +76,27 @@ export const vaultQuestions = {
     { id: 18, question: "What is the primary food source for the massive Blue Whale?", options: ["Large fish", "Tiny krill", "Seaweed"], correct: "Tiny krill" },
     { id: 19, question: "Which marine mammal is famous for holding hands while sleeping so they don't drift apart?", options: ["Sea Otters", "Seals", "Manatees"], correct: "Sea Otters" },
     { id: 20, question: "What causes the ocean tides to rise and fall?", options: ["Wind", "The gravitational pull of the Moon and Sun", "Whales swimming"], correct: "The gravitational pull of the Moon and Sun" }
+  ],
+  "vault_brain_01": [
+    { id: 1, question: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", options: ["A Ghost", "An Echo", "A Cloud"], correct: "An Echo" },
+    { id: 2, question: "The more of this there is, the less you see. What is it?", options: ["Light", "Fog", "Darkness"], correct: "Darkness" },
+    { id: 3, question: "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?", options: ["A Map", "A Dream", "A Globe"], correct: "A Map" },
+    { id: 4, question: "What can travel all around the world while staying in a single corner?", options: ["A Stamp", "The Sun", "A Satellite"], correct: "A Stamp" },
+    { id: 5, question: "What gets wetter and wetter the more it dries?", options: ["Water", "A Towel", "Ice"], correct: "A Towel" },
+    { id: 6, question: "What has 13 hearts, but no other organs?", options: ["A Deck of Cards", "An Alien", "A Hospital"], correct: "A Deck of Cards" },
+    { id: 7, question: "I shave every day, but my beard stays the same. What am I?", options: ["A Barber", "A Statue", "A Wizard"], correct: "A Barber" },
+    { id: 8, question: "What goes up but never comes down?", options: ["Your Age", "A Balloon", "A Rocket"], correct: "Your Age" },
+    { id: 9, question: "What has many keys but can't open a single lock?", options: ["A Keyboard", "A Piano", "A Janitor"], correct: "A Piano" },
+    { id: 10, question: "What belongs to you, but other people use it more than you do?", options: ["Your House", "Your Money", "Your Name"], correct: "Your Name" },
+    { id: 11, question: "I am full of holes, but I can still hold a lot of water. What am I?", options: ["A Sieve", "A Cloud", "A Sponge"], correct: "A Sponge" },
+    { id: 12, question: "Where does today come before yesterday?", options: ["In space", "In the dictionary", "In a time machine"], correct: "In the dictionary" },
+    { id: 13, question: "If you drop me I’m sure to crack, but give me a smile and I’ll always smile back. What am I?", options: ["A Mirror", "An Egg", "A Camera"], correct: "A Mirror" },
+    { id: 14, question: "What has legs, but doesn't walk?", options: ["A Snake", "A Table", "A Ghost"], correct: "A Table" },
+    { id: 15, question: "I have a tail and a head, but no body. What am I?", options: ["A Coin", "A Snake", "A Comet"], correct: "A Coin" },
+    { id: 16, question: "What comes once in a minute, twice in a moment, but never in a thousand years?", options: ["The letter 'M'", "A heartbeat", "The sun"], correct: "The letter 'M'" },
+    { id: 17, question: "What word is spelled incorrectly in every single dictionary?", options: ["Incorrectly", "Nothing", "Supercalifragilistic"], correct: "Incorrectly" },
+    { id: 18, question: "Which month of the year has 28 days?", options: ["February", "None", "All of them"], correct: "All of them" },
+    { id: 19, question: "What breaks yet never falls, and what falls yet never breaks?", options: ["Day and Night", "Glass and Rain", "A Promise and An Apple"], correct: "Day and Night" },
+    { id: 20, question: "I am not alive, but I grow; I don't have lungs, but I need air; I don't have a mouth, but water kills me. What am I?", options: ["A Plant", "Fire", "Ice"], correct: "Fire" }
   ]
 };
