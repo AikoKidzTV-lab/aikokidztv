@@ -113,12 +113,15 @@ export default function LandingPageHabitat({
   const [isClaimingYoutubeReward, setIsClaimingYoutubeReward] = React.useState(false);
   const [isClaimingTaskQuestReward, setIsClaimingTaskQuestReward] = React.useState(false);
   const [exchangeFeedback, setExchangeFeedback] = React.useState({ message: '', tone: 'neutral' });
+  const [dailyChestMessage, setDailyChestMessage] = React.useState('');
+  const [dailyClaimOverride, setDailyClaimOverride] = React.useState(null);
   const [hasClickedSubscribe, setHasClickedSubscribe] = React.useState(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY) === 'true';
   });
   const paymentToastTimerRef = React.useRef(null);
   const exchangeFeedbackTimerRef = React.useRef(null);
+  const dailyChestMessageTimerRef = React.useRef(null);
 
   const claimedRewards = React.useMemo(
     () => (Array.isArray(profile?.claimed_rewards) ? profile.claimed_rewards : []),
@@ -128,6 +131,15 @@ export default function LandingPageHabitat({
   const taskQuestClaimed = claimedRewards.includes(TASK_QUEST_REWARD_KEY);
   const gemsBalance = Number(profile?.gems || 0);
   const rainbowGemsBalance = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
+  const today = new Date().toLocaleDateString('en-CA');
+  const effectiveLastFreeClaimDate = dailyClaimOverride ?? profile?.last_free_claim_date ?? null;
+  const formattedLastFreeClaimDate = React.useMemo(() => {
+    if (!effectiveLastFreeClaimDate) return '';
+    const parsed = new Date(effectiveLastFreeClaimDate);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return parsed.toLocaleDateString('en-CA');
+  }, [effectiveLastFreeClaimDate]);
+  const hasClaimedDailyChestToday = formattedLastFreeClaimDate === today;
   const canClaimYoutubeReward = hasClickedSubscribe && !freeGemsClaimed && !isClaimingYoutubeReward;
   const heroBannerCount = heroBanners.length;
 
@@ -289,6 +301,16 @@ export default function LandingPageHabitat({
     }, 2000);
   }, []);
 
+  const showDailyChestFeedback = React.useCallback((message) => {
+    setDailyChestMessage(message);
+    if (dailyChestMessageTimerRef.current) {
+      clearTimeout(dailyChestMessageTimerRef.current);
+    }
+    dailyChestMessageTimerRef.current = setTimeout(() => {
+      setDailyChestMessage('');
+    }, 2000);
+  }, []);
+
   const handleConvertToRainbowGems = React.useCallback(async () => {
     const currentPurpleGems = Number(profile?.gems || 0);
     const currentRainbowGems = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
@@ -343,12 +365,65 @@ export default function LandingPageHabitat({
     user?.id,
   ]);
 
+  const handleClaimDailyChest = React.useCallback(async () => {
+    if (hasClaimedDailyChestToday) {
+      return;
+    }
+
+    const userId = user?.id || authUser?.id || null;
+    if (!userId) {
+      showDailyChestFeedback('Please log in to claim your daily chest.');
+      onOpenLogin?.();
+      return;
+    }
+
+    const nowIso = new Date().toISOString();
+    const currentGems = Number(profile?.gems || 0);
+    const newGemsTotal = currentGems + 50;
+    const previousLastFreeClaimDate = effectiveLastFreeClaimDate;
+
+    updateProfileBalances?.({ gems: newGemsTotal });
+    setDailyClaimOverride(nowIso);
+    showDailyChestFeedback('Yay! +50 💎 added!');
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ gems: newGemsTotal, last_free_claim_date: nowIso })
+      .eq('id', userId);
+
+    if (error) {
+      updateProfileBalances?.({ gems: currentGems });
+      setDailyClaimOverride(previousLastFreeClaimDate ?? null);
+      showDailyChestFeedback(error.message || 'Could not claim today. Please try again.');
+      return;
+    }
+
+    void fetchProfile?.(userId);
+  }, [
+    authUser?.id,
+    effectiveLastFreeClaimDate,
+    fetchProfile,
+    hasClaimedDailyChestToday,
+    onOpenLogin,
+    profile?.gems,
+    showDailyChestFeedback,
+    updateProfileBalances,
+    user?.id,
+  ]);
+
+  React.useEffect(() => {
+    setDailyClaimOverride(profile?.last_free_claim_date ?? null);
+  }, [profile?.last_free_claim_date]);
+
   React.useEffect(() => () => {
     if (paymentToastTimerRef.current) {
       clearTimeout(paymentToastTimerRef.current);
     }
     if (exchangeFeedbackTimerRef.current) {
       clearTimeout(exchangeFeedbackTimerRef.current);
+    }
+    if (dailyChestMessageTimerRef.current) {
+      clearTimeout(dailyChestMessageTimerRef.current);
     }
   }, []);
 
@@ -844,6 +919,25 @@ export default function LandingPageHabitat({
                   >
                     Go to Mega Vault 🏰
                   </Link>
+                </div>
+                <div className="col-span-2 rounded-3xl border border-white/80 bg-white/70 p-4 shadow-xl backdrop-blur">
+                  <p className="text-xs font-black uppercase tracking-wider !text-slate-500">Aiko&apos;s Daily Magic Chest 🎁</p>
+                  <p className="mt-2 text-sm font-bold !text-slate-700">
+                    {hasClaimedDailyChestToday ? "You opened today's chest!" : 'Aiko has a gift for you today!'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleClaimDailyChest}
+                    disabled={hasClaimedDailyChestToday}
+                    className={`mt-3 rounded-xl px-4 py-2 text-sm font-black ${
+                      hasClaimedDailyChestToday
+                        ? 'cursor-not-allowed border border-slate-300 bg-slate-300 !text-slate-600'
+                        : 'border border-fuchsia-700 bg-fuchsia-700 !text-white'
+                    }`}
+                  >
+                    {hasClaimedDailyChestToday ? 'Come back tomorrow ⏳' : 'Open Chest for 50 💎'}
+                  </button>
+                  <p className="mt-2 min-h-[1.25rem] text-sm font-semibold !text-emerald-700">{dailyChestMessage}</p>
                 </div>
                 {showTaskQuest ? (
                   <div className="col-span-2 rounded-3xl border border-white/85 bg-white/90 p-4 shadow-xl backdrop-blur">
