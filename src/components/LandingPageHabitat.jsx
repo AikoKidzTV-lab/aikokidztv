@@ -58,19 +58,8 @@ const isMissingColumnError = (error, columnName) => {
     (text.includes('column') || text.includes('schema cache') || error?.code === '42703' || error?.code === 'PGRST204')
   );
 };
-
-const sanskariTasks = [
-  "Drink a full glass of water 💧", "Say 'Thank You' to your mom or dad 🙏", "Organize your toys properly 🧸", "Take 5 deep breaths 🌬️", "Smile in the mirror 😊", "Wash your hands with soap 🧼", "Read one page of a book 📖", "Help set up the dining table 🍽️", "Hug your parents 🤗", "Say a positive morning prayer ☀️", "Stretch your body for 2 minutes 🤸", "Brush your teeth carefully 🪥", "Put your used plate in the sink 🍽️", "Share a toy or snack with someone 🤝", "Draw a happy face on paper 🖍️", "Eat a piece of fresh fruit 🍎", "Say 'Sorry' if you made a mistake 🕊️", "Pick up one piece of trash and throw it 🗑️", "Compliment someone today 💖", "Close your eyes and sit quietly for 1 min 🧘", "Water a plant in your house 🌱", "Fold your own blanket 🛏️", "Wipe a table clean 🧽", "Keep your shoes in the correct rack 👟", "Count from 1 to 50 slowly 🔢", "Listen to your elders without arguing 👂", "Feed a bird or an animal (with help) 🐦", "Say 'Please' when asking for something 🥺", "Turn off extra lights to save energy 💡", "Close the tap while brushing teeth 🚰", "Help fold dry clothes 👕", "Speak softly and politely today 🗣️", "Learn one new word today 📚", "Draw a picture for your grandparents 🎨", "Don't waste any food on your plate 🍛", "Chew your food 20 times 😋", "Arrange your books in the bag 🎒", "Do 10 jumping jacks 💪", "Sing a happy song 🎵", "Greet a neighbor with a smile 🙋‍♂️", "Help clean your room 🧹", "Write down one thing you are happy about 📝", "Wait for your turn patiently ⏳", "Cover your mouth when coughing 🤧", "Drink milk without complaining 🥛", "Put dirty clothes in the laundry basket 🧺", "Say goodnight to everyone before bed 🌙", "Think of 3 colors you saw today 🌈", "Clap for someone who did a good job 👏", "Promise to be a good kid today 😇"
-];
-
-const TASKS_PER_QUEST = 5;
-const TASK_ROTATION_INTERVAL_MS = 300000;
-const BELL_NOTIFICATION_EVENT = 'aiko:bell-notification';
 const YOUTUBE_SUBSCRIBE_REWARD_KEY = 'homepage_youtube_subscribe_50';
 const YOUTUBE_SUBSCRIBE_REWARD_GEMS = 50;
-const TASK_QUEST_REWARD_KEY = 'homepage_task_quest_2';
-const TASK_QUEST_REWARD_GEMS = 2;
-const TASK_QUEST_ANIMALS = ['🐶', '🐱', '🦊', '🐼', '🦁'];
 const YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY = 'aiko_subscribe_click_v1';
 const PARENT_ZONE_PRACTICE_ROUTES = [
   { id: 'tables', label: 'Tables', emoji: '🧮', to: '/parent-zone/tables' },
@@ -107,11 +96,7 @@ export default function LandingPageHabitat({
   const [heroBanners, setHeroBanners] = React.useState([]);
   const [heroBannersLoading, setHeroBannersLoading] = React.useState(true);
   const [heroBannersError, setHeroBannersError] = React.useState('');
-  const [activeTaskStart, setActiveTaskStart] = React.useState(0);
-  const [taskQuestChecks, setTaskQuestChecks] = React.useState(() => Array(TASKS_PER_QUEST).fill(false));
-  const [showTaskQuest, setShowTaskQuest] = React.useState(false);
   const [isClaimingYoutubeReward, setIsClaimingYoutubeReward] = React.useState(false);
-  const [isClaimingTaskQuestReward, setIsClaimingTaskQuestReward] = React.useState(false);
   const [exchangeFeedback, setExchangeFeedback] = React.useState({ message: '', tone: 'neutral' });
   const [dailyChestMessage, setDailyChestMessage] = React.useState('');
   const [dailyClaimOverride, setDailyClaimOverride] = React.useState(null);
@@ -128,8 +113,6 @@ export default function LandingPageHabitat({
     [profile?.claimed_rewards]
   );
   const freeGemsClaimed = claimedRewards.includes(YOUTUBE_SUBSCRIBE_REWARD_KEY);
-  const taskQuestClaimed = claimedRewards.includes(TASK_QUEST_REWARD_KEY);
-  const gemsBalance = Number(profile?.gems || 0);
   const rainbowGemsBalance = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
   const today = new Date().toLocaleDateString('en-CA');
   const effectiveLastFreeClaimDate = dailyClaimOverride ?? profile?.last_free_claim_date ?? null;
@@ -142,30 +125,6 @@ export default function LandingPageHabitat({
   const hasClaimedDailyChestToday = formattedLastFreeClaimDate === today;
   const canClaimYoutubeReward = hasClickedSubscribe && !freeGemsClaimed && !isClaimingYoutubeReward;
   const heroBannerCount = heroBanners.length;
-
-  const pushBellNotification = React.useCallback((message) => {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(new CustomEvent(BELL_NOTIFICATION_EVENT, {
-      detail: {
-        message,
-        createdAt: new Date().toISOString(),
-        source: 'task-quest',
-      },
-    }));
-  }, []);
-
-  const activeTaskQuestItems = React.useMemo(
-    () => Array.from(
-      { length: TASKS_PER_QUEST },
-      (_, index) => sanskariTasks[(activeTaskStart + index) % sanskariTasks.length]
-    ),
-    [activeTaskStart]
-  );
-  const allTaskHabitsChecked = React.useMemo(
-    () => taskQuestChecks.every(Boolean),
-    [taskQuestChecks]
-  );
-  const isTaskQuestRewardDisabled = !allTaskHabitsChecked || taskQuestClaimed || isClaimingTaskQuestReward;
 
   const showPaymentToast = React.useCallback((type, message) => {
     setPaymentToast({ type, message });
@@ -239,10 +198,6 @@ export default function LandingPageHabitat({
     user?.id,
   ]);
 
-  const handleToggleTaskQuestCheck = React.useCallback((index) => {
-    setTaskQuestChecks((current) => current.map((value, itemIndex) => (itemIndex === index ? !value : value)));
-  }, []);
-
   const handleSubscribeClick = React.useCallback(() => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY, 'true');
@@ -270,26 +225,6 @@ export default function LandingPageHabitat({
       setWatchEarnMessage(`Nice! ${YOUTUBE_SUBSCRIBE_REWARD_GEMS} Gems added to your wallet.`);
     }
   }, [claimRewardGems, hasClickedSubscribe, showPaymentToast]);
-
-  const handleTaskQuestReward = React.useCallback(async () => {
-    if (!allTaskHabitsChecked) {
-      showPaymentToast('info', 'Complete all 5 habits before claiming this reward.');
-      return;
-    }
-
-    const claimed = await claimRewardGems({
-      rewardKey: TASK_QUEST_REWARD_KEY,
-      gemAmount: TASK_QUEST_REWARD_GEMS,
-      startClaim: () => setIsClaimingTaskQuestReward(true),
-      endClaim: () => setIsClaimingTaskQuestReward(false),
-      successMessage: `Task Quest completed! +${TASK_QUEST_REWARD_GEMS} Gems.`,
-      alreadyClaimedMessage: 'Task Quest reward already claimed.',
-    });
-
-    if (claimed) {
-      pushBellNotification(`Task Quest reward claimed: +${TASK_QUEST_REWARD_GEMS} Gems.`);
-    }
-  }, [allTaskHabitsChecked, claimRewardGems, pushBellNotification, showPaymentToast]);
 
   const showExchangeFeedback = React.useCallback((message, tone) => {
     setExchangeFeedback({ message, tone });
@@ -520,23 +455,6 @@ export default function LandingPageHabitat({
 
     setHeroSlideIndex((current) => (current >= heroBannerCount ? 0 : current));
   }, [heroBannerCount]);
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    const rotationIntervalId = window.setInterval(() => {
-      setActiveTaskStart((current) => (current + TASKS_PER_QUEST) % sanskariTasks.length);
-      pushBellNotification('New tasks available!');
-    }, TASK_ROTATION_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(rotationIntervalId);
-    };
-  }, [pushBellNotification]);
-
-  React.useEffect(() => {
-    setTaskQuestChecks(Array(TASKS_PER_QUEST).fill(false));
-  }, [activeTaskStart]);
 
   const goToPrevBanner = () => {
     if (heroBannerCount <= 1) return;
@@ -871,26 +789,23 @@ export default function LandingPageHabitat({
             </div>
             <div className="relative">
               <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setShowTaskQuest((current) => !current)}
-                  className="rounded-3xl border border-white/80 bg-white/70 p-4 text-left shadow-xl backdrop-blur transition hover:-translate-y-0.5"
-                >
-                  <p className="text-xs font-black uppercase tracking-wider !text-slate-500">Task Quest 🌟</p>
-                  <p className="mt-2 text-4xl">✅💎</p>
-                  <p className="mt-2 text-sm font-bold !text-slate-700">Complete 5 good habits to earn 2 💎!</p>
-                </button>
-                <div className="rounded-3xl border border-white/80 bg-white/70 p-4 shadow-xl backdrop-blur">
-                  <p className="text-xs font-black uppercase tracking-wider !text-slate-500">Treasure Meter</p>
-                  <p className="mt-2 text-2xl font-black !text-blue-900">{gemsBalance} 💎</p>
-                  <p className="mt-1 text-sm font-black !text-fuchsia-700">Mega: {rainbowGemsBalance} 🌈</p>
-                  <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500 transition-all duration-500"
-                      style={{ width: `${Math.min((gemsBalance / 1000) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <p className="mt-2 text-xs font-semibold !text-slate-600">Current gem balance | Mega balance</p>
+                <div className="col-span-2 rounded-3xl border border-white/80 bg-white/70 p-4 shadow-xl backdrop-blur">
+                  <p className="text-xs font-black uppercase tracking-wider !text-slate-500">TREASURES &amp; DAILY GIFT 🎁</p>
+                  <p className="mt-2 text-sm font-black !text-fuchsia-700">Mega Balance</p>
+                  <p className="mt-1 text-3xl font-black !text-blue-900">{rainbowGemsBalance} 🌈</p>
+                  <button
+                    type="button"
+                    onClick={handleClaimDailyChest}
+                    disabled={hasClaimedDailyChestToday}
+                    className={`mt-3 rounded-xl px-4 py-2 text-sm font-black ${
+                      hasClaimedDailyChestToday
+                        ? 'cursor-not-allowed border border-slate-300 bg-slate-300 !text-slate-600'
+                        : 'border border-fuchsia-700 bg-fuchsia-700 !text-white'
+                    }`}
+                  >
+                    {hasClaimedDailyChestToday ? '⏳ Come back tomorrow' : '🎁 Open Daily Chest (+50 💎)'}
+                  </button>
+                  <p className="mt-2 min-h-[1.25rem] text-sm font-semibold !text-emerald-700">{dailyChestMessage}</p>
                 </div>
                 <div className="col-span-2 rounded-3xl border border-white/80 bg-white/70 p-4 shadow-xl backdrop-blur">
                   <p className="text-xs font-black uppercase tracking-wider !text-slate-500">Mega Vault Bank 🏦</p>
@@ -920,79 +835,6 @@ export default function LandingPageHabitat({
                     Go to Mega Vault 🏰
                   </Link>
                 </div>
-                <div className="col-span-2 rounded-3xl border border-white/80 bg-white/70 p-4 shadow-xl backdrop-blur">
-                  <p className="text-xs font-black uppercase tracking-wider !text-slate-500">Aiko&apos;s Daily Magic Chest 🎁</p>
-                  <p className="mt-2 text-sm font-bold !text-slate-700">
-                    {hasClaimedDailyChestToday ? "You opened today's chest!" : 'Aiko has a gift for you today!'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleClaimDailyChest}
-                    disabled={hasClaimedDailyChestToday}
-                    className={`mt-3 rounded-xl px-4 py-2 text-sm font-black ${
-                      hasClaimedDailyChestToday
-                        ? 'cursor-not-allowed border border-slate-300 bg-slate-300 !text-slate-600'
-                        : 'border border-fuchsia-700 bg-fuchsia-700 !text-white'
-                    }`}
-                  >
-                    {hasClaimedDailyChestToday ? 'Come back tomorrow ⏳' : 'Open Chest for 50 💎'}
-                  </button>
-                  <p className="mt-2 min-h-[1.25rem] text-sm font-semibold !text-emerald-700">{dailyChestMessage}</p>
-                </div>
-                {showTaskQuest ? (
-                  <div className="col-span-2 rounded-3xl border border-white/85 bg-white/90 p-4 shadow-xl backdrop-blur">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-black !text-slate-800">Active Task Quest (5 Habits)</p>
-                      <button
-                        type="button"
-                        onClick={() => setShowTaskQuest(false)}
-                        className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-black !text-slate-600"
-                      >
-                        Close
-                      </button>
-                    </div>
-                    <ul className="mt-3 space-y-2">
-                      {activeTaskQuestItems.map((task, index) => (
-                        <li key={task} className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-sm font-semibold !text-slate-700">{task}</span>
-                            <label className="flex items-center gap-2">
-                              <span className="text-xl leading-none">{TASK_QUEST_ANIMALS[index % TASK_QUEST_ANIMALS.length]}</span>
-                              <input
-                                type="checkbox"
-                                checked={taskQuestChecks[index] || false}
-                                onChange={() => handleToggleTaskQuestCheck(index)}
-                                className="h-5 w-5 cursor-pointer rounded-md border-2 border-emerald-300 text-emerald-600 accent-emerald-500"
-                                aria-label={`Mark habit ${index + 1} as completed`}
-                              />
-                            </label>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleTaskQuestReward}
-                        disabled={isTaskQuestRewardDisabled}
-                        className={`rounded-xl px-4 py-2 text-sm font-black transition ${
-                          isTaskQuestRewardDisabled
-                            ? 'cursor-not-allowed border border-slate-200 bg-slate-100 !text-slate-500 opacity-50'
-                            : 'border border-emerald-200 bg-emerald-500 !text-white shadow hover:bg-emerald-600'
-                        }`}
-                      >
-                        {taskQuestClaimed
-                          ? 'Reward Claimed ✅'
-                          : isClaimingTaskQuestReward
-                            ? 'Claiming...'
-                            : 'I completed all 5!'}
-                      </button>
-                      <span className="text-xs font-bold !text-slate-600">
-                        +2 💎 reward and bell notification update
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
                 <div className="col-span-2 rounded-[1.6rem] border border-white/80 bg-gradient-to-r from-white/80 via-sky-50/80 to-white/80 p-5 shadow-xl backdrop-blur">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
