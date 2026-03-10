@@ -36,6 +36,7 @@ function ProfileDropdownMenu({
   const avatarLetter = (user?.email || 'G')[0]?.toUpperCase();
   const isLoggedIn = Boolean(user);
   const gemsBalance = Number(profile?.gems || 0);
+  const rainbowGemsBalance = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
   const level = Math.max(1, Math.floor(gemsBalance / 100) + 1);
   const canSeeAdminPanel =
     user?.email === ADMIN_EMAIL || String(profile?.role || '').toLowerCase() === 'admin';
@@ -62,6 +63,7 @@ function ProfileDropdownMenu({
                 Gems: {gemsBalance}
                 <Gem size={13} className="text-purple-500" />
               </p>
+              <p className="text-xs font-black text-black">Mega: {rainbowGemsBalance} 🌈</p>
               <p className="text-xs font-black text-black">Level: {level}</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-3 text-right">

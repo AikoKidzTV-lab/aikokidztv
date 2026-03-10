@@ -125,6 +125,7 @@ export default function LandingPageHabitat({
   const freeGemsClaimed = claimedRewards.includes(YOUTUBE_SUBSCRIBE_REWARD_KEY);
   const taskQuestClaimed = claimedRewards.includes(TASK_QUEST_REWARD_KEY);
   const gemsBalance = Number(profile?.gems || 0);
+  const rainbowGemsBalance = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
   const canClaimYoutubeReward = hasClickedSubscribe && !freeGemsClaimed && !isClaimingYoutubeReward;
   const heroBannerCount = heroBanners.length;
 
@@ -738,13 +739,14 @@ export default function LandingPageHabitat({
                 <div className="rounded-3xl border border-white/80 bg-white/70 p-4 shadow-xl backdrop-blur">
                   <p className="text-xs font-black uppercase tracking-wider !text-slate-500">Treasure Meter</p>
                   <p className="mt-2 text-2xl font-black !text-blue-900">{gemsBalance} 💎</p>
+                  <p className="mt-1 text-sm font-black !text-fuchsia-700">Mega: {rainbowGemsBalance} 🌈</p>
                   <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500 transition-all duration-500"
                       style={{ width: `${Math.min((gemsBalance / 1000) * 100, 100)}%` }}
                     />
                   </div>
-                  <p className="mt-2 text-xs font-semibold !text-slate-600">Current gem balance</p>
+                  <p className="mt-2 text-xs font-semibold !text-slate-600">Current gem balance | Mega balance</p>
                 </div>
                 {showTaskQuest ? (
                   <div className="col-span-2 rounded-3xl border border-white/85 bg-white/90 p-4 shadow-xl backdrop-blur">

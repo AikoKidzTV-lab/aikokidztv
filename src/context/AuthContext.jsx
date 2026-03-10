@@ -15,11 +15,14 @@ const normalizeProfile = (rawProfile = null, userId = null) => {
   const source = rawProfile && typeof rawProfile === 'object' ? rawProfile : {};
   const toStringArray = (value) => (Array.isArray(value) ? value.filter(Boolean).map(String) : []);
   const gems = Number(source.gems);
+  const rainbowGems = Number(source.rainbow_gems ?? source.rainbowGems);
 
   return {
     ...source,
     id: source.id || userId || null,
     gems: Number.isFinite(gems) ? Math.max(0, Math.floor(gems)) : 0,
+    rainbow_gems: Number.isFinite(rainbowGems) ? Math.max(0, Math.floor(rainbowGems)) : 0,
+    rainbowGems: Number.isFinite(rainbowGems) ? Math.max(0, Math.floor(rainbowGems)) : 0,
     unlocked_zones: toStringArray(source.unlocked_zones),
     unlocked_features: toStringArray(source.unlocked_features),
     unlocked_videos: toStringArray(source.unlocked_videos),
