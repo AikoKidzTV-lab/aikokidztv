@@ -2,12 +2,9 @@ import React from 'react';
 import { Gem } from 'lucide-react';
 
 const USD_TO_INR_RATE = 83;
-
-const calculateDonationGems = (amount) => {
-  const numericAmount = Number(amount);
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) return 0;
-  return Math.ceil(numericAmount * 1.08);
-};
+const COMBO_BASE_PRICE_INR = 599;
+const COMBO_BASE_PURPLE_GEMS = 230;
+const COMBO_BASE_RAINBOW_GEMS = 50;
 
 const convertInrToUsd = (inrAmount) => Number((inrAmount / USD_TO_INR_RATE).toFixed(2));
 const convertUsdToInr = (usdAmount) => Number(usdAmount) * USD_TO_INR_RATE;
@@ -50,8 +47,8 @@ const gemPacks = [
 ];
 
 const SUPPORT_LIMITS = {
-  INR: { min: 250, max: 100000, step: 1 },
-  USD: { min: 3, max: 1200, step: 0.01 },
+  INR: { min: COMBO_BASE_PRICE_INR, max: 100000000, step: 1 },
+  USD: { min: convertInrToUsd(COMBO_BASE_PRICE_INR), max: convertInrToUsd(100000000), step: 0.01 },
 };
 
 const VIP_PASS = {
@@ -81,7 +78,11 @@ export default function GemPacksPricing({ onPay }) {
   const supportAmountInInr = activeCurrency === 'USD'
     ? convertUsdToInr(displaySupportAmount)
     : displaySupportAmount;
-  const donationGemReward = calculateDonationGems(supportAmountInInr);
+  const comboPurpleReward = Math.floor((supportAmountInInr / COMBO_BASE_PRICE_INR) * COMBO_BASE_PURPLE_GEMS);
+  const comboRainbowReward = Math.floor((supportAmountInInr / COMBO_BASE_PRICE_INR) * COMBO_BASE_RAINBOW_GEMS);
+  const comboStartingPrice = activeCurrency === 'USD'
+    ? convertInrToUsd(COMBO_BASE_PRICE_INR)
+    : COMBO_BASE_PRICE_INR;
 
   React.useEffect(() => {
     setCustomSupportAmount(String(SUPPORT_LIMITS[activeCurrency].min));
@@ -141,16 +142,18 @@ export default function GemPacksPricing({ onPay }) {
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="group relative min-w-0 overflow-hidden rounded-2xl border border-rose-300/90 bg-gradient-to-br from-pink-200 via-rose-100 to-yellow-100 p-4 shadow-[0_12px_30px_rgba(244,63,94,0.24)] transition-all duration-300 transform-gpu hover:-translate-y-1 hover:scale-105 hover:shadow-[0_20px_42px_rgba(244,63,94,0.34)] sm:p-5">
           <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-2 text-xs opacity-85">
-            <span>🌸</span>
-            <span>🐼</span>
+            <span>💎</span>
+            <span>🌈</span>
           </div>
 
           <div className="mt-3 flex flex-col items-center text-center">
             <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/90 bg-white/80 text-3xl shadow-md">
-              ☕
+              💎🌈
             </div>
-            <p className="mt-3 text-base font-black !text-slate-900">For Schools & Educators</p>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] !text-rose-700">Custom Support</p>
+            <p className="mt-3 text-base font-black !text-slate-900">Combo Pack for Both Gems</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] !text-rose-700">
+              Starting from just {formatCurrency(comboStartingPrice, activeCurrency)}
+            </p>
           </div>
 
           <div className="mt-3 rounded-xl border border-white/90 bg-white/80 p-3 shadow-sm">
@@ -166,16 +169,19 @@ export default function GemPacksPricing({ onPay }) {
               onChange={(event) => setCustomSupportAmount(event.target.value)}
               className="mt-2 w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-base font-black !text-slate-900 outline-none transition focus:border-rose-400"
             />
-            <p className="mt-2 text-[11px] font-bold !text-slate-600">
-              Min: {formatCurrency(supportLimits.min, activeCurrency)} / Max: {formatCurrency(supportLimits.max, activeCurrency)}
-            </p>
             <p className="mt-1 text-[11px] font-semibold !text-rose-700">
-              Gem rewards are calculated dynamically based on your support! ❤️
+              Get both standard and premium gems together! 💖
             </p>
             <div className="mt-2 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-center">
               <p className="text-[10px] font-black uppercase tracking-[0.14em] !text-rose-500">Estimated Reward</p>
-              <p className="mt-1 inline-flex items-center gap-1 text-lg font-black !text-slate-900">
-                {donationGemReward} Gems <Gem size={18} className="text-purple-500" />
+              <p className="mt-1 inline-flex flex-wrap items-center justify-center gap-2 text-lg font-black !text-slate-900">
+                <span className="inline-flex items-center gap-1">
+                  {comboPurpleReward} 💎
+                </span>
+                <span className="!text-rose-500">+</span>
+                <span className="inline-flex items-center gap-1">
+                  {comboRainbowReward} 🌈
+                </span>
               </p>
             </div>
           </div>
@@ -184,7 +190,13 @@ export default function GemPacksPricing({ onPay }) {
             <button
               type="button"
               onClick={() =>
-                onPay?.('For Schools & Educators', normalizedSupportAmount, donationGemReward, activeCurrency)
+                onPay?.(
+                  'Combo Pack for Both Gems',
+                  normalizedSupportAmount,
+                  comboPurpleReward,
+                  activeCurrency,
+                  { purpleGems: comboPurpleReward, rainbowGems: comboRainbowReward }
+                )
               }
               className="w-full rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(244,63,94,0.35)] transition-all hover:brightness-105"
             >
