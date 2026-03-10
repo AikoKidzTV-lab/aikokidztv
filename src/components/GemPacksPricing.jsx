@@ -142,13 +142,16 @@ export default function GemPacksPricing({ onPay }) {
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="group relative min-w-0 overflow-hidden rounded-2xl border border-rose-300/90 bg-gradient-to-br from-pink-200 via-rose-100 to-yellow-100 p-4 shadow-[0_12px_30px_rgba(244,63,94,0.24)] transition-all duration-300 transform-gpu hover:-translate-y-1 hover:scale-105 hover:shadow-[0_20px_42px_rgba(244,63,94,0.34)] sm:p-5">
           <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-2 text-xs opacity-85">
-            <span>💎</span>
+            <Gem size={14} className="text-purple-500" />
             <span>🌈</span>
           </div>
 
           <div className="mt-3 flex flex-col items-center text-center">
             <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/90 bg-white/80 text-3xl shadow-md">
-              💎🌈
+              <span className="inline-flex items-center gap-1">
+                <Gem size={24} className="text-purple-500" />
+                <span>🌈</span>
+              </span>
             </div>
             <p className="mt-3 text-base font-black !text-slate-900">Combo Pack for Both Gems</p>
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] !text-rose-700">
@@ -176,7 +179,7 @@ export default function GemPacksPricing({ onPay }) {
               <p className="text-[10px] font-black uppercase tracking-[0.14em] !text-rose-500">Estimated Reward</p>
               <p className="mt-1 inline-flex flex-wrap items-center justify-center gap-2 text-lg font-black !text-slate-900">
                 <span className="inline-flex items-center gap-1">
-                  {comboPurpleReward} 💎
+                  {comboPurpleReward} <Gem size={18} className="text-purple-500" />
                 </span>
                 <span className="!text-rose-500">+</span>
                 <span className="inline-flex items-center gap-1">
