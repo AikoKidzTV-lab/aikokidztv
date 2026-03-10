@@ -250,7 +250,7 @@ export default function LandingPageHabitat({
     const currentPurpleGems = Number(profile?.gems || 0);
     const currentRainbowGems = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
 
-    if (currentPurpleGems < 100) {
+    if (currentPurpleGems < 300) {
       showExchangeFeedback('Not enough Purple Gems! 💎', 'error');
       return;
     }
@@ -262,7 +262,7 @@ export default function LandingPageHabitat({
       return;
     }
 
-    const newPurpleGems = Math.max(0, currentPurpleGems - 100);
+    const newPurpleGems = Math.max(0, currentPurpleGems - 300);
     const newRainbowGems = Math.max(0, currentRainbowGems + 10);
 
     updateProfileBalances?.({
@@ -315,7 +315,7 @@ export default function LandingPageHabitat({
     const nowIso = new Date().toISOString();
     const currentGems = Number(profile?.gems || 0);
     const currentRainbowGems = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
-    const newGemsTotal = currentGems + 25;
+    const newGemsTotal = currentGems + 10;
     const newRainbowBalance = currentRainbowGems + 5;
     const previousLastFreeClaimDate = effectiveLastFreeClaimDate;
 
@@ -325,7 +325,7 @@ export default function LandingPageHabitat({
       rainbowGems: newRainbowBalance,
     });
     setDailyClaimOverride(nowIso);
-    showDailyChestFeedback('Yay! +25 💎 and +5 🌈 added!');
+    showDailyChestFeedback('Yay! +10 💎 and +5 🌈 added!');
 
     const { error } = await supabase
       .from('profiles')
@@ -815,7 +815,7 @@ export default function LandingPageHabitat({
                         : 'border border-fuchsia-700 bg-fuchsia-700 !text-white'
                     }`}
                   >
-                    {hasClaimedDailyChestToday ? '⏳ Come back tomorrow' : '🎁 Open Daily Chest (+25 💎 & +5 🌈)'}
+                    {hasClaimedDailyChestToday ? '⏳ Come back tomorrow' : '🎁 Open Daily Chest (+10 💎 & +5 🌈)'}
                   </button>
                   <p className="mt-2 min-h-[1.25rem] text-sm font-semibold !text-emerald-700">{dailyChestMessage}</p>
                 </div>
@@ -827,7 +827,7 @@ export default function LandingPageHabitat({
                     onClick={handleConvertToRainbowGems}
                     className="mt-3 rounded-xl bg-fuchsia-600 px-4 py-2 text-sm font-black text-white"
                   >
-                    Convert 100 💎 to 10 🌈
+                    Convert 300 💎 to 10 🌈
                   </button>
                   <p
                     className={`mt-2 min-h-[1.25rem] text-sm font-semibold ${
