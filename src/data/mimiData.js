@@ -13,13 +13,47 @@ export const puzzleCanvasData = [
 export const patternData = [
   { id: 1, sequence: ["🍎", "🍃", "🍎", "?"], options: ["🍃", "🍎", "🍌"], correct: "🍃" },
   { id: 2, sequence: ["⭐", "🌙", "⭐", "?"], options: ["☀️", "🌙", "⭐"], correct: "🌙" },
-  { id: 3, sequence: ["🐶", "🐱", "🐭", "🐶", "🐱", "?"], options: ["🐹", "🐭", "🐶"], correct: "🐭" }
+  { id: 3, sequence: ["🐶", "🐱", "🐭", "🐶", "🐱", "?"], options: ["🐹", "🐭", "🐶"], correct: "🐭" },
+  { id: 4, sequence: ["🔴", "🔵", "🔴", "🔵", "🔴", "?"], options: ["🟢", "🔴", "🔵"], correct: "🔵" },
+  { id: 5, sequence: ["🚗", "🚕", "🚗", "🚕", "?"], options: ["🚗", "🚕", "🚙"], correct: "🚗" },
+  { id: 6, sequence: ["☀️", "☁️", "🌧️", "☀️", "☁️", "?"], options: ["☀️", "❄️", "🌧️"], correct: "🌧️" },
+  { id: 7, sequence: ["🦋", "🐛", "🦋", "🐛", "?"], options: ["🐝", "🦋", "🐛"], correct: "🦋" },
+  { id: 8, sequence: ["🎸", "🥁", "🎸", "🥁", "?"], options: ["🎹", "🥁", "🎸"], correct: "🎸" },
+  { id: 9, sequence: ["🔼", "🔽", "🔼", "🔽", "?"], options: ["▶️", "🔼", "🔽"], correct: "🔼" },
+  { id: 10, sequence: ["⚽", "🏀", "🏈", "⚽", "🏀", "?"], options: ["🎾", "⚽", "🏈"], correct: "🏈" },
+  { id: 11, sequence: ["🟩", "🟩", "🟨", "🟩", "🟩", "?"], options: ["🟨", "🟩", "🟥"], correct: "🟨" },
+  { id: 12, sequence: ["🥞", "🧇", "🥞", "🧇", "?"], options: ["🍞", "🥞", "🧇"], correct: "🥞" },
+  { id: 13, sequence: ["🚀", "🛸", "🚀", "🛸", "?"], options: ["🚁", "🚀", "🛸"], correct: "🚀" },
+  { id: 14, sequence: ["🦁", "🐯", "🐻", "🦁", "🐯", "?"], options: ["🐨", "🐻", "🦁"], correct: "🐻" },
+  { id: 15, sequence: ["❌", "⭕", "❌", "⭕", "?"], options: ["❌", "⭕", "🛑"], correct: "❌" }
 ];
 
 export const curiousFactsData = [
   { id: 1, question: "Why is the sky blue?", fact: "Sunlight scatters in the atmosphere, and blue light scatters the most!" },
   { id: 2, question: "Do fishes sleep?", fact: "Yes! But they don't have eyelids, so they sleep with their eyes open." },
-  { id: 3, question: "Why do fireflies glow?", fact: "They mix chemicals in their tummy to create light and talk to other fireflies." }
+  { id: 3, question: "Why do fireflies glow?", fact: "They mix chemicals in their tummy to create light and talk to other fireflies." },
+  { id: 4, question: "How many noses does a slug have?", fact: "A slug has FOUR noses to help it smell its food from far away!" },
+  { id: 5, question: "Can it rain diamonds?", fact: "Yes! On planets like Jupiter and Saturn, the weather is so extreme it rains diamonds." },
+  { id: 6, question: "Why do cats purr?", fact: "Cats purr when they are happy, but also to heal themselves when they are scared or hurt." },
+  { id: 7, question: "How long is a day on Venus?", fact: "A day on Venus is longer than a whole year on Venus! It spins extremely slowly." },
+  { id: 8, question: "Do trees talk?", fact: "Yes! Trees use an underground network of mushrooms to send messages and food to each other." },
+  { id: 9, question: "Why are flamingos pink?", fact: "They are born grey! They turn pink because they eat so many pink shrimp." },
+  { id: 10, question: "Are zebras white with black stripes?", fact: "Nope! Zebras actually have black skin, and their white stripes are the add-ons." },
+  { id: 11, question: "How many hearts does an octopus have?", fact: "An octopus has THREE hearts. Two pump blood to the gills, and one to the body." },
+  { id: 12, question: "Can honey go bad?", fact: "Never! Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still safe to eat." },
+  { id: 13, question: "Are bananas really berries?", fact: "Yes! In botany, bananas are classified as berries, but strawberries are NOT!" },
+  { id: 14, question: "Why do we yawn?", fact: "Yawning helps cool down our brain and brings a big rush of oxygen into our body." },
+  { id: 15, question: "Are dinosaurs entirely extinct?", fact: "Not entirely! Birds are actually distant relatives of small, feathered dinosaurs." },
+  { id: 16, question: "How far away is space?", fact: "Space is only about 100 kilometers (62 miles) straight up! If you could drive a car upwards, you'd be there in an hour." },
+  { id: 17, question: "Can you cry in space?", fact: "You can produce tears, but because there is no gravity, they won't fall down your face! They just form a bubble." },
+  { id: 18, question: "Do ants sleep?", fact: "Ants don't sleep like we do. They take hundreds of tiny 1-minute 'power naps' throughout the day!" },
+  { id: 19, question: "Why do our fingers wrinkle in water?", fact: "Your body does it on purpose! The wrinkles give you a better grip on wet objects, like built-in rain tires." },
+  { id: 20, question: "Can a metal be liquid?", fact: "Yes! Mercury is a metal that is a liquid at normal room temperature." },
+  { id: 21, question: "Do polar bears have white skin?", fact: "No! Their skin is actually black to absorb heat from the sun, and their fur is clear (hollow), not white!" },
+  { id: 22, question: "How fast is a sneeze?", fact: "A sneeze can travel out of your nose at over 100 miles per hour!" },
+  { id: 23, question: "Does the Eiffel Tower grow?", fact: "Yes! In the summer, the heat makes the metal expand, and the tower can grow up to 6 inches taller." },
+  { id: 24, question: "What shape is wombat poop?", fact: "Wombat poop is shaped like little cubes so it doesn't roll away from their territory!" },
+  { id: 25, question: "Can frogs freeze and come back to life?", fact: "Yes! The Wood Frog can freeze almost completely solid in winter and thaw out perfectly fine in spring." }
 ];
 
 export const emojiPuzzleData = [
