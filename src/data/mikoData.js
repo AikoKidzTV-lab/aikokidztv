@@ -1,14 +1,29 @@
-﻿export const ecoMissions = [
+export const ecoMissions = [
   "Find a leaf with 3 different colors! 🍂",
   "Spot a bird outside and try to draw it! 🐦",
-  "Find a smooth rock and imagine its journey! 🪨",
   "Count how many trees you can see from your window! 🌳",
   "Help water a plant inside or outside your home! 🪴",
   "Close your eyes and identify 3 different nature sounds! 👂",
   "Find something in nature that is perfectly round! 🌍",
   "Pick up one piece of litter safely and throw it in the bin! ♻️",
   "Look at the clouds and find one that looks like an animal! ☁️",
-  "Hug a tree and say thank you for the oxygen! 🌲"
+  "Hug a tree and say thank you for the oxygen! 🌲",
+  "Find a rock that looks like a heart! 🪨",
+  "Spot a tiny insect working hard, like an ant! 🐜",
+  "Plant a small seed in a pot and give it water! 🌱",
+  "Turn off the tap while brushing your teeth to save water! 🚰",
+  "Turn off the lights when you leave a room to save energy! 💡",
+  "Find a flower but don't pick it—just smell it! 🌸",
+  "Look for animal footprints in the mud or sand! 🐾",
+  "Build a tiny house for a fairy using twigs and leaves! 🪵",
+  "Make a pile of dry leaves and listen to them crunch! 🍂",
+  "Watch a sunset and name all the colors you see! 🌅",
+  "Leave a small bowl of water outside for thirsty birds! 🥣",
+  "Find a piece of moss; touch it gently to feel how soft it is! 🦠",
+  "Try to balance a stick on your finger for 10 seconds! 🌿",
+  "Draw a picture of your favorite animal living in the wild! 🎨",
+  "Walk on grass barefoot (if it's safe) and feel the earth! 👣",
+  "Look at the moon tonight and draw its shape! 🌙"
 ];
 
 export const animalRiddles = [
@@ -19,7 +34,24 @@ export const animalRiddles = [
   { riddle: "I have black and white stripes and look like a horse. Who am I?", answer: "Zebra", emoji: "🦓" },
   { riddle: "I have eight legs and spin webs to catch my dinner. Who am I?", answer: "Spider", emoji: "🕷️" },
   { riddle: "I can fly, but I'm not a bird. I sleep upside down. Who am I?", answer: "Bat", emoji: "🦇" },
-  { riddle: "I have a trunk instead of a nose and big floppy ears. Who am I?", answer: "Elephant", emoji: "🐘" }
+  { riddle: "I have a trunk instead of a nose and big floppy ears. Who am I?", answer: "Elephant", emoji: "🐘" },
+  { riddle: "I love to eat bamboo and I look like a black and white bear. Who am I?", answer: "Panda", emoji: "🐼" },
+  { riddle: "I am pink, I stand on one leg, and I love the water. Who am I?", answer: "Flamingo", emoji: "🦩" },
+  { riddle: "I am very tall, have two humps, and live in the hot desert. Who am I?", answer: "Camel", emoji: "🐫" },
+  { riddle: "I swing from trees, love bananas, and am very playful. Who am I?", answer: "Monkey", emoji: "🐒" },
+  { riddle: "I have a hard shell and snap my claws. You find me at the beach. Who am I?", answer: "Crab", emoji: "🦀" },
+  { riddle: "I slither on the ground and hiss. I have no legs. Who am I?", answer: "Snake", emoji: "🐍" },
+  { riddle: "I am the largest animal in the ocean and blow water from my head. Who am I?", answer: "Blue Whale", emoji: "🐋" },
+  { riddle: "I am a bird that cannot fly, but I love to swim in the ice cold water. Who am I?", answer: "Penguin", emoji: "🐧" },
+  { riddle: "I have a pocket on my tummy to carry my baby, and I love to jump! Who am I?", answer: "Kangaroo", emoji: "🦘" },
+  { riddle: "I am a pet with soft fur, sharp claws, and I say 'Meow'. Who am I?", answer: "Cat", emoji: "🐈" },
+  { riddle: "I am known as man's best friend and I love to fetch sticks. Who am I?", answer: "Dog", emoji: "🐕" },
+  { riddle: "I work hard making honey and I buzz around flowers. Who am I?", answer: "Bee", emoji: "🐝" },
+  { riddle: "I have beautiful wings that used to be a caterpillar. Who am I?", answer: "Butterfly", emoji: "🦋" },
+  { riddle: "I hoot at night and have very big eyes to see in the dark. Who am I?", answer: "Owl", emoji: "🦉" },
+  { riddle: "I live on a farm, I eat grass, and I give you milk. Who am I?", answer: "Cow", emoji: "🐄" },
+  { riddle: "I am a slow reptile that can live for over 100 years and has a thick shell. Who am I?", answer: "Tortoise", emoji: "🐢" },
+  { riddle: "I am black and white, smell really bad when scared, and have a fluffy tail. Who am I?", answer: "Skunk", emoji: "🦨" }
 ];
 
 export const earthFacts = [
