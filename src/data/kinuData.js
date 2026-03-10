@@ -143,11 +143,54 @@ export const sillySolutionChallenges = [
 ];
 
 export const drawingPrompts = [
-  'Draw a flying cat wearing sunglasses!',
-  'Draw a pizza slice playing a guitar!',
-  'Draw a robot octopus painting the ocean!',
-  'Draw a sleepy dragon reading comic books!',
-  'Draw a disco banana on a skateboard!',
+  "Draw a cat wearing a space helmet! 🐱‍🚀",
+  "Design a house made entirely out of candy! 🍬🏡",
+  "Draw your favorite superhero, but as a cute baby! 🦸‍♂️🍼",
+  "Invent a new animal by mixing a lion and a fish! 🦁🐟",
+  "Draw a tree that grows pizzas instead of leaves! 🍕🌳",
+  "Design your dream robot friend. What does it do? 🤖",
+  "Draw a monster that is friendly and loves to bake cookies! 🍪👾",
+  "Imagine and draw what a flying car would look like! 🚗✈️",
+  "Draw a snowman enjoying a sunny day at the beach! ⛄🏖️",
+  "Design a magical sword or wand! What power does it have? ✨",
+  "Draw a dinosaur riding a skateboard! 🦖🛹",
+  "Draw an alien eating a giant ice cream cone! 👽🍦",
+  "Design the ultimate treehouse with a water slide! 🌳🎢",
+  "Draw a pirate ship that flies in the clouds! 🏴‍☠️☁️",
+  "Draw a dog wearing cool sunglasses and a hat! 🐶🕶️",
+  "Imagine a castle sitting on top of a fluffy cloud! 🏰☁️",
+  "Draw a monkey painting a picture on a canvas! 🐒🎨",
+  "Draw a butterfly with rainbow-colored wings! 🦋🌈",
+  "Draw a unicorn having a tea party! 🦄🫖",
+  "Design a rocket ship made entirely out of fruit! 🚀🍉",
+  "Draw a robot dog playing fetch! 🤖🐕",
+  "Imagine a glowing city deep underwater! 🏙️🌊",
+  "Draw a little bird wearing a tiny winter scarf! 🐦🧣",
+  "Draw the biggest, most delicious cupcake ever! 🧁✨",
+  "Draw a snake playing a rock guitar! 🐍🎸"
+];
+
+export const colorMixes = [
+  { question: "What do you get when you mix RED and YELLOW?", answer: "Orange! 🟠", emoji: "🎨" },
+  { question: "What do you get when you mix BLUE and YELLOW?", answer: "Green! 🟢", emoji: "🌿" },
+  { question: "What do you get when you mix RED and BLUE?", answer: "Purple! 🟣", emoji: "🍇" },
+  { question: "What do you get when you mix BLACK and WHITE?", answer: "Grey! ⚪", emoji: "🐘" },
+  { question: "What do you get when you mix RED and WHITE?", answer: "Pink! 🌸", emoji: "🐷" },
+  { question: "How do you make Brown?", answer: "Mix all three primary colors: Red, Blue, and Yellow! 🟤", emoji: "🐻" },
+  { question: "What is a 'Primary' color?", answer: "Red, Blue, and Yellow! You can't make them by mixing other colors.", emoji: "🥇" },
+  { question: "What is a 'Secondary' color?", answer: "A color made by mixing two primary colors (like Orange, Green, or Purple)!", emoji: "🥈" },
+  { question: "What do you get when you mix BLUE and WHITE?", answer: "Light Blue (like the sky)! 🩵", emoji: "☁️" },
+  { question: "What do you get when you mix GREEN and WHITE?", answer: "Mint or Light Green! 🍵", emoji: "🍃" },
+  { question: "What happens if you mix RED and GREEN?", answer: "You usually get a muddy Brown or Grey! 🟤", emoji: "🪵" },
+  { question: "What happens if you mix BLUE and ORANGE?", answer: "They cancel each other out and make Brown! 🟫", emoji: "🥥" },
+  { question: "What happens if you mix YELLOW and PURPLE?", answer: "You get Brown! They are 'complementary' colors.", emoji: "🍂" },
+  { question: "How do you make the color Peach?", answer: "Mix Yellow, Red (to make orange), and a lot of White! 🍑", emoji: "🎨" },
+  { question: "What color do you get if you mix BLACK and RED?", answer: "Dark Red or Maroon! 🍷", emoji: "🐞" },
+  { question: "How do you make Navy Blue?", answer: "Mix a little bit of Black into Blue! 🌌", emoji: "👖" },
+  { question: "What do you get when you mix Yellow and Green?", answer: "Yellow-Green or Lime Green! 🍋", emoji: "🦎" },
+  { question: "What are 'Warm' colors?", answer: "Colors like Red, Orange, and Yellow! They remind us of the sun and fire. 🔥", emoji: "☀️" },
+  { question: "What are 'Cool' colors?", answer: "Colors like Blue, Green, and Purple! They remind us of water and ice. ❄️", emoji: "🌊" },
+  { question: "Can you make Red by mixing other colors?", answer: "No! Red is a Primary color. You just have to buy it! 🖍️", emoji: "🍎" }
 ];
 
 export const kinuJokes = [
