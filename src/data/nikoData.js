@@ -54,7 +54,17 @@ export const healthyHabits = [
   "Limit your screen time and go play outside for an hour! ☀️",
   "Cough or sneeze into your elbow to protect your friends from germs! 🤧",
   "Always wear a helmet when riding your bike or scooter! 🚴‍♂️",
-  "Eat a colorful fruit like an apple or banana for your snack! 🍎"
+  "Eat a colorful fruit like an apple or banana for your snack! 🍎",
+  "Stand up straight and tall to keep your spine healthy! 🧍‍♂️",
+  "Look both ways before crossing the street! 🚦",
+  "Wear sunscreen when playing outside in the hot sun! 🧴",
+  "Try to eat a rainbow of foods every day (red apples, orange carrots, green spinach)! 🌈",
+  "Help clean up your toys so nobody trips and falls! 🧸",
+  "Take a bath or shower to keep your body clean and fresh! 🛀",
+  "Listen to your body—stop eating when your tummy feels full! 🍽️",
+  "Drink milk or eat yogurt to build strong bones! 🥛",
+  "Wear a seatbelt every single time you ride in a car! 🚗",
+  "Smile and laugh every day—it's good for your heart! 😄"
 ];
 
 export const teamworkScenarios = [
@@ -62,7 +72,17 @@ export const teamworkScenarios = [
   { title: "The Ball Hog", scenario: "A player on your team won't pass the ball to anyone.", options: ["Push them", "Stop playing", "Politely ask them to pass and remind them it's a team game"], correct: "Politely ask them to pass and remind them it's a team game", emoji: "⚽" },
   { title: "The Losing Game", scenario: "Your team is losing by 10 points and the game is almost over.", options: ["Give up and sit down", "Keep playing your best until the whistle blows", "Blame the referee"], correct: "Keep playing your best until the whistle blows", emoji: "⏱️" },
   { title: "The Injured Player", scenario: "A player from the OTHER team falls down and hurts their knee.", options: ["Laugh at them", "Ignore them", "Check if they are okay and help them up"], correct: "Check if they are okay and help them up", emoji: "🤝" },
-  { title: "The Winning Goal", scenario: "Your teammate scores the winning point!", options: ["Say nothing", "High-five them and celebrate together", "Say you could have done it better"], correct: "High-five them and celebrate together", emoji: "🏆" }
+  { title: "The Winning Goal", scenario: "Your teammate scores the winning point!", options: ["Say nothing", "High-five them and celebrate together", "Say you could have done it better"], correct: "High-five them and celebrate together", emoji: "🏆" },
+  { title: "The Disagreement", scenario: "You and your friend want to play different games.", options: ["Argue until you win", "Play Rock-Paper-Scissors to decide fairly", "Go home"], correct: "Play Rock-Paper-Scissors to decide fairly", emoji: "✌️" },
+  { title: "The New Player", scenario: "A kid joins your game but doesn't know the rules.", options: ["Kick them out", "Patiently teach them the rules", "Laugh at their mistakes"], correct: "Patiently teach them the rules", emoji: "📖" },
+  { title: "The Mistake", scenario: "You accidentally kick the ball into your own team's goal.", options: ["Blame the goalie", "Run away and hide", "Apologize to your team and try harder next time"], correct: "Apologize to your team and try harder next time", emoji: "🤦‍♂️" },
+  { title: "The Equipment", scenario: "There is only one basketball left at recess.", options: ["Grab it and run", "Fight over it", "Suggest a game where everyone can share the ball"], correct: "Suggest a game where everyone can share the ball", emoji: "🏀" },
+  { title: "The Tired Friend", scenario: "Your teammate is out of breath and needs a break.", options: ["Tell them to run faster", "Let them rest and sub them out for a few minutes", "Ignore them"], correct: "Let them rest and sub them out for a few minutes", emoji: "😮‍💨" },
+  { title: "The Cheater", scenario: "Someone on the other team isn't following the rules.", options: ["Cheat back", "Yell and stop the game", "Calmly remind them that it's more fun when it's fair"], correct: "Calmly remind them that it's more fun when it's fair", emoji: "🛑" },
+  { title: "The Coach's Speech", scenario: "Your coach is explaining the plan for the next game.", options: ["Talk to your friend", "Listen quietly and pay attention", "Play with the grass"], correct: "Listen quietly and pay attention", emoji: "🗣️" },
+  { title: "The Heavy Box", scenario: "The teacher needs help moving a heavy box of sports gear.", options: ["Watch them struggle", "Ask a teammate to help you lift it together", "Say your arms hurt"], correct: "Ask a teammate to help you lift it together", emoji: "📦" },
+  { title: "The Tie Game", scenario: "The game ends in a tie. Nobody wins or loses.", options: ["Get angry", "Demand extra time", "Shake hands and say 'Good Game!'"], correct: "Shake hands and say 'Good Game!'", emoji: "🤝" },
+  { title: "The Practice", scenario: "You don't want to go to practice today.", options: ["Make up an excuse", "Remember that practice makes you better and go anyway", "Quit the team"], correct: "Remember that practice makes you better and go anyway", emoji: "🏋️" }
 ];
 
 export const fitnessMissions = fitnessChallenges;
