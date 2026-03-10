@@ -49,7 +49,17 @@ export const affirmations = [
   "Every day I am getting stronger and smarter! 🧠",
   "I choose to be positive and spread happiness! 😊",
   "I believe in myself and my team! ⭐",
-  "I am proud of who I am becoming! 🌻"
+  "I am proud of who I am becoming! 🌻",
+  "I am a good listener and I respect others' feelings! 👂",
+  "I have a beautiful imagination and can create wonderful things! 🎨",
+  "It is okay to ask for help when I don't know the answer! 🙋‍♂️",
+  "I treat everyone equally, no matter how different they are! 🌍",
+  "I am calm and take deep breaths when I feel angry or upset! 🧘‍♀️",
+  "I am a problem solver, not a complainer! 🧩",
+  "I make healthy choices for my body and my mind! 🍎",
+  "My voice matters and I speak up for what is right! 🗣️",
+  "I am grateful for all the good things in my life! 🙏",
+  "I am enough, exactly as I am right now! 💖"
 ];
 
 export const leadershipChallenges = [
@@ -59,7 +69,18 @@ export const leadershipChallenges = [
   "Challenge: Try to go a whole day without complaining about anything! 🤐",
   "Challenge: Find someone who looks sad and try to make them smile! 😄",
   "Challenge: Organize your books or toys into neat, easy-to-find piles! 📚",
-  "Challenge: Ask for help when you need it – real leaders know they can't do everything alone! 🙋‍♂️"
+  "Challenge: Ask for help when you need it – real leaders know they can't do everything alone! 🙋‍♂️",
+  "Challenge: Let someone else choose the game you play today! 🎮",
+  "Challenge: Give 3 genuine compliments to 3 different people! 🌟",
+  "Challenge: Pick up 3 pieces of litter and throw them in the recycling bin safely! ♻️",
+  "Challenge: Write a 'Thank You' note to a teacher or parent! 📝",
+  "Challenge: Apologize to someone if you made a mistake today! 🤝",
+  "Challenge: Stand up for a kid who is being left out of a game! 🛡️",
+  "Challenge: Listen to someone tell a story without interrupting them once! 🤫",
+  "Challenge: Help cook or prepare a meal for your family! 🥗",
+  "Challenge: Share your favorite snack or toy with a friend! 🥨",
+  "Challenge: Take 5 deep breaths and count to 10 the next time you feel frustrated! 🧘‍♂️",
+  "Challenge: Practice looking people in the eye when you speak to them! 👀"
 ];
 
 export const HERO_MISSIONS = leadershipChallenges;
