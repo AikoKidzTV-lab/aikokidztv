@@ -85,14 +85,30 @@ const CheckoutModal = ({ plan, isOpen, onClose }) => {
     setError('');
 
     try {
+      const planName = plan.name || '';
+      const planGems = plan.gems || '0';
+      const gemsToAdd = planName.includes('Family')
+        ? 99999
+        : (parseInt(String(planGems).replace(/\D/g, ''), 10) || 0);
+      const rainbowRewardRaw =
+        plan?.rainbowGems ??
+        plan?.rainbow_gems ??
+        plan?.rewards?.rainbowGems ??
+        plan?.rewards?.rainbow_gems ??
+        0;
+      const rainbowGemsToAdd = Number.isFinite(Number(rainbowRewardRaw))
+        ? Math.max(0, Math.floor(Number(rainbowRewardRaw)))
+        : 0;
+
       // Razorpay order payload (USD, sub-units)
       const razorpayOrder = {
         amount: amountInCents, // cents for USD
         currency,
-        receipt: `order_${plan.name || 'plan'}`,
+        receipt: `order_${planName || 'plan'}`,
         notes: {
-          plan: plan.name || 'Unknown Plan',
-          gems: plan.gems || ''
+          plan: planName || 'Unknown Plan',
+          gems: planGems || '',
+          rainbow_gems: rainbowGemsToAdd || '',
         }
       };
       console.log('Razorpay order payload (ready to send to backend):', razorpayOrder);
@@ -103,8 +119,8 @@ const CheckoutModal = ({ plan, isOpen, onClose }) => {
         .insert({
           user_id: user.id,
           amount: finalPrice,
-          gems_added: parseInt((plan.gems || '0').replace(/\D/g, '')) || 99999, // Handle "Unlimited" case carefully
-          plan_name: plan.name || 'Unknown Plan',
+          gems_added: gemsToAdd,
+          plan_name: planName || 'Unknown Plan',
         });
 
       if (txError) throw txError;
@@ -113,18 +129,22 @@ const CheckoutModal = ({ plan, isOpen, onClose }) => {
       // First get current gems
       const { data: profile } = await supabase
         .from('profiles')
-        .select('gems')
+        .select('gems, rainbow_gems')
         .eq('id', user.id)
         .single();
       
       const currentGems = profile?.gems || 0;
-      const planName = plan.name || '';
-      const planGems = plan.gems || '0';
-      const gemsToAdd = planName.includes("Family") ? 99999 : (parseInt(planGems.replace(/\D/g, '')) || 0);
-      
+      const currentRainbowGems = Number(profile?.rainbow_gems || 0);
+      const profileUpdate = {
+        gems: currentGems + gemsToAdd,
+      };
+      if (rainbowGemsToAdd > 0) {
+        profileUpdate.rainbow_gems = currentRainbowGems + rainbowGemsToAdd;
+      }
+
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ gems: currentGems + gemsToAdd })
+        .update(profileUpdate)
         .eq('id', user.id);
 
       if (updateError) throw updateError;

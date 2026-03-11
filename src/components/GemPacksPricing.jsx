@@ -54,6 +54,7 @@ const SUPPORT_LIMITS = {
 const VIP_PASS = {
   title: 'Semi-Monthly VIP Pass',
   gems: 920,
+  rainbowGems: 100,
   prices: { INR: 4999, USD: convertInrToUsd(4999) },
 };
 
@@ -261,14 +262,28 @@ export default function GemPacksPricing({ onPay }) {
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.22em] !text-sky-200">Limited Membership</p>
             <p className="mt-1 text-sm font-semibold leading-relaxed !text-white sm:text-base">
-              Semi-Monthly VIP Pass: Get 200 Gems every month for 4 months + 120 Instant Bonus Gems! ✨
+              <span className="inline-flex flex-wrap items-center gap-1">
+                <span>Semi-Monthly VIP Pass: Get 200</span>
+                <Gem size={14} className="text-purple-500" />
+                <span>every month for 4 months + 120 Instant Bonus</span>
+                <Gem size={14} className="text-purple-500" />
+                <span>AND 100 Premium 🌈! ✨</span>
+              </span>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-xl font-black !text-amber-300">Price: {formatCurrency(VIP_PASS.prices[activeCurrency], activeCurrency)}</p>
             <button
               type="button"
-              onClick={() => onPay?.(VIP_PASS.title, VIP_PASS.prices[activeCurrency], VIP_PASS.gems, activeCurrency)}
+              onClick={() =>
+                onPay?.(
+                  VIP_PASS.title,
+                  VIP_PASS.prices[activeCurrency],
+                  VIP_PASS.gems,
+                  activeCurrency,
+                  { purpleGems: VIP_PASS.gems, rainbowGems: VIP_PASS.rainbowGems }
+                )
+              }
               className="rounded-xl bg-white px-4 py-2 text-sm font-black !text-slate-900 shadow-lg transition hover:bg-slate-100"
             >
               Claim VIP Pass

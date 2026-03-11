@@ -368,6 +368,75 @@ export default function LandingPageHabitat({
     user?.id,
   ]);
 
+  const handleGemPackPurchase = React.useCallback(async (
+    planName,
+    _planPrice,
+    planGems,
+    _currency,
+    rewards = {}
+  ) => {
+    const userId = user?.id || authUser?.id || null;
+    if (!userId) {
+      showPaymentToast('info', 'Please log in to claim this pack.');
+      onOpenLogin?.();
+      return;
+    }
+
+    const purpleReward = Number.isFinite(Number(rewards?.purpleGems ?? planGems))
+      ? Math.max(0, Math.floor(Number(rewards?.purpleGems ?? planGems)))
+      : 0;
+    const rainbowReward = Number.isFinite(Number(rewards?.rainbowGems))
+      ? Math.max(0, Math.floor(Number(rewards?.rainbowGems)))
+      : 0;
+
+    if (purpleReward <= 0 && rainbowReward <= 0) {
+      showPaymentToast('error', 'Invalid pack reward. Please try again.');
+      return;
+    }
+
+    const currentPurpleGems = Number(profile?.gems || 0);
+    const currentRainbowGems = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
+    const nextPurpleGems = currentPurpleGems + purpleReward;
+    const nextRainbowGems = currentRainbowGems + rainbowReward;
+
+    updateProfileBalances?.({
+      gems: nextPurpleGems,
+      rainbow_gems: nextRainbowGems,
+      rainbowGems: nextRainbowGems,
+    });
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ gems: nextPurpleGems, rainbow_gems: nextRainbowGems })
+      .eq('id', userId);
+
+    if (error) {
+      updateProfileBalances?.({
+        gems: currentPurpleGems,
+        rainbow_gems: currentRainbowGems,
+        rainbowGems: currentRainbowGems,
+      });
+      showPaymentToast('error', error.message || 'Could not process purchase. Please try again.');
+      return;
+    }
+
+    const rewardLabel = rainbowReward > 0
+      ? `${purpleReward} Gems + ${rainbowReward} 🌈`
+      : `${purpleReward} Gems`;
+    showPaymentToast('success', `${planName} unlocked! Added ${rewardLabel}.`);
+    void fetchProfile?.(userId);
+  }, [
+    authUser?.id,
+    fetchProfile,
+    onOpenLogin,
+    profile?.gems,
+    profile?.rainbowGems,
+    profile?.rainbow_gems,
+    showPaymentToast,
+    updateProfileBalances,
+    user?.id,
+  ]);
+
   React.useEffect(() => {
     setDailyClaimOverride(profile?.last_free_claim_date ?? null);
   }, [profile?.last_free_claim_date]);
@@ -609,7 +678,7 @@ export default function LandingPageHabitat({
         </div>
 
         <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
-          {!isKidsModeOn && <GemPacksPricing />}
+          {!isKidsModeOn && <GemPacksPricing onPay={handleGemPackPurchase} />}
 
           <div className="mt-14 space-y-10">
             <div
