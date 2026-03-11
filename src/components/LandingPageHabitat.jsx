@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Gem } from 'lucide-react';
 import AIStudio from './AIStudio';
 import GemPacksPricing from './GemPacksPricing';
 import LearningZone from './LearningZone';
@@ -97,8 +98,8 @@ export default function LandingPageHabitat({
   const [heroBannersLoading, setHeroBannersLoading] = React.useState(true);
   const [heroBannersError, setHeroBannersError] = React.useState('');
   const [isClaimingYoutubeReward, setIsClaimingYoutubeReward] = React.useState(false);
-  const [exchangeFeedback, setExchangeFeedback] = React.useState({ message: '', tone: 'neutral' });
-  const [dailyChestMessage, setDailyChestMessage] = React.useState('');
+  const [exchangeFeedback, setExchangeFeedback] = React.useState({ message: null, tone: 'neutral' });
+  const [dailyChestMessage, setDailyChestMessage] = React.useState(null);
   const [dailyClaimOverride, setDailyClaimOverride] = React.useState(null);
   const [hasClickedSubscribe, setHasClickedSubscribe] = React.useState(() => {
     if (typeof window === 'undefined') return false;
@@ -232,7 +233,7 @@ export default function LandingPageHabitat({
       clearTimeout(exchangeFeedbackTimerRef.current);
     }
     exchangeFeedbackTimerRef.current = setTimeout(() => {
-      setExchangeFeedback({ message: '', tone: 'neutral' });
+      setExchangeFeedback({ message: null, tone: 'neutral' });
     }, 2000);
   }, []);
 
@@ -242,7 +243,7 @@ export default function LandingPageHabitat({
       clearTimeout(dailyChestMessageTimerRef.current);
     }
     dailyChestMessageTimerRef.current = setTimeout(() => {
-      setDailyChestMessage('');
+      setDailyChestMessage(null);
     }, 2000);
   }, []);
 
@@ -251,7 +252,12 @@ export default function LandingPageHabitat({
     const currentRainbowGems = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
 
     if (currentPurpleGems < 300) {
-      showExchangeFeedback('Not enough Purple Gems! 💎', 'error');
+      showExchangeFeedback(
+        <>
+          Not enough Purple Gems! <Gem size={13} className="text-purple-500" />
+        </>,
+        'error'
+      );
       return;
     }
 
@@ -325,7 +331,11 @@ export default function LandingPageHabitat({
       rainbowGems: newRainbowBalance,
     });
     setDailyClaimOverride(nowIso);
-    showDailyChestFeedback('Yay! +10 💎 and +5 🌈 added!');
+    showDailyChestFeedback(
+      <>
+        Yay! +10 <Gem size={13} className="text-purple-500" /> and +5 🌈 added!
+      </>
+    );
 
     const { error } = await supabase
       .from('profiles')
@@ -815,7 +825,13 @@ export default function LandingPageHabitat({
                         : 'border border-fuchsia-700 bg-fuchsia-700 !text-white'
                     }`}
                   >
-                    {hasClaimedDailyChestToday ? '⏳ Come back tomorrow' : '🎁 Open Daily Chest (+10 💎 & +5 🌈)'}
+                    {hasClaimedDailyChestToday ? (
+                      '⏳ Come back tomorrow'
+                    ) : (
+                      <span className="inline-flex items-center gap-1">
+                        🎁 Open Daily Chest (+10 <Gem size={13} className="text-purple-500" /> &amp; +5 🌈)
+                      </span>
+                    )}
                   </button>
                   <p className="mt-2 min-h-[1.25rem] text-sm font-semibold !text-emerald-700">{dailyChestMessage}</p>
                 </div>
@@ -827,7 +843,9 @@ export default function LandingPageHabitat({
                     onClick={handleConvertToRainbowGems}
                     className="mt-3 rounded-xl bg-fuchsia-600 px-4 py-2 text-sm font-black text-white"
                   >
-                    Convert 300 💎 to 10 🌈
+                    <span className="inline-flex items-center gap-1">
+                      Convert 300 <Gem size={13} className="text-purple-500" /> to 10 🌈
+                    </span>
                   </button>
                   <p
                     className={`mt-2 min-h-[1.25rem] text-sm font-semibold ${
@@ -882,7 +900,9 @@ export default function LandingPageHabitat({
               The Ocean • Watch &amp; Earn
             </p>
             <h2 className="mt-3 text-3xl font-black sm:text-4xl !text-white">
-              Want Free Gems? 💎
+              <span className="inline-flex items-center gap-2">
+                Want Free Gems? <Gem size={22} className="text-purple-500" />
+              </span>
             </h2>
             <p className="mx-auto mt-3 max-w-3xl text-sm sm:text-base !text-blue-50/95">
               Explore our official channel and enjoy family-friendly adventures from AikoKidzTV.

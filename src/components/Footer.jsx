@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, MapPin } from 'lucide-react';
+import { X, Mail, MapPin, Gem } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const footerPanelClass =
@@ -14,16 +14,25 @@ const footerInfoCardClass =
 
 const economyGuideItems = [
   {
-    emoji: '💎',
+    emoji: '🎯',
     title: 'Daily Quests & Free Gems',
-    description:
-      "Log in every day to open Aiko's Daily Magic Chest and earn free Purple Gems (💎)! Complete fun daily habits to earn even more.",
+    description: (
+      <>
+        Log in every day to open Aiko&apos;s Daily Magic Chest and earn free Purple Gems (
+        <Gem size={13} className="text-purple-500" />
+        )! Complete fun daily habits to earn even more.
+      </>
+    ),
   },
   {
     emoji: '🌈',
     title: 'Standard vs. Premium Gems',
-    description:
-      'Use Purple Gems (💎) for basic activities. Convert them at the Bank or get Combo Packs to earn Premium Rainbow Gems (🌈)!',
+    description: (
+      <>
+        Use Purple Gems (<Gem size={13} className="text-purple-500" />) for basic activities. Convert them at the
+        Bank or get Combo Packs to earn Premium Rainbow Gems (🌈)!
+      </>
+    ),
   },
   {
     emoji: '🎁',

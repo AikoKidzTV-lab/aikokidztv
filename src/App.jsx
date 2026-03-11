@@ -23,7 +23,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { KidsModeProvider, useKidsMode } from './context/KidsModeContext';
 import { AuthModalProvider, useAuthModal } from './context/AuthModalContext';
 import { ParentControlsProvider } from './context/ParentControlsContext';
-import { ChevronDown, Sparkles, LogOut, Bell } from 'lucide-react';
+import { ChevronDown, Sparkles, LogOut, Bell, Gem } from 'lucide-react';
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { ADMIN_EMAIL, isAdminEmail } from './utils/admin';
 import ParentZoneHubPage from './components/parentZone/ParentZoneHubPage';
@@ -160,7 +160,9 @@ const TimeUpOverlay = ({ usedMinutes = 0, onOpenParentZone }) => (
           {'\u{1F6E1}\uFE0F'} Parent Zone
         </button>
         <div className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-600">
-          See you tomorrow, explorer {'\u{1F48E}'}
+          <span className="inline-flex items-center gap-1">
+            See you tomorrow, explorer <Gem size={13} className="text-purple-500" />
+          </span>
         </div>
       </div>
     </div>

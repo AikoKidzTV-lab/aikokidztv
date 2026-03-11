@@ -1,4 +1,5 @@
 import React from 'react';
+import { Gem } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useKidsMode } from '../context/KidsModeContext';
 import { LEARNING_ZONE_PREMIUM_UNLOCKS } from '../constants/gemEconomy';
@@ -92,7 +93,7 @@ const learningBoxes = [
 export default function LearningZone({ onSelect }) {
   const { user, profile, fetchProfile } = useAuth();
   const { isKidsModeOn } = useKidsMode();
-  const [statusMessage, setStatusMessage] = React.useState('');
+  const [statusMessage, setStatusMessage] = React.useState(null);
   const [processingAction, setProcessingAction] = React.useState('');
   const [guestGems, setGuestGems] = React.useState(() => readGuestGems());
   const [guestUnlockedZones, setGuestUnlockedZones] = React.useState(() => readGuestUnlockedZones());
@@ -179,7 +180,7 @@ export default function LearningZone({ onSelect }) {
       window.clearTimeout(statusTimeoutRef.current);
     }
     setStatusMessage(message);
-    statusTimeoutRef.current = window.setTimeout(() => setStatusMessage(''), 2600);
+    statusTimeoutRef.current = window.setTimeout(() => setStatusMessage(null), 2600);
   }, []);
 
   const canAccessCard = React.useCallback(
@@ -243,7 +244,11 @@ export default function LearningZone({ onSelect }) {
 
         const currentGems = Number(dbProfile?.gems || 0);
         if (!Number.isFinite(currentGems) || currentGems < unlockCost) {
-          showStatus(`Not enough Gems. ${box.title} needs ${unlockCost} \u{1F48E}.`);
+          showStatus(
+            <>
+              Not enough Gems. {box.title} needs {unlockCost} <Gem size={13} className="text-purple-500" />.
+            </>
+          );
           return;
         }
 
@@ -276,13 +281,21 @@ export default function LearningZone({ onSelect }) {
 
         setDbUnlockedModules((current) => [...new Set([...current, normalizedModuleId])]);
         setLocalGemBalance(nextGems);
-        showStatus(`${box.title} unlocked permanently for ${unlockCost} \u{1F48E}`);
+        showStatus(
+          <>
+            {box.title} unlocked permanently for {unlockCost} <Gem size={13} className="text-purple-500" />
+          </>
+        );
         void fetchProfile?.(user.id);
         return;
       }
 
       if (guestGems < unlockCost) {
-        showStatus(`Not enough Gems. ${box.title} needs ${unlockCost} \u{1F48E}.`);
+        showStatus(
+          <>
+            Not enough Gems. {box.title} needs {unlockCost} <Gem size={13} className="text-purple-500" />.
+          </>
+        );
         return;
       }
 
@@ -292,7 +305,11 @@ export default function LearningZone({ onSelect }) {
       setGuestUnlockedZones(nextGuestUnlocks);
       writeGuestGems(nextGuestGems);
       writeGuestUnlockedZones(nextGuestUnlocks);
-      showStatus(`${box.title} unlocked for ${unlockCost} \u{1F48E} (guest wallet).`);
+      showStatus(
+        <>
+          {box.title} unlocked for {unlockCost} <Gem size={13} className="text-purple-500" /> (guest wallet).
+        </>
+      );
     } catch (error) {
       console.error('[LearningZone] Premium unlock failed:', error);
       showStatus(error?.message || 'Unlock failed. Please try again.');
@@ -316,10 +333,16 @@ export default function LearningZone({ onSelect }) {
       <div className="mb-8 rounded-3xl border border-indigo-200 bg-indigo-50 p-5 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-base font-bold text-indigo-900">
-            Current Gems: <span className="font-black">{currentDisplayedGems} {'\u{1F48E}'}</span>
+            Current Gems:{' '}
+            <span className="inline-flex items-center gap-1 font-black">
+              {currentDisplayedGems}
+              <Gem size={13} className="text-purple-500" />
+            </span>
           </p>
           <p className="text-sm font-semibold text-indigo-700">
-            Premium unlocks: Colors & Shapes ({premiumUnlocks.colors} {'\u{1F48E}'}), Animal Safari ({premiumUnlocks.animals} {'\u{1F48E}'})
+            Premium unlocks: Colors & Shapes ({premiumUnlocks.colors}{' '}
+            <Gem size={13} className="text-purple-500" />), Animal Safari ({premiumUnlocks.animals}{' '}
+            <Gem size={13} className="text-purple-500" />)
           </p>
         </div>
       </div>
@@ -370,7 +393,12 @@ export default function LearningZone({ onSelect }) {
                   >
                     {processingAction === box.id
                       ? 'Unlocking...'
-                      : `Unlock for ${user?.id ? box.unlockCost : box.guestUnlockCost} \u{1F48E}`}
+                      : (
+                        <>
+                          Unlock for {user?.id ? box.unlockCost : box.guestUnlockCost}{' '}
+                          <Gem size={13} className="text-purple-500" />
+                        </>
+                      )}
                   </button>
                 )}
               </div>
