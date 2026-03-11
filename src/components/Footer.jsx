@@ -12,6 +12,33 @@ const footerLinkClass =
 const footerInfoCardClass =
   'rounded-2xl border border-white/75 bg-white/52 px-3.5 py-3 text-sm text-slate-800 shadow-[0_10px_28px_rgba(15,23,42,0.07)] backdrop-blur-xl';
 
+const economyGuideItems = [
+  {
+    emoji: '💎',
+    title: 'Daily Quests & Free Gems',
+    description:
+      "Log in every day to open Aiko's Daily Magic Chest and earn free Purple Gems (💎)! Complete fun daily habits to earn even more.",
+  },
+  {
+    emoji: '🌈',
+    title: 'Standard vs. Premium Gems',
+    description:
+      'Use Purple Gems (💎) for basic activities. Convert them at the Bank or get Combo Packs to earn Premium Rainbow Gems (🌈)!',
+  },
+  {
+    emoji: '🎁',
+    title: 'Mega Vault Packs',
+    description:
+      'Use your Rainbow Gems to unlock Mega Vault Packs permanently! Each pack is a one-time unlock packed with 250 premium, ad-free questions (like Deep Space, Dino Secrets, etc.).',
+  },
+  {
+    emoji: '🚀',
+    title: 'Combo Packs & Support',
+    description:
+      'Want to unlock things faster? Our Combo Packs give you a huge boost of both Purple and Rainbow gems while supporting our educational platform!',
+  },
+];
+
 const LegalModal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
 
@@ -181,6 +208,34 @@ const Footer = () => {
                 </a>
               </div>
               <p className="mt-3 text-xs font-semibold text-slate-700">Follow our journey and upcoming launches.</p>
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-3xl border border-white/75 bg-gradient-to-br from-sky-50/85 via-violet-50/80 to-amber-50/80 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.1)] sm:p-6">
+            <div className="mb-5 flex flex-col gap-2 text-left">
+              <p className="inline-flex w-fit rounded-full border border-white/85 bg-white/70 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-700">
+                Game Economy Guide
+              </p>
+              <h4 className="text-xl font-black text-slate-900">🌟 How to Play &amp; Earn</h4>
+              <p className="text-sm font-semibold leading-relaxed text-slate-700">
+                A quick and friendly guide for kids and parents to understand gems, packs, and smart progress.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {economyGuideItems.map((item) => (
+                <article
+                  key={item.title}
+                  className="rounded-2xl border border-white/85 bg-white/72 p-4 text-left shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
+                >
+                  <h5 className="text-base font-black text-slate-900">
+                    <span className="mr-2" aria-hidden="true">
+                      {item.emoji}
+                    </span>
+                    {item.title}
+                  </h5>
+                  <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-700">{item.description}</p>
+                </article>
+              ))}
             </div>
           </div>
 
