@@ -257,7 +257,7 @@ export default function GemPacksPricing({ onPay }) {
           </div>
         ))}
       </div>
-      <div className="mt-6 rounded-2xl border border-white/90 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 px-4 py-4 shadow-xl sm:px-6">
+      <div className="mt-6 rounded-2xl border border-white/55 bg-slate-900/30 px-4 py-4 shadow-[0_20px_50px_rgba(15,23,42,0.2)] backdrop-blur-2xl sm:px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.22em] !text-sky-200">Limited Membership</p>
@@ -284,7 +284,7 @@ export default function GemPacksPricing({ onPay }) {
                   { purpleGems: VIP_PASS.gems, rainbowGems: VIP_PASS.rainbowGems }
                 )
               }
-              className="rounded-xl bg-white px-4 py-2 text-sm font-black !text-slate-900 shadow-lg transition hover:bg-slate-100"
+              className="rounded-xl border border-white/70 bg-white/70 px-4 py-2 text-sm font-black !text-slate-900 shadow-lg backdrop-blur-xl"
             >
               Claim VIP Pass
             </button>

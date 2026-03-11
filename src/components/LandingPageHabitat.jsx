@@ -910,7 +910,7 @@ export default function LandingPageHabitat({
                   <button
                     type="button"
                     onClick={handleConvertToRainbowGems}
-                    className="mt-3 rounded-xl bg-fuchsia-600 px-4 py-2 text-sm font-black text-white"
+                    className="mt-3 inline-flex rounded-xl border border-white/45 bg-slate-900/35 px-4 py-2 text-sm font-black text-white backdrop-blur-xl shadow-[0_10px_24px_rgba(15,23,42,0.24)]"
                   >
                     <span className="inline-flex items-center gap-1">
                       Convert 300 <Gem size={13} className="text-purple-500" /> to 10 🌈
@@ -929,7 +929,7 @@ export default function LandingPageHabitat({
                   </p>
                   <Link
                     to="/mega-vault"
-                    className="mt-2 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-black text-white"
+                    className="mt-2 inline-flex rounded-xl border border-cyan-100/45 bg-indigo-900/35 px-4 py-2 text-sm font-black text-white backdrop-blur-xl shadow-[0_10px_24px_rgba(30,64,175,0.22)]"
                   >
                     Go to Mega Vault 🏰
                   </Link>
