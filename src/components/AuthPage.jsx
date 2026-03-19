@@ -153,7 +153,11 @@ const AuthPage = ({ onLoginSuccess, initialMode = 'login' }) => {
               .maybeSingle();
 
             if (!profile) {
-              await supabase.from('profiles').insert({ id: userId });
+              await supabase.from('profiles').insert({
+                id: userId,
+                gems: 700,
+                rainbow_gems: 500,
+              });
             }
           } catch (profileErr) {
             console.warn('[AuthPage] Profile check failed:', profileErr);

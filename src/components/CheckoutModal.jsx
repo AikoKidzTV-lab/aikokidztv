@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient';
 import { X, Check, Gem, Loader, Tag, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ECONOMY_TIER, persistEconomyTier } from '../utils/economyTier';
+import { startRazorpayCheckout } from '../utils/razorpayCheckout';
 
 const resolveTierFromPlanName = (planName) => {
   const normalized = String(planName || '').trim().toLowerCase();
@@ -17,7 +18,7 @@ const resolveTierFromPlanName = (planName) => {
 };
 
 const CheckoutModal = ({ plan, isOpen, onClose }) => {
-  const { user } = useAuth();
+  const { user, fetchProfile, updateProfileBalances } = useAuth();
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -34,18 +35,6 @@ const CheckoutModal = ({ plan, isOpen, onClose }) => {
   const basePrice = parseInt(String(priceString).replace('$', '')) || 0;
   const finalPrice = Math.max(0, basePrice - (basePrice * discount / 100));
 
-  const priceToCentsMap = {
-    5: 500,
-    10: 1000,
-    15: 1500,
-    35: 3500,
-    98: 9800,
-    100: 10000
-  };
-
-  const amountInCents = discount > 0
-    ? Math.round(finalPrice * 100)
-    : (priceToCentsMap[basePrice] ?? Math.round(finalPrice * 100));
   const currency = 'USD';
 
   const handleApplyCoupon = async () => {
@@ -86,78 +75,57 @@ const CheckoutModal = ({ plan, isOpen, onClose }) => {
 
     try {
       const planName = plan.name || '';
-      const planGems = plan.gems || '0';
-      const gemsToAdd = planName.includes('Family')
-        ? 99999
-        : (parseInt(String(planGems).replace(/\D/g, ''), 10) || 0);
-      const rainbowRewardRaw =
+      const purpleGems = Number.isFinite(Number(plan?.gems))
+        ? Math.max(0, Math.floor(Number(plan.gems)))
+        : 0;
+      const rainbowGems = Number.isFinite(Number(
         plan?.rainbowGems ??
         plan?.rainbow_gems ??
         plan?.rewards?.rainbowGems ??
-        plan?.rewards?.rainbow_gems ??
-        0;
-      const rainbowGemsToAdd = Number.isFinite(Number(rainbowRewardRaw))
-        ? Math.max(0, Math.floor(Number(rainbowRewardRaw)))
+        plan?.rewards?.rainbow_gems
+      ))
+        ? Math.max(0, Math.floor(Number(
+          plan?.rainbowGems ??
+          plan?.rainbow_gems ??
+          plan?.rewards?.rainbowGems ??
+          plan?.rewards?.rainbow_gems
+        )))
         : 0;
 
-      // Razorpay order payload (USD, sub-units)
-      const razorpayOrder = {
-        amount: amountInCents, // cents for USD
-        currency,
-        receipt: `order_${planName || 'plan'}`,
-        notes: {
-          plan: planName || 'Unknown Plan',
-          gems: planGems || '',
-          rainbow_gems: rainbowGemsToAdd || '',
-        }
-      };
-      console.log('Razorpay order payload (ready to send to backend):', razorpayOrder);
-
-      // 1. Record Transaction
-      const { error: txError } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: user.id,
+      const verification = await startRazorpayCheckout({
+        user,
+        plan: {
+          id: String(plan?.id || planName || 'custom-plan')
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, '-'),
+          planName: planName || 'Unknown Plan',
           amount: finalPrice,
-          gems_added: gemsToAdd,
-          plan_name: planName || 'Unknown Plan',
-        });
+          currency,
+          economyTier: plan?.economyTier || resolveTierFromPlanName(planName),
+          rewards: {
+            purpleGems,
+            rainbowGems,
+          },
+        },
+      });
 
-      if (txError) throw txError;
+      updateProfileBalances?.({
+        gems: verification?.gems,
+        rainbow_gems: verification?.rainbowGems,
+        rainbowGems: verification?.rainbowGems,
+      });
 
-      // 2. Update User Gems (Client-side update - ideally use RPC or Edge Function for security)
-      // First get current gems
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('gems, rainbow_gems')
-        .eq('id', user.id)
-        .single();
-      
-      const currentGems = profile?.gems || 0;
-      const currentRainbowGems = Number(profile?.rainbow_gems || 0);
-      const profileUpdate = {
-        gems: currentGems + gemsToAdd,
-      };
-      if (rainbowGemsToAdd > 0) {
-        profileUpdate.rainbow_gems = currentRainbowGems + rainbowGemsToAdd;
-      }
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update(profileUpdate)
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
-      persistEconomyTier(resolveTierFromPlanName(planName));
+      persistEconomyTier(verification?.economyTier || plan?.economyTier || resolveTierFromPlanName(planName));
       setSuccess(true);
+      void fetchProfile?.(user?.id);
       setTimeout(() => {
         window.location.reload(); // Refresh to update context/UI
       }, 2000);
 
     } catch (err) {
       console.error(err);
-      setError('Payment failed. Please try again.');
+      setError(err?.message || 'Payment failed. Please try again.');
     } finally {
       setProcessing(false);
     }

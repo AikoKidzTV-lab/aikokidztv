@@ -1,5 +1,6 @@
 import React from 'react';
 import { Gem } from 'lucide-react';
+import { ECONOMY_TIER } from '../utils/economyTier';
 
 const USD_TO_INR_RATE = 83;
 const COMBO_BASE_PRICE_INR = 599;
@@ -15,11 +16,12 @@ const gemPacks = [
     gems: 219,
     mascot: '🐼',
     prices: { INR: 499, USD: convertInrToUsd(499) },
-    useCaseDescription: 'Unlock Colors & Shapes (120 Purple Gems) and still have gems left for Stories.',
+    useCaseDescription: 'Unlock Colors & Shapes (220 Purple Gems) and still have gems left for Stories.',
     accent: 'from-pink-300 via-rose-200 to-yellow-200',
     border: 'border-pink-300/90',
     glow: 'shadow-[0_18px_40px_rgba(244,114,182,0.32)]',
     featured: true,
+    economyTier: ECONOMY_TIER.PACK_1,
   },
   {
     id: 'jungle-king',
@@ -27,10 +29,11 @@ const gemPacks = [
     gems: 419,
     mascot: '🐦',
     prices: { INR: 899, USD: convertInrToUsd(899) },
-    useCaseDescription: 'Unlock Animal Safari (150 Purple Gems) plus Colors & Shapes (120 Purple Gems).',
+    useCaseDescription: 'Unlock Animal Safari (270 Purple Gems) plus Colors & Shapes (220 Purple Gems).',
     accent: 'from-cyan-300 via-sky-200 to-blue-200',
     border: 'border-cyan-300/90',
     glow: 'shadow-[0_18px_40px_rgba(14,165,233,0.3)]',
+    economyTier: ECONOMY_TIER.PACK_2,
   },
   {
     id: 'treasure-gems',
@@ -42,14 +45,17 @@ const gemPacks = [
     accent: 'from-yellow-300 via-amber-200 to-fuchsia-200',
     border: 'border-amber-300/90',
     glow: 'shadow-[0_18px_40px_rgba(245,158,11,0.3)]',
+    economyTier: ECONOMY_TIER.PACK_3,
   },
 ];
 
 const VIP_PASS = {
+  id: 'vip-pass',
   title: 'Semi-Monthly VIP Pass',
   gems: 920,
   rainbowGems: 100,
   prices: { INR: 4999, USD: convertInrToUsd(4999) },
+  economyTier: ECONOMY_TIER.VIP,
 };
 
 const formatCurrency = (value, currency) =>
@@ -60,12 +66,13 @@ const formatCurrency = (value, currency) =>
     maximumFractionDigits: currency === 'INR' ? 0 : 2,
   }).format(value);
 
-export default function GemPacksPricing({ onPay }) {
+export default function GemPacksPricing({ onPay, processingPlanId = '' }) {
   const [isINR, setIsINR] = React.useState(true);
   const activeCurrency = isINR ? 'INR' : 'USD';
   const comboStartingPrice = activeCurrency === 'USD'
     ? convertInrToUsd(COMBO_BASE_PRICE_INR)
     : COMBO_BASE_PRICE_INR;
+  const isCheckoutBusy = Boolean(processingPlanId);
 
   return (
     <>
@@ -113,8 +120,8 @@ export default function GemPacksPricing({ onPay }) {
           Pick a Gem Card and Jump In
         </h2>
         <p className="mx-auto mt-3 max-w-3xl text-sm !text-slate-700 sm:text-base">
-          Fast, cute, and easy to understand. Tap a card, unlock Purple Gems{' '}
-          <Gem size={16} className="mb-0.5 inline-block text-purple-500" /> instantly, and keep the fun going.
+          Fast, cute, and easy to understand. Tap a card, pay securely with Razorpay, and receive Purple Gems{' '}
+          <Gem size={16} className="mb-0.5 inline-block text-purple-500" /> after successful payment verification.
         </p>
       </div>
 
@@ -123,7 +130,7 @@ export default function GemPacksPricing({ onPay }) {
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute -left-4 top-6 h-20 w-20 rounded-full bg-fuchsia-200/70 blur-2xl" />
             <div className="absolute right-2 top-4 h-16 w-16 rounded-full bg-cyan-200/60 blur-2xl" />
-            <div className="absolute bottom-4 left-6 text-2xl opacity-80">💜</div>
+            <div className="absolute bottom-4 left-6 text-2xl opacity-80">💖</div>
             <div className="absolute right-6 top-6 text-2xl opacity-85">🌈</div>
             <div className="absolute bottom-5 right-8 text-xl opacity-80">✨</div>
             <div className="absolute left-1/2 top-12 text-xl opacity-75">💎</div>
@@ -177,21 +184,23 @@ export default function GemPacksPricing({ onPay }) {
             <div className="mt-4">
               <button
                 type="button"
+                disabled={isCheckoutBusy}
                 onClick={() =>
-                  onPay?.(
-                    'Combo pack for both gems',
-                    comboStartingPrice,
-                    COMBO_BASE_PURPLE_GEMS,
-                    activeCurrency,
-                    {
+                  onPay?.({
+                    id: 'combo-pack',
+                    planName: 'Combo Pack',
+                    amount: comboStartingPrice,
+                    currency: activeCurrency,
+                    economyTier: ECONOMY_TIER.STANDARD,
+                    rewards: {
                       purpleGems: COMBO_BASE_PURPLE_GEMS,
                       rainbowGems: COMBO_BASE_MULTI_COLOR_GEMS,
-                    }
-                  )
+                    },
+                  })
                 }
-                className="w-full rounded-xl bg-gradient-to-r from-fuchsia-600 via-pink-500 to-cyan-500 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(168,85,247,0.34)] transition-all hover:brightness-105"
+                className="w-full rounded-xl bg-gradient-to-r from-fuchsia-600 via-pink-500 to-cyan-500 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(168,85,247,0.34)] transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Buy Cute Combo
+                {processingPlanId === 'combo-pack' ? 'Opening Checkout...' : 'Buy Cute Combo'}
               </button>
             </div>
           </div>
@@ -236,10 +245,23 @@ export default function GemPacksPricing({ onPay }) {
             <div className="mt-3">
               <button
                 type="button"
-                onClick={() => onPay?.(pack.title, pack.prices[activeCurrency], pack.gems, activeCurrency)}
-                className="w-full rounded-xl bg-gradient-to-r from-sky-600 via-cyan-500 to-blue-500 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(14,165,233,0.35)] transition-all hover:brightness-105"
+                disabled={isCheckoutBusy}
+                onClick={() =>
+                  onPay?.({
+                    id: pack.id,
+                    planName: pack.title,
+                    amount: pack.prices[activeCurrency],
+                    currency: activeCurrency,
+                    economyTier: pack.economyTier,
+                    rewards: {
+                      purpleGems: pack.gems,
+                      rainbowGems: 0,
+                    },
+                  })
+                }
+                className="w-full rounded-xl bg-gradient-to-r from-sky-600 via-cyan-500 to-blue-500 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(14,165,233,0.35)] transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Buy Now
+                {processingPlanId === pack.id ? 'Opening Checkout...' : 'Buy Now'}
               </button>
             </div>
           </div>
@@ -261,18 +283,23 @@ export default function GemPacksPricing({ onPay }) {
             <p className="text-xl font-black !text-amber-300">Price: {formatCurrency(VIP_PASS.prices[activeCurrency], activeCurrency)}</p>
             <button
               type="button"
+              disabled={isCheckoutBusy}
               onClick={() =>
-                onPay?.(
-                  VIP_PASS.title,
-                  VIP_PASS.prices[activeCurrency],
-                  VIP_PASS.gems,
-                  activeCurrency,
-                  { purpleGems: VIP_PASS.gems, rainbowGems: VIP_PASS.rainbowGems }
-                )
+                onPay?.({
+                  id: VIP_PASS.id,
+                  planName: VIP_PASS.title,
+                  amount: VIP_PASS.prices[activeCurrency],
+                  currency: activeCurrency,
+                  economyTier: VIP_PASS.economyTier,
+                  rewards: {
+                    purpleGems: VIP_PASS.gems,
+                    rainbowGems: VIP_PASS.rainbowGems,
+                  },
+                })
               }
-              className="rounded-xl border border-white/70 bg-white/70 px-4 py-2 text-sm font-black !text-slate-900 shadow-lg backdrop-blur-xl"
+              className="rounded-xl border border-white/70 bg-white/70 px-4 py-2 text-sm font-black !text-slate-900 shadow-lg backdrop-blur-xl disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Claim VIP Pass
+              {processingPlanId === VIP_PASS.id ? 'Opening Checkout...' : 'Buy VIP Pass'}
             </button>
           </div>
         </div>

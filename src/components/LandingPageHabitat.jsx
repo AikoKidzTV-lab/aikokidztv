@@ -7,6 +7,8 @@ import LearningZone from './LearningZone';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useKidsMode } from '../context/KidsModeContext';
+import { persistEconomyTier } from '../utils/economyTier';
+import { startRazorpayCheckout } from '../utils/razorpayCheckout';
 
 const HERO_BANNER_LIMIT = 5;
 const HERO_BANNER_FALLBACK_THUMBNAIL = '/logo.png.webp';
@@ -65,7 +67,7 @@ const YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY = 'aiko_subscribe_click_v1';
 const DAILY_PURPLE_GEM_REWARD = 10;
 const DAILY_MULTI_COLOR_GEM_REWARD = 5;
 const PURPLE_GEM_CONVERSION_COST = 300;
-const MULTI_COLOR_GEM_CONVERSION_REWARD = 10;
+const MULTI_COLOR_GEM_CONVERSION_REWARD = 219;
 const MEGA_VAULT_UNLOCK_REQUIREMENT = 500;
 const MEGA_VAULT_PACK_PRICE = 1100;
 const PARENT_ZONE_PRACTICE_ROUTES = [
@@ -107,6 +109,7 @@ export default function LandingPageHabitat({
   const [exchangeFeedback, setExchangeFeedback] = React.useState({ message: null, tone: 'neutral' });
   const [dailyChestMessage, setDailyChestMessage] = React.useState(null);
   const [dailyClaimOverride, setDailyClaimOverride] = React.useState(null);
+  const [processingCheckoutPlanId, setProcessingCheckoutPlanId] = React.useState('');
   const [hasClickedSubscribe, setHasClickedSubscribe] = React.useState(() => {
     if (typeof window === 'undefined') return false;
     return window.localStorage.getItem(YOUTUBE_SUBSCRIBE_CLICK_STORAGE_KEY) === 'true';
@@ -377,73 +380,69 @@ export default function LandingPageHabitat({
     user?.id,
   ]);
 
-  const handleGemPackPurchase = React.useCallback(async (
-    planName,
-    _planPrice,
-    planGems,
-    _currency,
-    rewards = {}
-  ) => {
-    const userId = user?.id || authUser?.id || null;
+  const handleGemPackPurchase = React.useCallback(async (plan) => {
+    const activeUser = user || authUser || null;
+    const userId = activeUser?.id || null;
+
     if (!userId) {
-      showPaymentToast('info', 'Please log in to claim this pack.');
+      showPaymentToast('info', 'Please log in to buy this pack.');
       onOpenLogin?.();
       return;
     }
 
-    const purpleReward = Number.isFinite(Number(rewards?.purpleGems ?? planGems))
-      ? Math.max(0, Math.floor(Number(rewards?.purpleGems ?? planGems)))
-      : 0;
-    const rainbowReward = Number.isFinite(Number(rewards?.rainbowGems))
-      ? Math.max(0, Math.floor(Number(rewards?.rainbowGems)))
-      : 0;
-
-    if (purpleReward <= 0 && rainbowReward <= 0) {
-      showPaymentToast('error', 'Invalid pack reward. Please try again.');
+    if (!plan?.id || !plan?.planName) {
+      showPaymentToast('error', 'This pack is missing checkout details. Please try again.');
       return;
     }
 
-    const currentPurpleGems = Number(profile?.gems || 0);
-    const currentRainbowGems = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
-    const nextPurpleGems = currentPurpleGems + purpleReward;
-    const nextRainbowGems = currentRainbowGems + rainbowReward;
+    setProcessingCheckoutPlanId(plan.id);
 
-    updateProfileBalances?.({
-      gems: nextPurpleGems,
-      rainbow_gems: nextRainbowGems,
-      rainbowGems: nextRainbowGems,
-    });
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ gems: nextPurpleGems, rainbow_gems: nextRainbowGems })
-      .eq('id', userId);
-
-    if (error) {
-      updateProfileBalances?.({
-        gems: currentPurpleGems,
-        rainbow_gems: currentRainbowGems,
-        rainbowGems: currentRainbowGems,
+    try {
+      const verification = await startRazorpayCheckout({
+        user: activeUser,
+        plan,
       });
-      showPaymentToast('error', error.message || 'Could not process purchase. Please try again.');
-      return;
-    }
 
-    const rewardLabel = rainbowReward > 0
-      ? `${purpleReward} Gems + ${rainbowReward} 🌈`
-      : `${purpleReward} Gems`;
-    showPaymentToast('success', `${planName} unlocked! Added ${rewardLabel}.`);
-    void fetchProfile?.(userId);
+      updateProfileBalances?.({
+        gems: verification?.gems,
+        rainbow_gems: verification?.rainbowGems,
+        rainbowGems: verification?.rainbowGems,
+      });
+
+      if (verification?.economyTier) {
+        persistEconomyTier(verification.economyTier);
+      }
+
+      const purpleReward = Number(verification?.purpleGemsAdded || 0);
+      const rainbowReward = Number(verification?.rainbowGemsAdded || 0);
+      const rewardLabel = rainbowReward > 0
+        ? `${purpleReward} Gems + ${rainbowReward} 🌈`
+        : `${purpleReward} Gems`;
+
+      showPaymentToast(
+        'success',
+        verification?.alreadyProcessed
+          ? `${plan.planName} payment was already verified. Wallet balances are up to date.`
+          : `${plan.planName} payment verified. Added ${rewardLabel}.`
+      );
+
+      void fetchProfile?.(userId);
+    } catch (error) {
+      if (error?.code === 'checkout_dismissed') {
+        showPaymentToast('info', error.message || 'Checkout closed before payment completed.');
+      } else {
+        showPaymentToast('error', error?.message || 'Payment failed. Please try again.');
+      }
+    } finally {
+      setProcessingCheckoutPlanId('');
+    }
   }, [
-    authUser?.id,
+    authUser,
     fetchProfile,
     onOpenLogin,
-    profile?.gems,
-    profile?.rainbowGems,
-    profile?.rainbow_gems,
     showPaymentToast,
     updateProfileBalances,
-    user?.id,
+    user,
   ]);
 
   React.useEffect(() => {
@@ -687,7 +686,12 @@ export default function LandingPageHabitat({
         </div>
 
         <div className="relative mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
-          {!isKidsModeOn && <GemPacksPricing onPay={handleGemPackPurchase} />}
+          {!isKidsModeOn && (
+            <GemPacksPricing
+              onPay={handleGemPackPurchase}
+              processingPlanId={processingCheckoutPlanId}
+            />
+          )}
 
           <div className="mt-14 space-y-10">
             <div
@@ -891,7 +895,7 @@ export default function LandingPageHabitat({
               <div className="mb-4 rounded-[1.6rem] border border-white/80 bg-white/65 p-4 shadow-xl backdrop-blur">
                 <p className="text-xs font-black uppercase tracking-[0.2em] !text-slate-500">Treasure Meter</p>
                 <p className="mt-1 text-sm font-semibold !text-slate-700">
-                  Quick actions for your free daily gems and Mega Vault upgrades. Your live balances stay in the
+                  Quick actions for your free daily gems and Mega Vault bank upgrades. Your live balances stay in the
                   top-right profile area.
                 </p>
               </div>
@@ -928,15 +932,15 @@ export default function LandingPageHabitat({
                 </div>
 
                 <div className="rounded-3xl border border-white/80 bg-white/70 p-5 shadow-xl backdrop-blur">
-                  <p className="text-xs font-black uppercase tracking-wider !text-slate-500">Mega Vault</p>
-                  <h3 className="mt-2 text-2xl font-black !text-slate-900">Build your Multi-Color Gems</h3>
+                  <p className="text-xs font-black uppercase tracking-wider !text-slate-500">MEGA VAULT BANK</p>
+                  <h3 className="mt-2 text-2xl font-black !text-slate-900">Convert 300 💎 to 219 🌈</h3>
                   <p className="mt-2 text-sm font-semibold !text-slate-700">
                     Convert Purple Gems into Multi-Color Gems, then unlock Mega Vault packs permanently.
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-xs font-black !text-fuchsia-800">
-                      {PURPLE_GEM_CONVERSION_COST} Purple = {MULTI_COLOR_GEM_CONVERSION_REWARD} Multi-Color
+                      Convert {PURPLE_GEM_CONVERSION_COST} 💎 to {MULTI_COLOR_GEM_CONVERSION_REWARD} 🌈
                     </span>
                     <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-black !text-amber-800">
                       Lock: {MEGA_VAULT_UNLOCK_REQUIREMENT} Multi-Color Gems
@@ -951,10 +955,7 @@ export default function LandingPageHabitat({
                     onClick={handleConvertToRainbowGems}
                     className="mt-4 inline-flex rounded-xl border border-white/45 bg-slate-900/35 px-4 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(15,23,42,0.24)] backdrop-blur-xl"
                   >
-                    <span className="inline-flex items-center gap-1">
-                      Convert {PURPLE_GEM_CONVERSION_COST} <Gem size={13} className="text-purple-500" /> to{' '}
-                      {MULTI_COLOR_GEM_CONVERSION_REWARD} 🌈
-                    </span>
+                    Convert 300 💎 to 219 🌈
                   </button>
                   <p
                     className={`mt-2 min-h-[1.25rem] text-sm font-semibold ${

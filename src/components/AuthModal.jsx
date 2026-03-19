@@ -223,6 +223,8 @@ const AuthModal = ({ open, onClose, onSuccess, initialMode = 'login' }) => {
 
     const baseProfilePayload = {
       id: userId,
+      gems: 700,
+      rainbow_gems: 500,
       unlocked_zones: [],
       unlocked_videos: [],
       unlocked_items: [],

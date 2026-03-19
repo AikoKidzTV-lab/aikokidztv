@@ -44,7 +44,7 @@ const economyGuideItems = [
     emoji: '🏰',
     title: 'Mega Vault Rules',
     description:
-      'Convert 300 Purple Gems into 10 Multi-Color Gems at the bank. Keep 500 Multi-Color Gems to unlock Mega Vault access, and each Mega Vault pack costs 1100 Multi-Color Gems.',
+      'Convert 300 Purple Gems into 219 Multi-Color Gems at the bank. Keep 500 Multi-Color Gems to unlock Mega Vault access, and each Mega Vault pack costs 1100 Multi-Color Gems.',
   },
 ];
 
@@ -352,7 +352,7 @@ const Footer = () => {
             special reward tasks help kids earn more gems through guided play.
           </li>
           <li>
-            <strong className="text-slate-900">Mega Vault:</strong> Convert 300 Purple Gems into 10 Multi-Color Gems.
+            <strong className="text-slate-900">Mega Vault:</strong> Convert 300 Purple Gems into 219 Multi-Color Gems.
             You need 500 Multi-Color Gems to unlock Mega Vault access, and each pack costs 1100 Multi-Color Gems.
           </li>
         </ul>
