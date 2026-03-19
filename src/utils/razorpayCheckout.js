@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient';
 
 const RAZORPAY_SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 const RAZORPAY_KEY_ID = String(import.meta.env.VITE_RAZORPAY_KEY_ID || '').trim();
+const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').trim().replace(/\/+$/, '');
 
 let razorpayScriptPromise = null;
 
@@ -33,8 +34,11 @@ const normalizeAmount = (value) => {
 
 const isPaymentApiNetworkError = (error) => {
   const message = String(error?.message || '').trim().toLowerCase();
+  const errorName = String(error?.name || '').trim().toLowerCase();
   return (
+    errorName.includes('functionsfetcherror') ||
     message.includes('failed to fetch') ||
+    message.includes('failed to send a request to the edge function') ||
     message.includes('network request failed') ||
     message.includes('network error') ||
     message.includes('load failed') ||
@@ -48,6 +52,17 @@ const getPaymentApiErrorMessage = (error) => {
   }
 
   return String(error?.message || '').trim() || 'Payment service request failed.';
+};
+
+const getFunctionTargetUrl = (functionName) => {
+  if (!SUPABASE_URL) {
+    throw createCheckoutError(
+      'missing_backend_url',
+      'Payment server URL is not configured. Please set VITE_SUPABASE_URL.'
+    );
+  }
+
+  return `${SUPABASE_URL}/functions/v1/${functionName}`;
 };
 
 const loadRazorpayCheckoutScript = async () => {
@@ -103,7 +118,14 @@ const invokeSupabaseFunction = async (functionName, payload) => {
       throw createCheckoutError('auth_required', 'Please log in before continuing to checkout.');
     }
 
-    // Use the Supabase Functions client so the correct backend base URL and CORS flow are handled centrally.
+    const targetUrl = getFunctionTargetUrl(functionName);
+
+    if (functionName === 'razorpay-create-order') {
+      console.log('Attempting to fetch Razorpay order from:', targetUrl);
+    } else {
+      console.log('Attempting Razorpay payment verification via:', targetUrl);
+    }
+
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: payload,
       headers: {
@@ -112,14 +134,22 @@ const invokeSupabaseFunction = async (functionName, payload) => {
     });
 
     if (error) {
+      error.targetUrl = targetUrl;
       throw error;
     }
 
     return data ?? {};
   } catch (error) {
     console.error('Payment API Error:', error);
+
+    if (typeof window !== 'undefined' && error?.targetUrl && functionName === 'razorpay-create-order') {
+      window.alert(`Failed to connect to payment server at: ${error.targetUrl}`);
+    }
+
     throw createCheckoutError(
-      isPaymentApiNetworkError(error) ? 'payment_api_unreachable' : 'function_request_failed',
+      isPaymentApiNetworkError(error)
+        ? 'payment_api_unreachable'
+        : (error?.code || 'function_request_failed'),
       getPaymentApiErrorMessage(error)
     );
   }
