@@ -2,21 +2,25 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Content-Type': 'application/json',
 };
 
-const jsonResponse = (body: Record<string, unknown>, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
+const successResponse = (order: Record<string, unknown>) =>
+  new Response(JSON.stringify({ success: true, order }), {
+    status: 200,
+    headers: corsHeaders,
+  });
+
+const errorResponse = (error: unknown) =>
+  new Response(JSON.stringify({ success: false, error }), {
+    status: 200,
     headers: corsHeaders,
   });
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
-const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID') || '';
-const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET') || '';
 
 const normalizeText = (value: unknown, fallback = '') =>
   String(value ?? fallback)
@@ -56,7 +60,7 @@ const resolveOrderAmount = (body: Record<string, unknown>) => {
     return explicitSubunitAmount;
   }
 
-  // Backward-compatible fallback for existing frontend payloads that still send major currency units.
+  // Frontend currently sends major currency units, but Razorpay requires paise/cents.
   return normalizeMajorAmountToSubunits(body.amount);
 };
 
@@ -111,34 +115,40 @@ const parseRazorpayResponse = async (response: Response) => {
   }
 };
 
-Deno.serve(async (request) => {
-  if (request.method === 'OPTIONS') {
-    return new Response('ok', { status: 200, headers: corsHeaders });
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  if (request.method !== 'POST') {
-    return jsonResponse({ error: 'Method not allowed.' }, 405);
+  if (req.method !== 'POST') {
+    return errorResponse({ message: 'Method not allowed.' });
   }
 
-  if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-    return jsonResponse({ error: 'Missing Razorpay credentials in environment.' }, 500);
+  const keyId = Deno.env.get('RAZORPAY_KEY_ID')?.trim();
+  const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET')?.trim();
+
+  if (!keyId || !keySecret) {
+    return errorResponse('CRITICAL: Missing API Keys in backend. Please check Supabase secrets.');
   }
 
-  const body = await parseJsonBody(request);
+  const body = await parseJsonBody(req);
   if (!body) {
-    return jsonResponse({ error: 'Invalid request body.' }, 400);
+    return errorResponse({ message: 'Invalid request body.' });
   }
 
   const amount = resolveOrderAmount(body);
   const currency = normalizeCurrency(body.currency);
 
   if (!amount) {
-    return jsonResponse({ error: 'A valid amount is required to create a Razorpay order.' }, 400);
+    return errorResponse({
+      message: 'A valid amount is required to create a Razorpay order.',
+      receivedAmount: body.amount ?? null,
+    });
   }
 
-  const { user, error: authError } = await getAuthenticatedUser(request);
+  const { user, error: authError } = await getAuthenticatedUser(req);
   if (authError) {
-    return jsonResponse({ error: authError }, 401);
+    return errorResponse({ message: authError });
   }
 
   const planName = normalizeText(body.planName ?? body.plan_name, 'Gem Pack');
@@ -157,13 +167,13 @@ Deno.serve(async (request) => {
     ...(user?.email ? { user_email: normalizeText(user.email) } : {}),
   };
 
-  const basicAuth = `Basic ${btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)}`;
+  const authHeader = 'Basic ' + btoa(keyId + ':' + keySecret);
 
   try {
     const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
       headers: {
-        Authorization: basicAuth,
+        Authorization: authHeader,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -177,30 +187,22 @@ Deno.serve(async (request) => {
     const razorpayPayload = await parseRazorpayResponse(razorpayResponse);
 
     if (!razorpayResponse.ok) {
-      return jsonResponse(
-        {
-          error:
-            razorpayPayload?.error?.description ||
-            razorpayPayload?.error?.reason ||
-            'Failed to create Razorpay order.',
-        },
-        razorpayResponse.status
-      );
+      return errorResponse({
+        status: razorpayResponse.status,
+        razorpay: razorpayPayload,
+      });
     }
 
-    return jsonResponse({
-      id: razorpayPayload.id,
+    return successResponse({
+      ...razorpayPayload,
       orderId: razorpayPayload.id,
-      amount: razorpayPayload.amount,
-      currency: razorpayPayload.currency,
-      keyId: RAZORPAY_KEY_ID,
+      keyId,
     });
   } catch (error) {
-    return jsonResponse(
-      {
-        error: error instanceof Error ? error.message : 'Unable to reach Razorpay API.',
-      },
-      500
+    return errorResponse(
+      error instanceof Error
+        ? { message: error.message }
+        : { message: 'Unable to reach Razorpay API.' }
     );
   }
 });

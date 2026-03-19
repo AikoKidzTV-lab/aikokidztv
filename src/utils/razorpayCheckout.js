@@ -32,6 +32,8 @@ const normalizeAmount = (value) => {
   return Number(numeric.toFixed(2));
 };
 
+const convertAmountToSubunits = (value) => Math.max(0, Math.round(Number(value) * 100));
+
 const isPaymentApiNetworkError = (error) => {
   const message = String(error?.message || '').trim().toLowerCase();
   const errorName = String(error?.name || '').trim().toLowerCase();
@@ -52,6 +54,38 @@ const getPaymentApiErrorMessage = (error) => {
   }
 
   return String(error?.message || '').trim() || 'Payment service request failed.';
+};
+
+const stringifyDebugPayload = (value) => {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value ?? 'Unknown error');
+  }
+};
+
+const getRazorpayErrorMessage = (errorPayload) => {
+  if (!errorPayload) {
+    return 'Razorpay rejected the order request.';
+  }
+
+  if (typeof errorPayload?.message === 'string' && errorPayload.message.trim()) {
+    return errorPayload.message.trim();
+  }
+
+  if (typeof errorPayload?.razorpay?.error?.description === 'string' && errorPayload.razorpay.error.description.trim()) {
+    return errorPayload.razorpay.error.description.trim();
+  }
+
+  if (typeof errorPayload?.razorpay?.error?.reason === 'string' && errorPayload.razorpay.error.reason.trim()) {
+    return errorPayload.razorpay.error.reason.trim();
+  }
+
+  if (typeof errorPayload?.razorpay?.error?.code === 'string' && errorPayload.razorpay.error.code.trim()) {
+    return `Razorpay error: ${errorPayload.razorpay.error.code.trim()}`;
+  }
+
+  return 'Razorpay rejected the order request.';
 };
 
 const getFunctionTargetUrl = (functionName) => {
@@ -134,6 +168,11 @@ const invokeSupabaseFunction = async (functionName, payload) => {
     });
 
     if (error) {
+      console.error('Edge Function Error:', error);
+      if (typeof window !== 'undefined' && functionName === 'razorpay-create-order') {
+        window.alert(`Network Error: ${error.message}\nEndpoint: ${targetUrl}`);
+        error.alertedToUser = true;
+      }
       error.targetUrl = targetUrl;
       throw error;
     }
@@ -142,7 +181,12 @@ const invokeSupabaseFunction = async (functionName, payload) => {
   } catch (error) {
     console.error('Payment API Error:', error);
 
-    if (typeof window !== 'undefined' && error?.targetUrl && functionName === 'razorpay-create-order') {
+    if (
+      typeof window !== 'undefined' &&
+      error?.targetUrl &&
+      functionName === 'razorpay-create-order' &&
+      !error?.alertedToUser
+    ) {
       window.alert(`Failed to connect to payment server at: ${error.targetUrl}`);
     }
 
@@ -164,10 +208,12 @@ export const startRazorpayCheckout = async ({ user, plan }) => {
     throw createCheckoutError('missing_key', 'Razorpay key is not configured.');
   }
 
+  const normalizedAmount = normalizeAmount(plan?.amount);
   const normalizedPlan = {
     id: String(plan?.id || '').trim(),
     planName: String(plan?.planName || plan?.title || '').trim(),
-    amount: normalizeAmount(plan?.amount),
+    amount: normalizedAmount,
+    amountInSubunits: convertAmountToSubunits(normalizedAmount),
     currency: normalizeCurrency(plan?.currency),
     rewards: {
       purpleGems: normalizePositiveInteger(plan?.rewards?.purpleGems ?? plan?.purpleGems),
@@ -180,7 +226,32 @@ export const startRazorpayCheckout = async ({ user, plan }) => {
     throw createCheckoutError('invalid_plan', 'This plan is missing payment details.');
   }
 
-  const order = await invokeSupabaseFunction('razorpay-create-order', normalizedPlan);
+  const createOrderResponse = await invokeSupabaseFunction('razorpay-create-order', normalizedPlan);
+
+  if (createOrderResponse?.success === false) {
+    const razorpayError = createOrderResponse.error ?? { message: 'Unknown Razorpay order creation error.' };
+    console.error('Razorpay Error:', razorpayError);
+
+    if (typeof window !== 'undefined') {
+      window.alert(`RAZORPAY ERROR:\n${stringifyDebugPayload(razorpayError)}`);
+    }
+
+    throw createCheckoutError('razorpay_order_rejected', getRazorpayErrorMessage(razorpayError));
+  }
+
+  const order =
+    createOrderResponse?.success === true && createOrderResponse?.order
+      ? createOrderResponse.order
+      : createOrderResponse;
+  const orderId = String(order?.id || order?.orderId || '').trim();
+  const checkoutAmount =
+    normalizePositiveInteger(order?.amount) || normalizePositiveInteger(normalizedPlan.amountInSubunits);
+  const checkoutCurrency = normalizeCurrency(order?.currency || normalizedPlan.currency);
+
+  if (!orderId) {
+    throw createCheckoutError('invalid_order_response', 'Payment server did not return a valid Razorpay order ID.');
+  }
+
   const Razorpay = await loadRazorpayCheckoutScript();
 
   if (typeof Razorpay !== 'function') {
@@ -198,9 +269,9 @@ export const startRazorpayCheckout = async ({ user, plan }) => {
 
     const checkout = new Razorpay({
       key: order?.keyId || RAZORPAY_KEY_ID,
-      order_id: order?.orderId,
-      amount: order?.amount,
-      currency: order?.currency,
+      order_id: orderId,
+      amount: checkoutAmount,
+      currency: checkoutCurrency,
       name: 'AikoKidzTV',
       description: normalizedPlan.planName,
       prefill: {
