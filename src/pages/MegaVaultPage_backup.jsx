@@ -82,14 +82,7 @@ export default function MegaVaultPage() {
       return;
     }
 
-    // Mega Vault Lock: Require 500 multi-color gems minimum to unlock any pack
     const currentRainbowGems = Number(profile?.rainbowGems ?? profile?.rainbow_gems ?? 0);
-    const MEGA_VAULT_LOCK_REQUIREMENT = 500;
-    if (!Number.isFinite(currentRainbowGems) || currentRainbowGems < MEGA_VAULT_LOCK_REQUIREMENT) {
-      setFeedback({ message: `🔒 Mega Vault Lock: You need ${MEGA_VAULT_LOCK_REQUIREMENT} 🌈 to unlock premium packs. Keep collecting!`, tone: 'error' });
-      return;
-    }
-
     if (!Number.isFinite(currentRainbowGems) || currentRainbowGems < pack.price) {
       setFeedback({ message: 'Not enough Mega Gems! 🌈', tone: 'error' });
       return;
@@ -175,9 +168,6 @@ export default function MegaVaultPage() {
               <h1 className="mt-2 text-3xl font-black text-slate-900">Mega Vault 🏰</h1>
               <p className="mt-2 text-sm font-semibold text-slate-700">
                 Spend Mega Gems to permanently unlock premium question packs.
-              </p>
-              <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-black text-amber-800">
-                🔒 Vault Lock: <span className="font-bold">500 🌈</span> required to unlock any pack
               </p>
             </div>
             <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50 px-4 py-3">

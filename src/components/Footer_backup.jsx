@@ -18,9 +18,9 @@ const economyGuideItems = [
     title: 'Daily Quests & Free Gems',
     description: (
       <>
-        Log in every day to open Aiko&apos;s Daily Magic Chest and earn <strong>10 Purple Gems</strong> (
+        Log in every day to open Aiko&apos;s Daily Magic Chest and earn free Purple Gems (
         <Gem size={13} className="text-purple-500" />
-        ) <strong>+ 5 Rainbow Gems</strong> (🌈) absolutely free!
+        )! Complete fun daily habits to earn even more.
       </>
     ),
   },
@@ -29,21 +29,22 @@ const economyGuideItems = [
     title: 'Standard vs. Premium Gems',
     description: (
       <>
-        Purple Gems (<Gem size={13} className="text-purple-500" />) are for basic activities. Convert <strong>300 Purple = 10 Rainbow</strong> at the Bank, or grab Combo Packs for the best value!
+        Use Purple Gems (<Gem size={13} className="text-purple-500" />) for basic activities. Convert them at the
+        Bank or get Combo Packs to earn Premium Rainbow Gems (🌈)!
       </>
     ),
   },
   {
-    emoji: '🏰',
+    emoji: '🎁',
     title: 'Mega Vault Packs',
     description:
-      'Unlock premium question packs permanently! 🔒 Requires 500 🌈 to unlock. Each pack costs 1100 🌈 and includes 250 advanced questions (Space, Dinosaurs, Ocean, Brain Teasers).',
+      'Use your Rainbow Gems to unlock Mega Vault Packs permanently! Each pack is a one-time unlock packed with 250 premium, ad-free questions (like Deep Space, Dino Secrets, etc.).',
   },
   {
-    emoji: '💖',
-    title: 'Combo Packs (Best Value!)',
+    emoji: '🚀',
+    title: 'Combo Packs & Support',
     description:
-      'Starting at just ₹599! Get both Purple + Rainbow Gems together. Example: ₹599 = 230 💜 + 50 🌈. Support our platform while boosting your gem balance!',
+      'Want to unlock things faster? Our Combo Packs give you a huge boost of both Purple and Rainbow gems while supporting our educational platform!',
   },
 ];
 

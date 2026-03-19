@@ -1,8 +1,8 @@
 export const megaVaultPacks = [
-  { id: "vault_space_01", title: "Deep Space Mystery", price: 1100, icon: "🚀", description: "250 Advance Space Questions" },
-  { id: "vault_dino_01", title: "Dinosaur Secrets", price: 1100, icon: "🦖", description: "250 Advance Dino Questions" },
-  { id: "vault_ocean_01", title: "Ocean Explorers", price: 1100, icon: "🌊", description: "250 Advance Ocean Questions" },
-  { id: "vault_brain_01", title: "Genius Brain Teasers", price: 1100, icon: "🧠", description: "250 Hard Riddles" }
+  { id: "vault_space_01", title: "Deep Space Mystery", price: 500, icon: "🚀", description: "250 Advance Space Questions" },
+  { id: "vault_dino_01", title: "Dinosaur Secrets", price: 500, icon: "🦖", description: "250 Advance Dino Questions" },
+  { id: "vault_ocean_01", title: "Ocean Explorers", price: 500, icon: "🌊", description: "250 Advance Ocean Questions" },
+  { id: "vault_brain_01", title: "Genius Brain Teasers", price: 500, icon: "🧠", description: "250 Hard Riddles" }
 ];
 
 export const vaultQuestions = {

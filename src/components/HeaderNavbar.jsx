@@ -11,12 +11,6 @@ const INITIAL_NOTIFICATIONS = [
     message: `${'\u{1F95A}'} Hint: read carefully on the site to find the Easter Egg and get a surprise gift!`,
     unread: true,
   },
-  {
-    id: 'notif-task-quest-update',
-    title: 'Quest Update',
-    message: `${'\u{1F31F}'} Quest Update: Tick all 5 daily habit boxes to unlock your 2 free Gems!`,
-    unread: true,
-  },
 ];
 
 function ProfileDropdownMenu({
