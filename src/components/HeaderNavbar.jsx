@@ -53,11 +53,13 @@ function ProfileDropdownMenu({
                 {isLoggedIn ? 'Profile' : 'Guest'}
               </p>
               <p className="truncate text-sm font-black text-black">{user?.email || 'Login / Profile'}</p>
-              <p className="mt-2 inline-flex items-center gap-1 text-xs font-black text-black">
-                Gems: {gemsBalance}
-                <Gem size={13} className="text-purple-500" />
+              <p className="mt-2 text-xs font-black text-black">
+                <span className="inline-flex items-center gap-1">
+                  Purple Gems: {gemsBalance}
+                  <Gem size={13} className="text-purple-500" />
+                </span>
               </p>
-              <p className="text-xs font-black text-black">Mega: {rainbowGemsBalance} 🌈</p>
+              <p className="text-xs font-black text-black">Multi-Color Gems: {rainbowGemsBalance} 🌈</p>
               <p className="text-xs font-black text-black">Level: {level}</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-3 text-right">
@@ -388,4 +390,3 @@ export default function HeaderNavbar({
     </>
   );
 }
-

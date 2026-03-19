@@ -4,19 +4,18 @@ import { Gem } from 'lucide-react';
 const USD_TO_INR_RATE = 83;
 const COMBO_BASE_PRICE_INR = 599;
 const COMBO_BASE_PURPLE_GEMS = 230;
-const COMBO_BASE_RAINBOW_GEMS = 50;
+const COMBO_BASE_MULTI_COLOR_GEMS = 50;
 
 const convertInrToUsd = (inrAmount) => Number((inrAmount / USD_TO_INR_RATE).toFixed(2));
-const convertUsdToInr = (usdAmount) => Number(usdAmount) * USD_TO_INR_RATE;
 
 const gemPacks = [
   {
     id: 'safari-pro',
     title: 'Safari Pro',
     gems: 219,
-    mascot: '\u{1F43C}',
+    mascot: '🐼',
     prices: { INR: 499, USD: convertInrToUsd(499) },
-    useCaseDescription: 'Unlock Colors & Shapes (120 Gems) and have gems left for Stories!',
+    useCaseDescription: 'Unlock Colors & Shapes (120 Purple Gems) and still have gems left for Stories.',
     accent: 'from-pink-300 via-rose-200 to-yellow-200',
     border: 'border-pink-300/90',
     glow: 'shadow-[0_18px_40px_rgba(244,114,182,0.32)]',
@@ -26,9 +25,9 @@ const gemPacks = [
     id: 'jungle-king',
     title: 'Jungle King',
     gems: 419,
-    mascot: '\u{1F426}',
+    mascot: '🐦',
     prices: { INR: 899, USD: convertInrToUsd(899) },
-    useCaseDescription: 'Unlock Animal Safari (150 Gems) + Colors & Shapes (120 Gems)!',
+    useCaseDescription: 'Unlock Animal Safari (150 Purple Gems) plus Colors & Shapes (120 Purple Gems).',
     accent: 'from-cyan-300 via-sky-200 to-blue-200',
     border: 'border-cyan-300/90',
     glow: 'shadow-[0_18px_40px_rgba(14,165,233,0.3)]',
@@ -37,19 +36,14 @@ const gemPacks = [
     id: 'treasure-gems',
     title: 'Treasure Gems',
     gems: 1019,
-    mascot: '\u{1F420}',
+    mascot: '🐠',
     prices: { INR: 1699, USD: convertInrToUsd(1699) },
-    useCaseDescription: 'Unlock everything in the Learning Zone + massive Story Studio sessions!',
+    useCaseDescription: 'Unlock everything in the Learning Zone and power lots of Story Studio sessions.',
     accent: 'from-yellow-300 via-amber-200 to-fuchsia-200',
     border: 'border-amber-300/90',
     glow: 'shadow-[0_18px_40px_rgba(245,158,11,0.3)]',
   },
 ];
-
-const SUPPORT_LIMITS = {
-  INR: { min: COMBO_BASE_PRICE_INR, max: 100000000, step: 1 },
-  USD: { min: convertInrToUsd(COMBO_BASE_PRICE_INR), max: convertInrToUsd(100000000), step: 0.01 },
-};
 
 const VIP_PASS = {
   title: 'Semi-Monthly VIP Pass',
@@ -68,26 +62,10 @@ const formatCurrency = (value, currency) =>
 
 export default function GemPacksPricing({ onPay }) {
   const [isINR, setIsINR] = React.useState(true);
-  const [customSupportAmount, setCustomSupportAmount] = React.useState(String(SUPPORT_LIMITS.INR.min));
   const activeCurrency = isINR ? 'INR' : 'USD';
-  const supportLimits = SUPPORT_LIMITS[activeCurrency];
-  const parsedSupportAmount = Number(customSupportAmount);
-  const displaySupportAmount = Number.isFinite(parsedSupportAmount) ? Math.max(0, parsedSupportAmount) : 0;
-  const normalizedSupportAmount = Number.isFinite(parsedSupportAmount)
-    ? Math.min(supportLimits.max, Math.max(supportLimits.min, parsedSupportAmount))
-    : supportLimits.min;
-  const supportAmountInInr = activeCurrency === 'USD'
-    ? convertUsdToInr(displaySupportAmount)
-    : displaySupportAmount;
-  const comboPurpleReward = Math.floor((supportAmountInInr / COMBO_BASE_PRICE_INR) * COMBO_BASE_PURPLE_GEMS);
-  const comboRainbowReward = Math.floor((supportAmountInInr / COMBO_BASE_PRICE_INR) * COMBO_BASE_RAINBOW_GEMS);
   const comboStartingPrice = activeCurrency === 'USD'
     ? convertInrToUsd(COMBO_BASE_PRICE_INR)
     : COMBO_BASE_PRICE_INR;
-
-  React.useEffect(() => {
-    setCustomSupportAmount(String(SUPPORT_LIMITS[activeCurrency].min));
-  }, [activeCurrency]);
 
   return (
     <>
@@ -132,80 +110,90 @@ export default function GemPacksPricing({ onPay }) {
       <div className="mt-8 text-center">
         <p className="text-xs font-black uppercase tracking-[0.25em] !text-emerald-800">The Land • Gem Packs</p>
         <h2 className="mt-3 text-3xl font-black !text-slate-900 sm:text-4xl">
-          Pick a Gem Pack and Jump In
+          Pick a Gem Card and Jump In
         </h2>
         <p className="mx-auto mt-3 max-w-3xl text-sm !text-slate-700 sm:text-base">
-          Fast, fun, and automated-friendly. Tap a pack, unlock Gems <Gem size={16} className="mb-0.5 inline-block text-purple-500" /> instantly, and start
-          playing without manual waiting.
+          Fast, cute, and easy to understand. Tap a card, unlock Purple Gems{' '}
+          <Gem size={16} className="mb-0.5 inline-block text-purple-500" /> instantly, and keep the fun going.
         </p>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="group relative min-w-0 overflow-hidden rounded-2xl border border-rose-300/90 bg-gradient-to-br from-pink-200 via-rose-100 to-yellow-100 p-4 shadow-[0_12px_30px_rgba(244,63,94,0.24)] transition-all duration-300 transform-gpu hover:-translate-y-1 hover:scale-105 hover:shadow-[0_20px_42px_rgba(244,63,94,0.34)] sm:p-5">
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-2 text-xs opacity-85">
-            <Gem size={14} className="text-purple-500" />
-            <span>🌈</span>
+        <div className="group relative min-w-0 overflow-hidden rounded-[2rem] border border-fuchsia-300/90 bg-[radial-gradient(circle_at_top_left,_rgba(250,232,255,0.95),_rgba(244,114,182,0.22)_38%,_rgba(168,85,247,0.28)_62%,_rgba(255,255,255,0.9)_100%)] p-4 shadow-[0_16px_38px_rgba(168,85,247,0.28)] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_22px_48px_rgba(168,85,247,0.34)] sm:p-5">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -left-4 top-6 h-20 w-20 rounded-full bg-fuchsia-200/70 blur-2xl" />
+            <div className="absolute right-2 top-4 h-16 w-16 rounded-full bg-cyan-200/60 blur-2xl" />
+            <div className="absolute bottom-4 left-6 text-2xl opacity-80">💜</div>
+            <div className="absolute right-6 top-6 text-2xl opacity-85">🌈</div>
+            <div className="absolute bottom-5 right-8 text-xl opacity-80">✨</div>
+            <div className="absolute left-1/2 top-12 text-xl opacity-75">💎</div>
           </div>
 
-          <div className="mt-3 flex flex-col items-center text-center">
-            <div className="grid h-14 w-14 place-items-center rounded-xl border border-white/90 bg-white/80 text-3xl shadow-md">
-              <span className="inline-flex items-center gap-1">
-                <Gem size={24} className="text-purple-500" />
-                <span>🌈</span>
+          <div className="relative">
+            <div className="flex items-center justify-between gap-2 text-[11px] font-black uppercase tracking-[0.18em]">
+              <span className="rounded-full border border-white/80 bg-white/75 px-3 py-1 !text-fuchsia-800">
+                Cute Combo
+              </span>
+              <span className="rounded-full border border-white/80 bg-white/75 px-3 py-1 !text-sky-800">
+                Purple + Multi-Color
               </span>
             </div>
-            <p className="mt-3 text-base font-black !text-slate-900">Combo Pack for Both Gems</p>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] !text-rose-700">
-              Starting from just {formatCurrency(comboStartingPrice, activeCurrency)}
-            </p>
-          </div>
 
-          <div className="mt-3 rounded-xl border border-white/90 bg-white/80 p-3 shadow-sm">
-            <label className="block text-left text-[11px] font-black uppercase tracking-widest !text-slate-600">
-              Custom Amount
-            </label>
-            <input
-              type="number"
-              min={supportLimits.min}
-              max={supportLimits.max}
-              step={supportLimits.step}
-              value={customSupportAmount}
-              onChange={(event) => setCustomSupportAmount(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-base font-black !text-slate-900 outline-none transition focus:border-rose-400"
-            />
-            <p className="mt-1 text-[11px] font-semibold !text-rose-700">
-              Get both standard and premium gems together! 💖
-            </p>
-            <div className="mt-2 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-center">
-              <p className="text-[10px] font-black uppercase tracking-[0.14em] !text-rose-500">Estimated Reward</p>
-              <p className="mt-1 inline-flex flex-wrap items-center justify-center gap-2 text-lg font-black !text-slate-900">
-                <span className="inline-flex items-center gap-1">
-                  {comboPurpleReward} <Gem size={18} className="text-purple-500" />
+            <div className="mt-4 flex flex-col items-center text-center">
+              <div className="grid h-16 w-16 place-items-center rounded-2xl border border-white/90 bg-white/85 text-3xl shadow-md">
+                <span className="inline-flex items-center gap-1.5">
+                  <Gem size={24} className="text-purple-500" />
+                  <span>🌈</span>
                 </span>
-                <span className="!text-rose-500">+</span>
-                <span className="inline-flex items-center gap-1">
-                  {comboRainbowReward} 🌈
-                </span>
+              </div>
+              <p className="mt-4 text-lg font-black !text-slate-900">Combo pack for both gems</p>
+              <p className="mt-1 text-sm font-semibold !text-slate-700">
+                One adorable starter bundle filled with Purple Gems and Multi-Color Gems.
+              </p>
+              <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.2em] !text-fuchsia-800">
+                Starting from just {formatCurrency(comboStartingPrice, activeCurrency)}
               </p>
             </div>
-          </div>
 
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={() =>
-                onPay?.(
-                  'Combo Pack for Both Gems',
-                  normalizedSupportAmount,
-                  comboPurpleReward,
-                  activeCurrency,
-                  { purpleGems: comboPurpleReward, rainbowGems: comboRainbowReward }
-                )
-              }
-              className="w-full rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-orange-400 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(244,63,94,0.35)] transition-all hover:brightness-105"
-            >
-              Buy Now
-            </button>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-white/90 bg-white/80 p-3 text-center shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] !text-fuchsia-700">Purple Gems</p>
+                <p className="mt-1 inline-flex items-center gap-1 text-lg font-black !text-slate-900">
+                  {COMBO_BASE_PURPLE_GEMS} <Gem size={18} className="text-purple-500" />
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/90 bg-white/80 p-3 text-center shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] !text-sky-700">Multi-Color Gems</p>
+                <p className="mt-1 text-lg font-black !text-slate-900">{COMBO_BASE_MULTI_COLOR_GEMS} 🌈</p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/90 bg-white/75 px-4 py-3 text-center shadow-sm">
+              <p className="text-sm font-semibold !text-slate-700">
+                Sweet, simple, and fixed. No confusing max cap shown, just the combo reward you asked for.
+              </p>
+            </div>
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() =>
+                  onPay?.(
+                    'Combo pack for both gems',
+                    comboStartingPrice,
+                    COMBO_BASE_PURPLE_GEMS,
+                    activeCurrency,
+                    {
+                      purpleGems: COMBO_BASE_PURPLE_GEMS,
+                      rainbowGems: COMBO_BASE_MULTI_COLOR_GEMS,
+                    }
+                  )
+                }
+                className="w-full rounded-xl bg-gradient-to-r from-fuchsia-600 via-pink-500 to-cyan-500 px-4 py-2.5 text-sm font-black !text-white shadow-[0_8px_20px_rgba(168,85,247,0.34)] transition-all hover:brightness-105"
+              >
+                Buy Cute Combo
+              </button>
+            </div>
           </div>
         </div>
 
@@ -235,7 +223,7 @@ export default function GemPacksPricing({ onPay }) {
 
             <div className="mt-3 rounded-xl border border-white/85 bg-white/80 p-3 text-center shadow-sm">
               <p className="inline-flex items-center gap-1 text-2xl font-black !text-slate-900">
-                {pack.gems} Gems <Gem size={22} className="text-purple-500" />
+                {pack.gems} Purple Gems <Gem size={22} className="text-purple-500" />
               </p>
               <p className="mt-1.5 text-xl font-black !text-slate-900">
                 {formatCurrency(pack.prices[activeCurrency], activeCurrency)}
@@ -263,11 +251,9 @@ export default function GemPacksPricing({ onPay }) {
             <p className="text-[11px] font-black uppercase tracking-[0.22em] !text-sky-200">Limited Membership</p>
             <p className="mt-1 text-sm font-semibold leading-relaxed !text-white sm:text-base">
               <span className="inline-flex flex-wrap items-center gap-1">
-                <span>Semi-Monthly VIP Pass: Get 200</span>
+                <span>Semi-Monthly VIP Pass: 920 Purple Gems</span>
                 <Gem size={14} className="text-purple-500" />
-                <span>every month for 4 months + 120 Instant Bonus</span>
-                <Gem size={14} className="text-purple-500" />
-                <span>AND 100 Premium 🌈! ✨</span>
+                <span>plus 100 Multi-Color Gems 🌈 in one premium plan.</span>
               </span>
             </p>
           </div>

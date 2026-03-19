@@ -15,35 +15,36 @@ const footerInfoCardClass =
 const economyGuideItems = [
   {
     emoji: '🎯',
-    title: 'Daily Quests & Free Gems',
+    title: 'Free Daily Gems',
     description: (
       <>
         Log in every day to open Aiko&apos;s Daily Magic Chest and earn <strong>10 Purple Gems</strong> (
         <Gem size={13} className="text-purple-500" />
-        ) <strong>+ 5 Rainbow Gems</strong> (🌈) absolutely free!
+        ) <strong>+ 5 Multi-Color Gems</strong> (🌈) absolutely free.
       </>
     ),
   },
   {
-    emoji: '🌈',
-    title: 'Standard vs. Premium Gems',
+    emoji: '💳',
+    title: 'Cards & Combo Packs',
     description: (
       <>
-        Purple Gems (<Gem size={13} className="text-purple-500" />) are for basic activities. Convert <strong>300 Purple = 10 Rainbow</strong> at the Bank, or grab Combo Packs for the best value!
+        Gem cards top up your Purple Gems (<Gem size={13} className="text-purple-500" />) fast, and the Combo
+        pack for both gems starts at <strong>₹599</strong> with <strong>230 Purple Gems + 50 Multi-Color Gems</strong>.
       </>
     ),
+  },
+  {
+    emoji: '🌟',
+    title: 'Subscriptions & Quests',
+    description:
+      'VIP subscriptions are for families who want bigger gem boosts, while quests and practice activities help kids earn more in a clear, guided way.',
   },
   {
     emoji: '🏰',
-    title: 'Mega Vault Packs',
+    title: 'Mega Vault Rules',
     description:
-      'Unlock premium question packs permanently! 🔒 Requires 500 🌈 to unlock. Each pack costs 1100 🌈 and includes 250 advanced questions (Space, Dinosaurs, Ocean, Brain Teasers).',
-  },
-  {
-    emoji: '💖',
-    title: 'Combo Packs (Best Value!)',
-    description:
-      'Starting at just ₹599! Get both Purple + Rainbow Gems together. Example: ₹599 = 230 💜 + 50 🌈. Support our platform while boosting your gem balance!',
+      'Convert 300 Purple Gems into 10 Multi-Color Gems at the bank. Keep 500 Multi-Color Gems to unlock Mega Vault access, and each Mega Vault pack costs 1100 Multi-Color Gems.',
   },
 ];
 
@@ -222,11 +223,11 @@ const Footer = () => {
           <div className="mt-10 rounded-3xl border border-white/75 bg-gradient-to-br from-sky-50/85 via-violet-50/80 to-amber-50/80 p-5 shadow-[0_18px_40px_rgba(15,23,42,0.1)] sm:p-6">
             <div className="mb-5 flex flex-col gap-2 text-left">
               <p className="inline-flex w-fit rounded-full border border-white/85 bg-white/70 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-slate-700">
-                Game Economy Guide
+                Gem Economy Guide
               </p>
-              <h4 className="text-xl font-black text-slate-900">🌟 How to Play &amp; Earn</h4>
+              <h4 className="text-xl font-black text-slate-900">🌟 Cards, Quests &amp; Free Gems</h4>
               <p className="text-sm font-semibold leading-relaxed text-slate-700">
-                A quick and friendly guide for kids and parents to understand gems, packs, and smart progress.
+                A quick and friendly guide for kids and parents to understand cards, subscriptions, quests, and free gems.
               </p>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -335,17 +336,24 @@ const Footer = () => {
       <LegalModal isOpen={activeModal === 'pricing'} onClose={closeModal} title="Pricing & Gem Economy">
         <ul className="list-disc space-y-3 pl-5 text-slate-800">
           <li>
-            <strong className="text-slate-900">Story &amp; Poem Limits:</strong> Session limits depend on your
-            active pack. Basic packs offer 2, 5, or 8 sessions every 3 days. VIP Pass holders get 15 daily
-            sessions, and School/Educator accounts get 120 daily sessions.
+            <strong className="text-slate-900">Free Daily Gems:</strong> Open the daily chest once per day to collect
+            10 Purple Gems and 5 Multi-Color Gems for free.
           </li>
           <li>
-            <strong className="text-slate-900">Magic Art:</strong> Standard access is 80 Gems for 10 uses. VIP Pass
-            gives 150 uses for 120 Gems. Free for registered Schools &amp; Educators.
+            <strong className="text-slate-900">Cards &amp; Combo Packs:</strong> Gem cards boost Purple Gems, and the
+            Combo pack for both gems starts at ₹599 with 230 Purple Gems plus 50 Multi-Color Gems.
           </li>
           <li>
-            <strong className="text-slate-900">Learning Zone:</strong> Colors &amp; Shapes permanently unlocks for
-            120 Gems. Animal Safari permanently unlocks for 150 Gems.
+            <strong className="text-slate-900">Subscriptions:</strong> VIP plans are for families who want bigger
+            recurring gem support and premium access without guessing which card to buy next.
+          </li>
+          <li>
+            <strong className="text-slate-900">Quests &amp; Practice:</strong> Daily quests, practice activities, and
+            special reward tasks help kids earn more gems through guided play.
+          </li>
+          <li>
+            <strong className="text-slate-900">Mega Vault:</strong> Convert 300 Purple Gems into 10 Multi-Color Gems.
+            You need 500 Multi-Color Gems to unlock Mega Vault access, and each pack costs 1100 Multi-Color Gems.
           </li>
         </ul>
       </LegalModal>
