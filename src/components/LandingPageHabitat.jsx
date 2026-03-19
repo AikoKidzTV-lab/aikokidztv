@@ -430,6 +430,8 @@ export default function LandingPageHabitat({
     } catch (error) {
       if (error?.code === 'checkout_dismissed') {
         showPaymentToast('info', error.message || 'Checkout closed before payment completed.');
+      } else if (error?.code === 'payment_api_unreachable') {
+        showPaymentToast('error', 'Server connection failed. Please check your internet or try again later.');
       } else {
         showPaymentToast('error', error?.message || 'Payment failed. Please try again.');
       }

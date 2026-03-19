@@ -2,8 +2,6 @@ import { supabase } from '../supabaseClient';
 
 const RAZORPAY_SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 const RAZORPAY_KEY_ID = String(import.meta.env.VITE_RAZORPAY_KEY_ID || '').trim();
-const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').trim().replace(/\/+$/, '');
-const SUPABASE_ANON_KEY = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 let razorpayScriptPromise = null;
 
@@ -31,6 +29,25 @@ const normalizeAmount = (value) => {
     throw createCheckoutError('invalid_amount', 'Invalid checkout amount.');
   }
   return Number(numeric.toFixed(2));
+};
+
+const isPaymentApiNetworkError = (error) => {
+  const message = String(error?.message || '').trim().toLowerCase();
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('network request failed') ||
+    message.includes('network error') ||
+    message.includes('load failed') ||
+    message.includes('cors')
+  );
+};
+
+const getPaymentApiErrorMessage = (error) => {
+  if (isPaymentApiNetworkError(error)) {
+    return 'Server connection failed. Please check your internet or try again later.';
+  }
+
+  return String(error?.message || '').trim() || 'Payment service request failed.';
 };
 
 const loadRazorpayCheckoutScript = async () => {
@@ -71,55 +88,41 @@ const loadRazorpayCheckoutScript = async () => {
   return razorpayScriptPromise;
 };
 
-const getFunctionUrl = (functionName) => {
-  if (!SUPABASE_URL) {
-    throw createCheckoutError('missing_supabase_url', 'Missing Supabase URL for Razorpay checkout.');
-  }
-
-  return `${SUPABASE_URL}/functions/v1/${functionName}`;
-};
-
 const invokeSupabaseFunction = async (functionName, payload) => {
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-
-  if (sessionError) {
-    throw createCheckoutError('auth_session_error', sessionError.message || 'Unable to load auth session.');
-  }
-
-  if (!session?.access_token) {
-    throw createCheckoutError('auth_required', 'Please log in before continuing to checkout.');
-  }
-
-  const response = await fetch(getFunctionUrl(functionName), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const rawText = await response.text();
-  let parsed;
-
   try {
-    parsed = rawText ? JSON.parse(rawText) : {};
-  } catch {
-    parsed = { error: rawText || 'Unexpected response from payment service.' };
-  }
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-  if (!response.ok) {
+    if (sessionError) {
+      throw createCheckoutError('auth_session_error', sessionError.message || 'Unable to load auth session.');
+    }
+
+    if (!session?.access_token) {
+      throw createCheckoutError('auth_required', 'Please log in before continuing to checkout.');
+    }
+
+    // Use the Supabase Functions client so the correct backend base URL and CORS flow are handled centrally.
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data ?? {};
+  } catch (error) {
+    console.error('Payment API Error:', error);
     throw createCheckoutError(
-      'function_request_failed',
-      parsed?.error || parsed?.message || 'Payment service request failed.'
+      isPaymentApiNetworkError(error) ? 'payment_api_unreachable' : 'function_request_failed',
+      getPaymentApiErrorMessage(error)
     );
   }
-
-  return parsed;
 };
 
 export const startRazorpayCheckout = async ({ user, plan }) => {

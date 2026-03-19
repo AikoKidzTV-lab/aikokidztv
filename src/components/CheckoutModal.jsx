@@ -125,7 +125,11 @@ const CheckoutModal = ({ plan, isOpen, onClose }) => {
 
     } catch (err) {
       console.error(err);
-      setError(err?.message || 'Payment failed. Please try again.');
+      if (err?.code === 'payment_api_unreachable') {
+        setError('Server connection failed. Please check your internet or try again later.');
+      } else {
+        setError(err?.message || 'Payment failed. Please try again.');
+      }
     } finally {
       setProcessing(false);
     }
